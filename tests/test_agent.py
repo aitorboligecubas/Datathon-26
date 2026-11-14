@@ -171,3 +171,25 @@ def test_no_data_in_the_last_week_buys_nothing():
     assert res.totals["infractions"] == 0
     assert last.import_kw.iloc[1:].sum() < 1e-6          # desde que se sabe que no hay datos, no compra
     assert last.export_kw.iloc[1:].sum() < 1e-6
+
+
+def test_train_has_no_meter_before_the_november_week():
+    """Un dato del train que usamos en la presentación: la semana de noviembre de 2025 es la única del
+    calendario del test que empezaría justo después de 7 días sin una sola lectura del contador."""
+    import pandas as pd
+    import pytest
+
+    from battery.data import TRAIN_DIR, ensure_official
+
+    if not ensure_official():
+        pytest.skip("sin datos oficiales")
+    col = "Contador - POTENCIA ACTIVA EXPORTADA (kW)"
+    meter = pd.read_csv(TRAIN_DIR / "contador.csv", usecols=["Fecha", col], parse_dates=["Fecha"])
+    readings = meter.dropna(subset=[col]).Fecha
+    silent = []
+    for month in pd.period_range("2025-09", "2026-08", freq="M"):
+        start = pd.Timestamp(month.year, month.month, month.days_in_month - 6)     # 00:00 del primer día del test
+        before = readings[(readings >= start - pd.Timedelta(days=7)) & (readings < start)]
+        if before.empty:
+            silent.append((month.year, month.month))
+    assert silent == [(2025, 11)]

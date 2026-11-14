@@ -1,12 +1,12 @@
-banco alineado, suite dev, agente scripts/p1_lab/cand_info.py:make_agent: 36 episodios en 99 s
+banco alineado, suite dev, agente actual: 36 episodios en 84 s
 familia      n    score   mitad1   mitad2  a óptimo  m1 a ópt  m2 a ópt  infr  vertido  t máx
-averia       9   6.1778   5.2128   7.1475    0.0231    0.0221    0.0244     0      215    6.4
-cero_otra    3   6.0890   4.8582   7.1215    0.0211    0.0450    0.0003     0      168    6.8
-dos_ceros    3   6.2744   4.9325   7.4708    0.0687    0.1116    0.0632     0      395    4.7
-normal       6   6.0561   5.0112   7.0723    0.0072    0.0132    0.0011     0       69    7.1
-nov0        12   6.3209   5.3305   7.1347    0.0073    0.0133    0.0025     0       79    6.5
-parcial      3   6.1886   5.0290   7.1701    0.0600    0.1341    0.0017     0      370    6.7
-TODOS       36   6.2068   5.1502   7.1574    0.0219    0.0364    0.0126     0      169    7.1
+averia       9   6.1778   5.2128   7.1475    0.0231    0.0221    0.0244     0      215    4.9
+cero_otra    3   6.0890   4.8582   7.1215    0.0211    0.0450    0.0003     0      168    5.4
+dos_ceros    3   6.2744   4.9325   7.4708    0.0687    0.1116    0.0632     0      395    4.8
+normal       6   6.0561   5.0112   7.0723    0.0072    0.0132    0.0011     0       69    5.2
+nov0        12   6.3209   5.3305   7.1347    0.0073    0.0133    0.0025     0       79    5.1
+parcial      3   6.1886   5.0290   7.1701    0.0600    0.1341    0.0017     0      370    5.2
+TODOS       36   6.2068   5.1502   7.1574    0.0219    0.0364    0.0126     0      169    5.4
 
 Diferencia con la referencia, episodio a episodio (36 comunes): media [mín, máx]
 averia     score -0.0018 [-0.0059, +0.0002]   mitad1 -0.0034 [-0.0117, +0.0004]   mitad2 +0.0000 [+0.0000, +0.0000]
@@ -16,4 +16,4 @@ normal     score -0.0018 [-0.0054, +0.0000]   mitad1 -0.0034 [-0.0105, +0.0000] 
 nov0       score +0.0136 [-0.0000, +0.0662]   mitad1 +0.0307 [+0.0000, +0.1537]   mitad2 +0.0000 [+0.0000, +0.0000]
 parcial    score -0.0055 [-0.0156, +0.0000]   mitad1 -0.0125 [-0.0357, +0.0000]   mitad2 -0.0000 [-0.0000, +0.0000]
 TODOS      score +0.0040 [-0.0156, +0.0662]   mitad1 +0.0097 [-0.0357, +0.1537]   mitad2 -0.0000 [-0.0000, +0.0000]
-guardado en results/p1_banco/alineado_dev_info_make_agent.csv
+guardado en results/p1_banco/alineado_dev_v4.csv
