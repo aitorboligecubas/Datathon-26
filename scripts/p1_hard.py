@@ -281,6 +281,9 @@ def split_frame(full: pd.DataFrame, split: str) -> pd.DataFrame:
         return d.reset_index(drop=True)
     if split == "train":
         return train_split(full).reset_index(drop=True)
+    if "-" in split:        # "A-B": los días A a B de cada mes (otra ventana para diseñar, p. ej. "1-7")
+        a, b = (int(x) for x in split.split("-"))
+        return full[(full.timestamp.dt.day >= a) & (full.timestamp.dt.day <= b)].reset_index(drop=True)
     return full.reset_index(drop=True)
 
 
@@ -294,17 +297,20 @@ def load_factory(spec: str):
     return getattr(mod, func)
 
 
-def evaluate(split: str = "val", market: str = "", solar: str = "", only: str = "") -> pd.DataFrame:
+def evaluate(split: str = "val", market: str = "", solar: str = "", only: str = "", agent: str = "") -> pd.DataFrame:
     """Comparativa en `split`. Todo lo que se aprende (perfiles, modelos) se ajusta SIN las horas del split.
 
     market: 'ruta.py:func' con func(exclude: set de pd.Timestamp, prior: dict) -> objeto con
             .forecast(obs, times, weather) (contrato de battery.hard_market.MarketForecaster).
     solar:  'ruta.py:func' con func(exclude, base_forecaster) -> objeto con .update(obs, weather),
             .forecast(obs, times) y .adjust_action(action_kw, obs, p) (contrato de battery.hard_solar).
+    agent:  'ruta.py:func' con func(prior, solar_prior, exclude) -> agente completo con .act(obs). `prior` y
+            `solar_prior` son las tablas de mercado y de consumo/solar ajustadas SIN las horas del split
+            (las mismas que recibe hard_agent). Sirve para candidatos que cambian la política o el plan.
     """
     full = hard_table()
     df = split_frame(full, split)
-    exclude = set(df.timestamp) if split in ("val", "dev") else None
+    exclude = set(df.timestamp) if (split in ("val", "dev") or "-" in split) else None
     fit_df = full[~full.timestamp.isin(exclude)] if exclude else full
     prior = fit_market(exclude, fit_df)
     solar_prior = fit_solar(fit_df)
@@ -330,6 +336,8 @@ def evaluate(split: str = "val", market: str = "", solar: str = "", only: str = 
     }
     if market or solar:
         agents["CANDIDATO"] = candidate
+    if agent:
+        agents["CANDIDATO"] = lambda: load_factory(agent)(prior, solar_prior, exclude or set())
     if only:
         agents = {k: v for k, v in agents.items() if k in only.split(",")}
     rows = []
@@ -355,9 +363,10 @@ def evaluate(split: str = "val", market: str = "", solar: str = "", only: str = 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--split", default="val", choices=["val", "dev", "train", "todo"])
+    ap.add_argument("--split", default="val", help="val (reservada), dev (días 8-14), train, todo, o 'A-B' (días A a B de cada mes)")
     ap.add_argument("--market", default="", help="candidato de previsión de precio y CO2: ruta.py:func")
     ap.add_argument("--solar", default="", help="candidato de previsión de consumo y solar: ruta.py:func")
+    ap.add_argument("--agent", default="", help="candidato de agente completo: ruta.py:func(prior, solar_prior, exclude)")
     ap.add_argument("--only", default="", help="agentes a ejecutar, separados por comas")
     ap.add_argument("--out", default="", help="CSV donde guardar la tabla")
     ap.add_argument("--fit", action="store_true", help="guardar models/hard_market.json con todo el train")
@@ -369,7 +378,7 @@ def main() -> int:
         (MODELS / "hard_solar.json").write_text(json.dumps(fit_solar(full)), encoding="utf-8")
         print("guardados models/hard_market.json y models/hard_solar.json")
         return 0
-    out = evaluate(args.split, args.market, args.solar, args.only)
+    out = evaluate(args.split, args.market, args.solar, args.only, args.agent)
     if args.out:
         Path(args.out).parent.mkdir(parents=True, exist_ok=True)
         out.to_csv(args.out, index=False)

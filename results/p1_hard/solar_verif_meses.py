@@ -135,12 +135,50 @@ def run(split: str, make, piezas: bool):
     return out, pm, d
 
 
+def placebo(split: str, make, n: int) -> None:
+    """¿Cuánto se mueve el score del candidato por puro ruido? Se vuelve a ajustar quitando, además del split,
+    2 días al azar de cada mes: el previsor es el mismo y las tablas, casi iguales. Lo que cambie el score
+    es el ruido de las decisiones, y contra eso hay que leer la ganancia."""
+    G = make.__globals__
+    full = bench.hard_table()
+    df = bench.split_frame(full, split)
+    exclude = set(df.timestamp)
+    fit_df = full[~full.timestamp.isin(exclude)]
+    prior = bench.fit_market(exclude, fit_df)
+    solar_prior = bench.fit_solar(fit_df)
+    base = baseline_totals(df)
+
+    def run_with(table):
+        a = bench.hard_agent(prior, solar_prior)
+        a.policy.netload = G["SolarCand"](G["fit_prior"](table), a.policy.forecaster)
+        totals, _ = bench.simulate_hard(a, df)
+        return score(totals, base)["score_raw"]
+
+    ref = run_with(fit_df)
+    rng = np.random.default_rng(2026)
+    days = fit_df.timestamp.dt.normalize()
+    difs = []
+    for _ in range(n):
+        drop = []
+        for _, g in days.groupby(fit_df.timestamp.dt.to_period("M")):
+            drop += list(rng.choice(g.unique(), 2, replace=False))
+        difs.append(run_with(fit_df[~days.isin(drop)]) - ref)
+    difs = np.array(difs)
+    print(f"placebo {split}: candidato {ref:.4f} | {n} reajustes sin 2 días al azar por mes: diferencias {np.round(difs, 4).tolist()} | "
+          f"desviación típica {difs.std(ddof=1):.4f}, máx |dif| {np.abs(difs).max():.4f}")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--piezas", action="store_true")
     ap.add_argument("--splits", default="dev,val")
+    ap.add_argument("--placebo", type=int, default=0, help="solo el placebo, con este número de reajustes por split")
     args = ap.parse_args()
     make = bench.load_factory(CAND)
+    if args.placebo:
+        for split in args.splits.split(","):
+            placebo(split, make, args.placebo)
+        return 0
     res = {}
     for split in args.splits.split(","):
         res[split] = run(split, make, args.piezas)
