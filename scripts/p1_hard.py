@@ -156,7 +156,18 @@ def fit_solar(table: pd.DataFrame) -> dict:
     load_hat = p_now * (1 + ((t.load_kw.shift(1) / p_prev).clip(0.3, 3.0) - 1) * 0.9)
     err = ((t.load_kw - t.pv_kw) - (load_hat - pv_hat))[ok]
     sd = err.groupby(h[ok]).std().reindex(range(24)).fillna(err.std()).clip(lower=15.0)
-    return {"pv_clear": clear.tolist(), "pv_mean": mean.tolist(), "net_sd": [float(v) for v in sd]}
+    return {"pv_clear": clear.tolist(), "pv_mean": mean.tolist(), "net_sd": [float(v) for v in sd],
+            "cand": fit_solar_tables(table)}
+
+
+def fit_solar_tables(table: pd.DataFrame) -> dict:
+    """Tablas del previsor ampliado de consumo y solar (battery.hard_solar.SolarCand). El ajuste está en
+    scripts/p1_lab/hard_solar_cand.py (fit_prior), que es donde se diseñó."""
+    lab = str(REPO / "scripts" / "p1_lab")
+    if lab not in sys.path:
+        sys.path.insert(0, lab)
+    from hard_solar_cand import fit_prior
+    return fit_prior(table)
 
 
 def simulate_hard(agent, df: pd.DataFrame, known: int = KNOWN_HOURS, p=HARD_PARAMS):
@@ -210,13 +221,13 @@ def hard_agent(prior: dict, solar: dict = None, **cfg):
     """El agente del modo difícil con las tablas dadas (sin leer models/hard_*.json).
     cfg: yesterday_weight (mercado), z_discharge / z_charge (solar), y atributos de la política."""
     from battery.forecaster import FORECASTER_FILE, Forecaster
-    from battery.hard_solar import NetLoadForecaster
+    from battery.hard_solar import make_netload
     from battery.policy import find_models_dir, load_json
     pol = HardPolicy()
     pol.market = MarketCand(prior, **{k: v for k, v in cfg.items() if k in ("yesterday_weight",)})
     pol.w_co2, pol.w_cost = score_weights(prior["co2_ref_kg_per_h"], prior["cost_ref_eur_per_h"])
     pol.forecaster = Forecaster(load_json(find_models_dir(), FORECASTER_FILE))
-    pol.netload = NetLoadForecaster(solar, pol.forecaster, **{k: v for k, v in cfg.items() if k in ("z_discharge", "z_charge")})
+    pol.netload = make_netload(solar, pol.forecaster, **{k: v for k, v in cfg.items() if k in ("z_discharge", "z_charge")})
     for k, v in cfg.items():
         if k not in ("yesterday_weight", "z_discharge", "z_charge"):
             setattr(pol, k, v)
@@ -312,6 +323,7 @@ def evaluate(split: str = "val", market: str = "", solar: str = "", only: str = 
         "nada": lambda: Nothing(),
         "plan de 3 h (sin prever)": lambda: hard_agent(prior, solar_prior, horizon=3),
         "mercado sin memoria (v4)": lambda: hard_agent({k: v for k, v in prior.items() if k != "cand"}, solar_prior),
+        "solar sencilla (v6)": lambda: hard_agent(prior, {k: v for k, v in solar_prior.items() if k != "cand"}),
         "agente actual": lambda: hard_agent(prior, solar_prior),
         "precio y CO2 reales a 24 h": lambda: perfect_market_agent(prior, df, solar_prior),
         "óptimo (todo el futuro)": lambda: OracleAgent(df, *w, p=HARD_PARAMS),

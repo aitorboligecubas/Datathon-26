@@ -1,0 +1,10 @@
+# Verificación independiente del candidato 'solar' (HARD MODE) en el split RESERVADO (val)
+# 2026-11-14 18:52 UTC | candidato scripts/p1_lab/hard_solar_cand.py md5 7e51351fde0f | src/battery/hard_solar.py md5 fd2998f5b123 | src/battery/hard.py md5 a90f5b601091
+# Orden: python scripts/p1_hard.py --split val --solar scripts/p1_lab/hard_solar_cand.py:make --only "solar sencilla (v6),agente actual,CANDIDATO"
+# Ojo: 'agente actual' ya lleva el candidato dentro (v7 en el árbol de trabajo). El agente de partida es 'solar sencilla (v6)'.
+
+val: 1848 h | referencia 75.3 kg/h y 127.1 EUR/h | excedente solar sin batería 67828 kWh (10.5 % de las horas)
+             agente  score  co2_pct  coste_pct  infr  vertido_kwh  vert_descarga  vert_solar  ms_paso  s_2016h
+solar sencilla (v6) 20.661   19.453     23.480     0     5421.248       3329.755    2091.492    2.863    5.776
+      agente actual 20.780   19.528     23.702     0     5827.214       4443.106    1384.108    2.703    5.452
+          CANDIDATO 20.780   19.528     23.702     0     5827.214       4443.106    1384.108    2.635    5.614

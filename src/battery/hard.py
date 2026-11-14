@@ -19,7 +19,7 @@ import numpy as np
 import pandas as pd
 
 from .hard_market import KNOWN_HOURS, MARKET_FILE, MarketCand
-from .hard_solar import SOLAR_FILE, NetLoadForecaster
+from .hard_solar import SOLAR_FILE, make_netload
 from .obs import Obs
 from .optimizer import plan, score_weights
 from .params import BatteryParams
@@ -69,12 +69,13 @@ class HardPolicy(MPCPolicy):
         super().__init__(p=p, models_dir=models_dir, horizon=horizon, **kwargs)
         prior = load_json(models_dir, MARKET_FILE)
         self.market = MarketCand(prior)     # con memoria del train; si faltan sus tablas, decide como el previsor base
-        self.netload = NetLoadForecaster(load_json(models_dir, SOLAR_FILE), self.forecaster)
+        self.netload = make_netload(load_json(models_dir, SOLAR_FILE), self.forecaster)
         self.weather = {}
         self.seen_reading = False    # ha llegado alguna lectura de consumo válida (si no, es cosa del formato)
         self.n_blocks = 0            # semanas del test empezadas
         self.expected_soc = None     # carga que debería verse en la próxima observación
         self.empty_weeks = False     # el entorno reinicia la batería cada semana: se cierra cada una vacía
+        self.last_seen = None        # fecha de la última observación (para notar si el reloj vuelve atrás)
         try:    # pesos del objetivo con la referencia del modo difícil (con 12 veces más solar cambia)
             self.w_co2, self.w_cost = score_weights(float(prior["co2_ref_kg_per_h"]), float(prior["cost_ref_eur_per_h"]))
         except Exception:
@@ -154,6 +155,19 @@ class HardPolicy(MPCPolicy):
             self.n_fallbacks += 1
             return greedy_action(obs, load[0], pv[0], self.p)
 
+    def restarted(self, obs: Obs) -> bool:
+        """True si el reloj vuelve atrás: el entorno empieza otra simulación con este mismo agente (por ejemplo,
+        el test después de una prueba rápida). Se olvida lo deducido de la simulación anterior."""
+        ts = obs.timestamp
+        if ts is None:
+            return False
+        back = self.last_seen is not None and ts < self.last_seen - ONE_HOUR
+        self.last_seen = ts
+        if back:
+            self.n_blocks, self.expected_soc, self.empty_weeks = 0, None, False
+            self.block_hours, self.zero_hours, self.no_data_block, self.no_reading = 0, 0, False, False
+        return back
+
     def watch_restart(self, obs: Obs, new_block: bool) -> None:
         """¿El entorno reinicia la batería al empezar cada semana? Se mira una sola vez, al empezar la segunda:
         si la carga es el 50 % justo y no la que dejó el agente, cada semana es una simulación aparte."""
@@ -167,6 +181,8 @@ class HardPolicy(MPCPolicy):
     def act_obs(self, obs: Obs) -> float:
         try:
             new_block = self.track_block(obs)      # semanas del test y semanas sin datos de contador (policy.py)
+            if self.restarted(obs):
+                new_block = True
             self.watch_restart(obs, new_block)
             if math.isfinite(obs.load_prev_kw):
                 self.seen_reading = True
