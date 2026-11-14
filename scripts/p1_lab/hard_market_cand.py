@@ -43,8 +43,8 @@ SEED_HOURS = 168            # horas del final de cada tramo del train que se gua
                             # las pistas miran 48 h atrás como mucho: el resto es margen)
 STORE_PAST_H = 24 * 40      # horas hacia atrás que caben en la memoria densa
 STORE_LEN_H = 24 * 460      # un año de test y margen
-Z_CLIP = 2.0                # la desviación prevista se limita a e^-2..e^2 (igual que el agente actual)
-Z_STORE_CLIP = 4.0          # y la observada, a e^-4..e^4: en el train no pasa de 3,5; protege de un precio 0
+Z_CLIP = 2.0                # la desviación prevista se limita a e^-2..e^2 (igual que el agente actual), y la
+                            # observada también: en el train no pasa de 1,2; solo protege de un precio 0 o disparatado
 BLOCK_DAYS = 7              # (laboratorio) bloques de días del mes para la variante de perfil cruzado
 # Pistas de la regresión. z = desviación de la propia variable, o = desviación de la otra.
 #   z0, z1, z2  las tres horas conocidas            zm24, zm6  media de las últimas 24 y 6 horas
@@ -58,11 +58,11 @@ DEFAULT_CFG = {"feats": FEATS, "crossfit": False, "ridge_hour": -1.0, "seed_hour
 
 
 # ------------------------------------------------------------------------------- inferencia
-def deviation(value: float, base: float) -> float:
+def log_ratio(value: float, base: float) -> float:
     """z = log(real / perfil). NaN si falta alguno de los dos."""
     if not (math.isfinite(value) and math.isfinite(base) and base > 0):
         return float("nan")
-    return min(max(math.log(max(value, 1e-6) / max(base, 1e-6)), -Z_STORE_CLIP), Z_STORE_CLIP)
+    return min(max(math.log(max(value, 1e-6) / max(base, 1e-6)), -Z_CLIP), Z_CLIP)
 
 
 def window_mean(z: np.ndarray, lo: int, hi: int, min_count: int) -> float:
@@ -122,14 +122,14 @@ class MarketCand(MarketForecaster):
                     for j in range(len(vals)):
                         pos = start + j - self.h0
                         if 0 <= pos < STORE_LEN_H and vals[j] is not None:
-                            self.z[name][pos] = deviation(float(vals[j]), self.profile_at(name, start + j))
+                            self.z[name][pos] = log_ratio(float(vals[j]), self.profile_at(name, start + j))
             except Exception:
                 continue
         for name in NAMES:               # lo ya visto en este episodio manda sobre la semilla
             for key, (v, b) in self.seen[name].items():
                 pos = key - self.h0
                 if 0 <= pos < STORE_LEN_H:
-                    self.z[name][pos] = deviation(v, b)
+                    self.z[name][pos] = log_ratio(v, b)
 
     def scalars(self, name: str, i: int, hour_now: int) -> dict:
         """Pistas que no dependen de la antelación. `i` = posición de la hora actual en la memoria."""
@@ -180,7 +180,7 @@ class MarketCand(MarketForecaster):
             for k in range(n_known):
                 pos = keys[k] - self.h0
                 if 0 <= pos < STORE_LEN_H:
-                    self.z[name][pos] = deviation(float(arr[k]), float(base[name][k]))
+                    self.z[name][pos] = log_ratio(float(arr[k]), float(base[name][k]))
         sc = {name: self.scalars(name, i, times[0].hour) for name in NAMES}
         for name in NAMES:
             if not all(math.isfinite(sc[name][j]) for j in ("0", "1", "2")):
@@ -205,15 +205,45 @@ class MarketCand(MarketForecaster):
         return out[0], out[1]
 
     def forecast(self, obs, times: list, weather: Optional[dict] = None) -> tuple:
+        """Precio y CO2 para cada fecha de `times` ([0] = hora actual). Lo conocido se respeta. Nunca falla."""
+        out = None
         if self.cand_ok:
             try:
                 out = self.cand_forecast(obs, times)
                 if out is not None:
                     self.remember(obs, times)       # la clase madre sigue al día por si hay que volver a ella
-                    return out
             except Exception:
-                pass
-        return super().forecast(obs, times, weather)
+                out = None
+        if out is None:
+            try:
+                out = super().forecast(obs, times, weather)
+            except Exception:
+                out = None
+        return self.repair(obs.price, out[0] if out else None, len(times)), self.repair(obs.co2, out[1] if out else None, len(times))
+
+    @staticmethod
+    def repair(known, x, n: int) -> np.ndarray:
+        """Último seguro: `n` valores finitos y >= 0. Un hueco se rellena con el último valor válido."""
+        try:
+            x = np.array(x, dtype=float).ravel()
+        except Exception:
+            x = np.empty(0)
+        if len(x) != n:
+            try:
+                k = np.array(known, dtype=float).ravel()[:n]
+            except Exception:
+                k = np.empty(0)
+            x = np.r_[k, np.full(n - len(k), np.nan)]
+        bad = ~np.isfinite(x)
+        if bad.any():
+            good = x[~bad]
+            last = float(good[0]) if len(good) else 0.0
+            for j in range(n):
+                if bad[j]:
+                    x[j] = last
+                else:
+                    last = x[j]
+        return np.maximum(x, 0.0)
 
 
 # ------------------------------------------------------------------------------- ajuste (laboratorio)
@@ -341,8 +371,8 @@ def training_rows(d: pd.DataFrame, feats: tuple, crossfit: bool) -> dict:
                     f = dict(fixed[name])
                     f["zy"], f["zy2"], f["oy"] = at(z[name], k - 24), at(z[name], k - 48), at(z[other], k - 24)
                     y = at(z[name], k)
-                    X = np.column_stack([f[n] for n in feats])
-                    Xc = np.column_stack([f[n] for n in COLD_FEATS])
+                    X = np.vstack([f[n] for n in feats]).T
+                    Xc = np.vstack([f[n] for n in COLD_FEATS]).T
                     keep = keep_rows & np.isfinite(y) & np.isfinite(Xc).all(axis=1)
                     rows[name][k - KNOWN_HOURS].append((X[keep], Xc[keep], y[keep], hour_t[keep].astype(int)))
     out = {}
@@ -377,6 +407,26 @@ def ridge_by_hour(X: np.ndarray, y: np.ndarray, hour: np.ndarray, ridge_hour: fl
     return out
 
 
+def ridge_cv(X: np.ndarray, y: np.ndarray, lams=(0.0, 10.0, 30.0, 100.0, 300.0, 1000.0, 3000.0), folds: int = 6) -> tuple:
+    """(Laboratorio) Regresión común con encogimiento elegido SOLO con el train: 6 pliegues seguidos en el
+    tiempo (unos 2 meses cada uno). Devuelve (coeficientes [F+1], lambda elegida)."""
+    A = np.c_[X, np.ones(len(X))]
+    nf = A.shape[1]
+    P = np.eye(nf)
+    P[-1, -1] = 0.0                                   # el término independiente no se encoge
+    fold = (np.arange(len(y)) * folds) // max(len(y), 1)
+    best, best_err = lams[0], float("inf")
+    for lam in lams:
+        err = 0.0
+        for f in range(folds):
+            tr = fold != f
+            b = np.linalg.solve(A[tr].T @ A[tr] + lam * P + 1e-9 * np.eye(nf), A[tr].T @ y[tr])
+            err += float(((A[~tr] @ b - y[~tr]) ** 2).sum())
+        if err < best_err:
+            best, best_err = lam, err
+    return np.linalg.solve(A.T @ A + best * P + 1e-9 * np.eye(nf), A.T @ y), best
+
+
 def seed_segments(d: pd.DataFrame, seed_hours: int) -> list:
     """Las últimas `seed_hours` horas de cada tramo seguido de datos del train."""
     ok = np.isfinite(d["price"].to_numpy()) & np.isfinite(d["co2"].to_numpy())
@@ -403,6 +453,10 @@ def fit_cand(exclude=None, cfg: Optional[dict] = None) -> dict:
         full[name] = []
         for X, Xc, y, hour in rows[name]:
             ok = np.isfinite(X).all(axis=1)
+            if cfg.get("ridge_cv"):
+                coef, lam = ridge_cv(X[ok], y[ok])
+                full[name].append(coef.tolist())
+                continue
             coef = ridge_by_hour(X[ok], y[ok], hour[ok], cfg["ridge_hour"], cfg["smear"])
             full[name].append((coef if cfg["ridge_hour"] >= 0 else coef[0]).tolist())
     seed = seed_segments(d, int(cfg["seed_hours"])) if cfg["seed_hours"] else []

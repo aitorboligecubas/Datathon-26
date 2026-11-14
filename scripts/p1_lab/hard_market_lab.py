@@ -119,7 +119,8 @@ def variants(exclude, prior):
          "FINAL + por hora 30": cand(ridge_hour=30.0),
          "FINAL + por hora 300": cand(ridge_hour=300.0),
          "FINAL + sesgo log": cand(smear=True),
-         "FINAL + perfil cruzado": cand(crossfit=True)}
+         "FINAL + perfil cruzado": cand(crossfit=True),
+         "FINAL + encogida (CV train)": cand(ridge_cv=True)}
     return v
 
 
