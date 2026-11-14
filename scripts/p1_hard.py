@@ -73,11 +73,40 @@ def fit_market(exclude=None, refs_df: pd.DataFrame = None) -> dict:
                     v = g.get((mo, t, h), np.nan)
                     arr[mo - 1, t, h] = v if np.isfinite(v) else by_h.get((mo, h), np.nan)
         out[name] = arr.tolist()
+    out["reg"] = fit_market_regression(m, out)
     if refs_df is not None:
         b = baseline_totals(refs_df)
         out["co2_ref_kg_per_h"] = b["co2_kg"] / len(refs_df)
         out["cost_ref_eur_per_h"] = b["cost_eur"] / len(refs_df)
     return out
+
+
+def fit_market_regression(m: pd.DataFrame, prof: dict) -> dict:
+    """Para cada antelación k = 3..23, regresión de la desviación futura z(t+k) = log(real/perfil) sobre
+    las tres horas conocidas, la media de las últimas 6 y 24 horas y la de ayer a la misma hora ("full"),
+    y otra solo con las tres horas conocidas para el arranque de cada semana ("cold").
+    `m`: precio y CO2 horarios con los que se ajusta (ya sin las horas excluidas)."""
+    typ = np.where(m.index.dayofweek < 5, 0, np.where(m.index.dayofweek == 5, 1, 2))
+    reg = {}
+    for name in ("price", "co2"):
+        p = np.asarray(prof[name])[m.index.month - 1, typ, m.index.hour]
+        z = pd.Series(np.log(np.clip(m[name].to_numpy(), 1e-6, None) / np.clip(p, 1e-6, None)), index=m.index)
+        full_idx = pd.date_range(m.index.min(), m.index.max(), freq="h")
+        z = z.reindex(full_idx)                                   # los huecos (otras semanas, horas excluidas) quedan en NaN
+        feats = pd.DataFrame({"z0": z, "z1": z.shift(-1), "z2": z.shift(-2),
+                              "zm24": z.rolling(24, min_periods=12).mean(), "zm6": z.rolling(6, min_periods=3).mean()})
+        full, cold = [], []
+        for k in range(3, 24):
+            d = pd.concat([feats, z.shift(24 - k).rename("zy"), z.shift(-k).rename("y")], axis=1)
+            same_month = (d.index + pd.Timedelta(hours=k)).month == d.index.month
+            dw = d[same_month].dropna()
+            A = np.c_[dw[["z0", "z1", "z2", "zm24", "zm6", "zy"]].to_numpy(), np.ones(len(dw))]
+            full.append([float(v) for v in np.linalg.lstsq(A, dw.y.to_numpy(), rcond=None)[0]])
+            dc = d[same_month][["z0", "z1", "z2", "y"]].dropna()
+            A = np.c_[dc[["z0", "z1", "z2"]].to_numpy(), np.ones(len(dc))]
+            cold.append([float(v) for v in np.linalg.lstsq(A, dc.y.to_numpy(), rcond=None)[0]])
+        reg[name] = {"full": full, "cold": cold}
+    return reg
 
 
 def fit_solar(table: pd.DataFrame) -> dict:
@@ -264,7 +293,7 @@ def evaluate(split: str = "val", market: str = "", solar: str = "", only: str = 
     agents = {
         "nada": lambda: Nothing(),
         "plan de 3 h (sin prever)": lambda: hard_agent(prior, solar_prior, horizon=3),
-        "v0 (sin tabla solar)": lambda: hard_agent(prior, None),
+        "mercado sin regresión (v1)": lambda: hard_agent({k: v for k, v in prior.items() if k != "reg"}, solar_prior),
         "agente actual": lambda: hard_agent(prior, solar_prior),
         "precio y CO2 reales a 24 h": lambda: perfect_market_agent(prior, df, solar_prior),
         "óptimo (todo el futuro)": lambda: OracleAgent(df, *w, p=HARD_PARAMS),
