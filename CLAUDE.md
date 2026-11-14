@@ -109,7 +109,7 @@ peso_hora = 0,7 · CO₂_hora / CO₂_medio + 0,3 · precio_hora / precio_medio
 
 **③ El margen es pequeño, así que el jurado pesa mucho.** La batería (2 MWh) es solo el 7 % del consumo diario.
 Aunque supiésemos el futuro perfecto, el score máximo en nuestra validación sería **6,12**. Nuestro agente ya saca
-**6,08**, el 99,3 % de ese máximo. En el leaderboard las diferencias entre buenos equipos serán de décimas.
+**6,09**, el 99,6 % de ese máximo. En el leaderboard las diferencias entre buenos equipos serán de décimas.
 **Lo que nos diferenciará es explicar bien el razonamiento, con números y gráficas.**
 
 ---
@@ -134,7 +134,15 @@ Dos detalles importantes:
 - **Al final del test, gasta lo que queda.** La carga final no puntúa. El simulador nos manda menos de 24 horas
   de previsión cuando se acaban los datos: es la señal para vaciar la batería en las peores horas.
   Hay que contarlo con transparencia al jurado: en el campus real no lo haríamos así.
+- **Nunca descarga más de lo que el campus compró la hora anterior.** Normalmente no cambia nada (el campus
+  consume más de 500 kW), pero protege de las averías del contador: en los datos hay 14 horas seguidas marcando 0,
+  y descargar contra un consumo nulo es tirar la energía.
+- **No cuenta pasos.** El final se detecta solo por la previsión recortada, así que el agente funciona igual dure
+  lo que dure el test.
 - **Si algo falla o vamos justos de tiempo**, el agente usa una regla simple de respaldo. **Nunca** lanza un error.
+
+Cuánto aporta cada pieza y cómo aguanta el agente (por semanas, con ruido, fuera de la validación):
+`results/p1_ablaciones.md`, que se regenera con `python scripts/p1_ablaciones.py`.
 
 Para tener contexto, comparamos siempre con otras estrategias (`python eval.py --agent all`):
 
@@ -143,7 +151,7 @@ Para tener contexto, comparamos siempre con otras estrategias (`python eval.py -
 | `nothing` | No usa la batería (es la referencia) | 0,00 |
 | plantilla oficial | Reglas fijas por horas del kit oficial | 0,03 (con 7 infracciones) |
 | `greedy` | Reglas sencillas | 0,08 |
-| **`mpc`** | **Nuestro agente** | **6,08** |
+| **`mpc`** | **Nuestro agente** | **6,09** |
 | `oracle` | El mismo planificador, pero con **bola de cristal**: conoce todo el futuro. Es el techo teórico | 6,12 |
 
 ---
@@ -163,7 +171,7 @@ que se rompen entre sí y nadie sabe qué versión es buena.
 
 ### Los roles (y por qué son estos)
 
-Los datos cambiaron el reparto inicial. Como la solar casi no cuenta y el agente ya captura el 99,3 % del máximo,
+Los datos cambiaron el reparto inicial. Como la solar casi no cuenta y el agente ya captura el 99,6 % del máximo,
 **queda poco que ganar en el leaderboard y mucho que ganar ante el jurado**. Por eso los roles se centran en
 **solidez, pruebas y relato**:
 
@@ -323,6 +331,7 @@ python eval.py --log "qué he cambiado"      # medir y dejarlo apuntado en resul
 python eval.py --fc-noise 0.1               # ¿y si las previsiones de precio/CO2 fallaran un 10 %?
 python eval.py --save-hourly                # guardar el detalle hora a hora (para gráficas)
 python scripts/calibrate_sim.py             # ¿nuestro simulador sigue dando lo mismo que el oficial?
+python scripts/p1_ablaciones.py             # ¿cuánto aporta cada pieza y cómo aguanta? (P1, 2-3 min)
 python scripts/train_forecaster.py          # regenerar los modelos de models/ (P2)
 python scripts/build_submission.py          # crear dist/submission.zip y comprobarlo
 python eval.py --agent dist                 # medir el agent.py empaquetado

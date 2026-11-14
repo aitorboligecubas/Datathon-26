@@ -7,7 +7,7 @@ leído `CLAUDE.md` al arrancar.
 Cada prompt empieza con un **PASO 0** que lo deja todo listo sin hacer nada a mano:
 - da permiso para trabajar en la rama del rol (si no, una sesión en la nube usaría su propia rama `claude/...`);
 - instala las librerías y descomprime los datos oficiales;
-- comprueba que se ven los datos oficiales y la puntuación esperada (mpc 6,08 / oracle 6,12).
+- comprueba que se ven los datos oficiales y la puntuación esperada (mpc 6,09 / oracle 6,12).
 
 Por qué estos roles y el plan por fases: `docs/equipo.md`.
 
@@ -25,7 +25,7 @@ b) Prepara el entorno: pip install -r requirements.txt pytest matplotlib, y pyth
    (descomprime oficial.zip, que está en el repo, en oficial/).
 c) Comprueba que todo cuadra: python -m pytest -q, python scripts/calibrate_sim.py y
    python eval.py --agent all. eval.py tiene que decir "Datos oficiales" (NO "sintéticos") y dar
-   mpc 6,08 y oracle 6,12 con 0 infracciones, y calibrate_sim tiene que decir OK en las dos líneas.
+   mpc 6,09 y oracle 6,12 con 0 infracciones, y calibrate_sim tiene que decir OK en las dos líneas.
    Si algo no cuadra, PARA y dímelo antes de seguir.
 Después, resúmeme en 3 líneas qué has entendido de tu rol, y empieza.
 
@@ -34,7 +34,7 @@ Lee CLAUDE.md, docs/equipo.md (sección 1, P1), docs/reto.md y src/battery/{poli
 Trabajas en la rama p1-optimizador. Solo puedes editar los ficheros de P1 que indica CLAUDE.md;
 tus scripts nuevos van en scripts/p1_*.py.
 
-Situación: el MPC saca 6,08 en validación frente a 6,12 del techo teórico (oracle), con 0 infracciones.
+Situación: el MPC saca 6,09 en validación frente a 6,12 del techo teórico (oracle), con 0 infracciones.
 Queda muy poco margen en puntos. Tu valor está en que la solución sea SÓLIDA y JUSTIFICADA:
 este es el rol con más carga de razonamiento. Con un margen tan pequeño, una mejora puede ser casualidad
 (sobreajuste a la validación). Desconfía de las mejoras pequeñas y explica siempre el porqué.
@@ -83,7 +83,7 @@ b) Prepara el entorno: pip install -r requirements.txt pytest matplotlib, y pyth
    (descomprime oficial.zip, que está en el repo, en oficial/).
 c) Comprueba que todo cuadra: python -m pytest -q, python scripts/calibrate_sim.py y
    python eval.py --agent all. eval.py tiene que decir "Datos oficiales" (NO "sintéticos") y dar
-   mpc 6,08 y oracle 6,12 con 0 infracciones, y calibrate_sim tiene que decir OK en las dos líneas.
+   mpc 6,09 y oracle 6,12 con 0 infracciones, y calibrate_sim tiene que decir OK en las dos líneas.
    Si algo no cuadra, PARA y dímelo antes de seguir.
 Después, resúmeme en 3 líneas qué has entendido de tu rol, y empieza.
 
@@ -135,7 +135,7 @@ b) Prepara el entorno: pip install -r requirements.txt pytest matplotlib, y pyth
    (descomprime oficial.zip, que está en el repo, en oficial/).
 c) Comprueba que todo cuadra: python -m pytest -q, python scripts/calibrate_sim.py y
    python eval.py --agent all. eval.py tiene que decir "Datos oficiales" (NO "sintéticos") y dar
-   mpc 6,08 y oracle 6,12 con 0 infracciones, y calibrate_sim tiene que decir OK en las dos líneas.
+   mpc 6,09 y oracle 6,12 con 0 infracciones, y calibrate_sim tiene que decir OK en las dos líneas.
    Si algo no cuadra, PARA y dímelo antes de seguir.
 Después, resúmeme en 3 líneas qué has entendido de tu rol, y empieza.
 
@@ -156,7 +156,7 @@ Fase 1 (hasta las 17:00 del sábado):
    - problema (campus, CO2 y precio que cambian cada hora);
    - idea (llenar en horas limpias y baratas, regla del 11 %);
    - método (MPC como un GPS, LP);
-   - resultados (6,08 frente a un techo de 6,12, 0 infracciones, 4 s);
+   - resultados (6,09 frente a un techo de 6,12, 0 infracciones, 4 s);
    - transparencia (vaciar al final no se haría en la realidad);
    - recomendación para UPC Sostenible (tamaño de la batería, de P2);
    - qué haríamos con más tiempo.

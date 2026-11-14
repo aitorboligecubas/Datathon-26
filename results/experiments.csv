@@ -7,3 +7,7 @@ fecha_utc,rama,commit,agente,datos,fc_noise,pasos,score,d_co2_pct,d_cost_pct,inf
 2026-11-14 11:18,claude/clever-euler-koiz2q,2a349b9,greedy,oficiales,0.0,1848,0.081,0.096,0.046,0,0.07,Gastar la carga al final (previsión recortada)
 2026-11-14 11:18,claude/clever-euler-koiz2q,2a349b9,mpc,oficiales,0.0,1848,6.078,5.728,6.894,0,3.97,Gastar la carga al final (previsión recortada)
 2026-11-14 11:18,claude/clever-euler-koiz2q,2a349b9,oracle,oficiales,0.0,1848,6.115,5.778,6.902,0,0.05,Gastar la carga al final (previsión recortada)
+2026-11-14 12:20,p1-optimizador,ead275e,nothing,oficiales,0.0,1848,0.000,0.000,0.000,0,0.00,P1: sin contador de pasos + tope de descarga por última lectura
+2026-11-14 12:20,p1-optimizador,ead275e,greedy,oficiales,0.0,1848,0.081,0.096,0.046,0,0.08,P1: sin contador de pasos + tope de descarga por última lectura
+2026-11-14 12:20,p1-optimizador,ead275e,mpc,oficiales,0.0,1848,6.090,5.734,6.922,0,4.26,P1: sin contador de pasos + tope de descarga por última lectura
+2026-11-14 12:20,p1-optimizador,ead275e,oracle,oficiales,0.0,1848,6.115,5.778,6.902,0,0.05,P1: sin contador de pasos + tope de descarga por última lectura
