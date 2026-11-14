@@ -1,6 +1,6 @@
 # Cómo trabajamos: 3 personas, 3 Claudes, un repo (Opción B)
 
-Owner: integrador (P3).
+Owner: integrador (P3; **provisionalmente Aitor**, ver abajo).
 
 ## Quién es quién (rellenad los nombres)
 
@@ -8,10 +8,22 @@ Owner: integrador (P3).
 |---|---|---|---|---|
 | **P1 · Optimización y robustez** | Aitor Bolige | @aitorboligecubas | `p1-optimizador` | Quien tenga más base matemática (optimización, razonar con rigor) |
 | **P2 · Datos y análisis** | Ivan Torres | @ivan-torres-ros | `p2-datos` | Quien se mueva mejor con pandas y gráficas, y sepa sacar conclusiones de los datos |
-| **P3 · Relato, presentación e integración** | _nombre_ | _@usuario_ | `p3-relato` | Quien comunique mejor y sea más ordenado |
+| **P3 · Relato, presentación e integración** | _pendiente_ | _@usuario_ | `p3-relato` | Quien comunique mejor y sea más ordenado |
+| **Integrador provisional** (hasta que haya P3) | Aitor Bolige | @aitorboligecubas | — | Dueño del repo, con permisos para fusionar |
 
 Si sois 4, la cuarta persona se queda con la integración (pull requests, `main` y envíos) y P3 se dedica solo
 a la presentación.
+
+### Mientras no haya P3
+
+- **Integración → Aitor (provisional).** Fusiona las pull requests en `main` (también las de Ivan), mantiene `main`
+  en verde, genera el ZIP, pasa el dry-run, hace los envíos oficiales (`docs/envios.md`) y edita los ficheros del
+  integrador cuando haga falta. **Prioridad hoy: dry-run y primer envío oficial**, para fijar el PIN del equipo.
+- **Presentación → espera hasta la sincronización de las 17:00.** Si para entonces sigue sin haber P3:
+  - **opción A:** Ivan prepara las gráficas con su frase de "qué demuestra" (ya es tarea suya) y Aitor monta el guion;
+  - **opción B:** una sesión de Claude hace el borrador del guion y de las preguntas difíciles del jurado
+    (encargo de P3 en `docs/prompts-arranque.md`), y Aitor e Ivan lo revisan.
+- Cuando llegue P3, recupera la integración y Aitor vuelve a dedicarse solo a P1.
 
 ## 0. Por qué estos roles (y cuál es el más difícil)
 

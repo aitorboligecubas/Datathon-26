@@ -183,6 +183,8 @@ Los datos cambiaron el reparto inicial. Como la solar casi no cuenta y el agente
   - Como integrador: revisa y fusiona las pull requests, mantiene `main` en verde, genera el ZIP y hace los envíos.
   - El simulador ya está calibrado; solo comprueba que sigue cuadrando.
   - Si sois 4, la cuarta persona se queda con la integración.
+  - **Ahora mismo P3 está pendiente: el integrador provisional es Aitor (P1).** Su Claude puede ayudarle con
+    las tareas de integración y editar los ficheros del integrador cuando él lo pida. Detalle en `docs/equipo.md`.
 
 **¿A la vez o uno detrás de otro? Por fases.** Hasta el sábado por la noche, los tres en paralelo, con
 sincronizaciones a las 17:00, 21:00 y 00:00. P1 cierra la estrategia a medianoche. El domingo, todos convergen en

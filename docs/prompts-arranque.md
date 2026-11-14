@@ -39,6 +39,14 @@ Fase 2 (17:00–00:00):
 5. Estrategia cerrada a medianoche. Pasa a P3 un resumen de 5 líneas de "qué hace el agente y por qué".
 Antes de cada PR: tests, eval.py --log y build_submission.py en verde, y la tabla pegada en la PR.
 Si necesitas algo de otro rol (por ejemplo, un agente nuevo en eval.py), pídelo en la PR; no lo toques.
+
+Mientras no haya P3, tu humano (Aitor) es también el INTEGRADOR PROVISIONAL (docs/equipo.md). Cuando te lo pida,
+ayúdale con la integración:
+- revisar las PRs de Ivan;
+- comprobar que main está en verde (pytest, calibrate_sim, build_submission);
+- generar dist/submission.zip para el dry-run y los envíos (docs/envios.md);
+- editar los ficheros del integrador.
+El merge de las PRs lo hace él en GitHub. Primera tarea de integración: dry-run y primer envío oficial.
 ```
 
 ---
@@ -82,7 +90,7 @@ Antes de cada PR: tests y eval.py --log en verde, y la tabla pegada en la PR.
 
 ---
 
-## P3 · Relato, presentación e integración (rama `p3-relato`)
+## P3 · Relato, presentación e integración (rama `p3-relato`) — *rol pendiente de asignar; mientras tanto integra Aitor*
 
 ```text
 Eres el Claude de P3 (relato, presentación e integración) del equipo, en el reto de la batería de la
