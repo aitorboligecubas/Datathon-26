@@ -86,7 +86,22 @@ def blend_lookup(prof, mo0, day, typ, hr, centers) -> np.ndarray:
     return (1.0 - w) * own + w * prof[other, typ, hr]
 
 
-def fit_market(exclude=None, refs_df: pd.DataFrame = None, blend: bool = True) -> dict:
+def smooth_weekend(prof, on: bool = True) -> np.ndarray:
+    """Perfil [mes][tipo][hora] con los de sábado y domingo suavizados. Cada mes solo tiene 3 o 4 sábados y otros
+    tantos domingos, así que su perfil es ruidoso. Se sustituye por el de los laborables del mes multiplicado por la
+    razón fin de semana / laborable promediada con los dos meses vecinos (unos 10 días en vez de 3)."""
+    a = np.asarray(prof, dtype=float)
+    if not on:
+        return a
+    out = a.copy()
+    for t in (1, 2):
+        ratio = a[:, t, :] / np.clip(a[:, 0, :], 1e-9, None)
+        pooled = (np.roll(ratio, 1, axis=0) + ratio + np.roll(ratio, -1, axis=0)) / 3.0
+        out[:, t, :] = a[:, 0, :] * pooled
+    return out
+
+
+def fit_market(exclude=None, refs_df: pd.DataFrame = None, blend: bool = True, weekend: bool = True) -> dict:
     """Perfil de precio y CO2 por mes, tipo de día (laborable, sábado, domingo) y hora. Con `blend`, el perfil se
     interpola entre meses según el día (clave "day_center") y las regresiones se ajustan con ese perfil."""
     m = market_frame()
@@ -105,9 +120,9 @@ def fit_market(exclude=None, refs_df: pd.DataFrame = None, blend: bool = True) -
                 for h in range(24):
                     v = g.get((mo, t, h), np.nan)
                     arr[mo - 1, t, h] = v if np.isfinite(v) else by_h.get((mo, h), np.nan)
-        out[name] = arr.tolist()
+        out[name] = smooth_weekend(arr, weekend).tolist()
     out["reg"] = fit_market_regression(m, out)
-    out["cand"] = fit_market_memory(exclude, blend)
+    out["cand"] = fit_market_memory(exclude, blend, weekend)
     if refs_df is not None:
         b = baseline_totals(refs_df)
         out["co2_ref_kg_per_h"] = b["co2_kg"] / len(refs_df)
@@ -115,14 +130,14 @@ def fit_market(exclude=None, refs_df: pd.DataFrame = None, blend: bool = True) -
     return out
 
 
-def fit_market_memory(exclude=None, blend: bool = True) -> dict:
+def fit_market_memory(exclude=None, blend: bool = True, weekend: bool = True) -> dict:
     """Tablas del previsor con memoria del train (13 pistas y los últimos 7 días de cada mes como "semilla").
     El ajuste está en scripts/p1_lab/hard_market_cand.py (fit_cand), que es donde se diseñó."""
     lab = str(REPO / "scripts" / "p1_lab")
     if lab not in sys.path:
         sys.path.insert(0, lab)
     from hard_market_cand import fit_cand
-    return fit_cand(exclude, {"blend": blend})
+    return fit_cand(exclude, {"blend": blend, "weekend": weekend})
 
 
 def fit_market_regression(m: pd.DataFrame, prof: dict) -> dict:
@@ -388,8 +403,9 @@ def evaluate(split: str = "val", market: str = "", solar: str = "", only: str = 
         "plan de 3 h (sin prever)": lambda: hard_agent(prior, solar_prior, horizon=3),
         "mercado sin memoria (v4)": lambda: hard_agent({k: v for k, v in prior.items() if k != "cand"}, solar_prior),
         "solar sencilla (v6)": lambda: hard_agent(prior, {k: v for k, v in solar_prior.items() if k != "cand"}),
-        "plan con margen fijo (v10)": lambda: hard_agent(fit_market(exclude, fit_df, blend=False), solar_prior, use_scenarios=False),
-        "perfil del mes sin interpolar (v12)": lambda: hard_agent(fit_market(exclude, fit_df, blend=False), solar_prior),
+        "plan con margen fijo (v10)": lambda: hard_agent(fit_market(exclude, fit_df, blend=False, weekend=False), solar_prior, use_scenarios=False),
+        "perfil del mes sin interpolar (v12)": lambda: hard_agent(fit_market(exclude, fit_df, blend=False, weekend=False), solar_prior),
+        "fines de semana sin suavizar (v13)": lambda: hard_agent(fit_market(exclude, fit_df, weekend=False), solar_prior),
         "agente actual": lambda: hard_agent(prior, solar_prior),
         "precio y CO2 reales a 24 h": lambda: perfect_market_agent(prior, df, solar_prior),
         "óptimo (todo el futuro)": lambda: OracleAgent(df, *w, p=HARD_PARAMS),

@@ -323,7 +323,7 @@ def day_means(z: np.ndarray, hour: np.ndarray) -> tuple:
     return today, yday
 
 
-def training_rows(d: pd.DataFrame, feats: tuple, crossfit: bool, blend: bool = False) -> dict:
+def training_rows(d: pd.DataFrame, feats: tuple, crossfit: bool, blend: bool = False, weekend: bool = False) -> dict:
     """Filas de ajuste por variable y antelación: {name: [(X, Xcold, y, hora_objetivo) para k = 3..23]}.
 
     Con `crossfit`, cada bloque de días se mide contra el perfil del resto de su mes, y solo cuentan
@@ -355,10 +355,15 @@ def training_rows(d: pd.DataFrame, feats: tuple, crossfit: bool, blend: bool = F
                 if crossfit:
                     sb, cb = profile_sums(vals[name], mo, typ, hr, in_block)
                     s, c = s - sb, c - cb
+                table = profile_from(s, c)
+                if weekend:     # sábados y domingos suavizados con los meses vecinos, como en fit_market
+                    from p1_hard import smooth_weekend
+                    table = smooth_weekend(table)
                 if centers is None:
-                    prof = profile_from(s, c)[mo[sl], typ[sl], hr[sl]]
+                    prof = table[mo[sl], typ[sl], hr[sl]]
                 else:
-                    prof = blend_lookup(profile_from(s, c), mo[sl], day[sl], typ[sl], hr[sl], centers)
+                    from p1_hard import blend_lookup
+                    prof = blend_lookup(table, mo[sl], day[sl], typ[sl], hr[sl], centers)
                 zz = np.log(np.clip(vals[name][sl], 1e-6, None) / np.clip(prof, 1e-6, None))
                 z[name] = np.r_[np.full(pad, np.nan), zz, np.full(pad, np.nan)]
             inb = np.r_[np.zeros(pad, bool), in_block[sl], np.zeros(pad, bool)]
@@ -455,7 +460,7 @@ def fit_cand(exclude=None, cfg: Optional[dict] = None) -> dict:
     cfg = {**DEFAULT_CFG, **(cfg or {})}
     feats = tuple(cfg["feats"])
     d = dense_market(exclude)
-    rows = training_rows(d, feats, bool(cfg["crossfit"]), bool(cfg.get("blend", False)))
+    rows = training_rows(d, feats, bool(cfg["crossfit"]), bool(cfg.get("blend", False)), bool(cfg.get("weekend", False)))
     full = {}
     for name in NAMES:
         full[name] = []
