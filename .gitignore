@@ -1,6 +1,8 @@
 # Datos oficiales: NO se suben (el repo es público)
+oficial/
 starter_kit/
 data/
+__MACOSX/
 *.zip
 
 # Generados

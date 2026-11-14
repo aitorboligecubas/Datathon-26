@@ -1,51 +1,65 @@
-# Reto UPC Sostenible: especificación y lista de verificación
+# Reto UPC Sostenible: especificación verificada
 
-Owner: integrador. Aquí está lo que sabemos con seguridad y lo que hay que **comprobar en `starter_kit/environment.py`**.
-Cuando algo se verifique, se cambia en el código (dónde se indica) y se marca aquí con ✅.
+Owner: integrador. Resumen de lo que dicen los documentos oficiales (`oficial/docs/ENUNCIAT.md`,
+`oficial/docs/GUIA_VARIABLES.md`, `oficial/starter_kit/environment.py`, `agent.py`, `check_submission.py`,
+`battery_spec.json` y `tutorial.ipynb`) y de lo que sigue abierto.
 
-## Lo confirmado
+## Confirmado ✅
 
 | Tema | Valor | Fuente |
 |---|---|---|
-| Interfaz | `class BatteryAgent` con `__init__()` y `act(obs: dict) -> float` | plantilla `agent.py` ✅ |
-| Acción | kW: > 0 carga desde la red interna (hasta +500), < 0 descarga al campus (hasta −500) | plantilla ✅ |
-| Claves de `obs` | `timestamp`, `hour`, `day_of_week` (0 = lunes), `soc_kwh`, `soc_pct`, `preu_actual` (€/kWh), `co2_actual` (kg/kWh), `preus_properes_24h`, `co2_properes_24h`, `noves_dades_5min` | plantilla ✅ |
-| Batería | 2.000 kWh, ±500 kW, η = √0,9 ≈ 0,9487 por sentido, carga inicial de 1.000 kWh, sin reinicios ni degradación | web + clamp de la plantilla ✅ |
-| Clamp | carga ≤ min(500, (2000 − soc)/η); descarga ≤ min(500, soc·η) | plantilla ✅ |
-| Test | 12 semanas = 2.016 h, la última semana de cada mes de un año. Train = las primeras ~3 semanas de cada mes | web |
-| Envío | ZIP ≤ 25 MB con `agent.py` y los .pkl en la raíz, 60 s para toda la simulación, 10 envíos al día | web |
-| Librerías | numpy, pandas, scipy, sklearn, joblib, xgboost, lightgbm, math, datetime, collections, itertools, random, json, pathlib, typing | web |
-| Leaderboard | 50 % público y 50 % privado. El jurado decide de forma decisiva | web |
+| Interfaz | `class BatteryAgent` con `__init__()` sin argumentos y `act(obs: dict) -> float` | agent.py, ENUNCIAT |
+| Acción | kW: > 0 carga (hasta +500), < 0 descarga (hasta −500) | ENUNCIAT |
+| `obs["preus_properes_24h"]` | `df[t : t+24]`: **empieza en la hora actual** (`[0] == preu_actual`) y al final de los datos trae menos de 24 | environment.py |
+| `obs["noves_dades_5min"]` | `{"ultim_consum_kw": demanda de t−1, "ultima_solar_kw": solar de t−1}`; en t = 0 da los valores de t | environment.py |
+| Otras claves | `timestamp` (pd.Timestamp; en check_submission es str), `hour`, `day_of_week` (0 = lunes), `soc_kwh`, `soc_pct`, `soc_percent`, `preu_actual` (€/kWh), `co2_actual` (kg/kWh) | environment.py |
+| Batería | 2.000 kWh, ±500 kW, η = 0,9 ida y vuelta (√0,9 por sentido), carga inicial del 50 % (1.000 kWh), carga permitida entre 0 y 2.000 kWh, Δt = 1 h, sin degradación | battery_spec.json |
+| Física | carga: soc += P·√0,9; descarga: soc += P/√0,9; la acción se recorta a ±500 y a la capacidad | environment.py |
+| Infracciones | +1 si se recorta la potencia, +1 si se recorta por capacidad (puede haber 2 en una hora) | environment.py |
+| Excedente | No se paga (`export_price = 0`) y no ahorra CO₂ | environment.py, ENUNCIAT |
+| Referencia | Sin batería: compra = max(demanda − solar, 0) | environment.py |
+| Score | `max(0, 100·(0,7·ΔCO₂ + 0,3·ΔCoste − 0,002·infracciones))`, es decir, **0,20 puntos por infracción** | environment.py |
+| Test | 12 semanas = los últimos 7 días de cada mes de sep 2025 a ago 2026 (2.016 h). El train es el resto | ENUNCIAT |
+| Envío | `submission.zip` (o solo `agent.py`) ≤ 25 MB, 60 s por simulación, 10 envíos/día (los fallidos no cuentan), PIN de equipo en el primer envío | ENUNCIAT |
+| Librerías | numpy, pandas, scipy, scikit-learn, joblib, xgboost, lightgbm, math, random, datetime, collections, itertools, json, pathlib, typing, dataclasses (+ functools, heapq, bisect, re, copy, pickle) | ENUNCIAT |
+| Vetado (AST) | os, sys, subprocess, importlib, inspect, socket, threading…; llamadas `.stack()`, `.system()`, `.popen()`, `.rmtree()`…; `eval`, `exec`, `compile`, `globals`, `locals`, `vars`, `__import__` | check_submission.py |
+| Artefactos | Se cargan con `Path(__file__).parent / "fichero"` | ENUNCIAT, check_submission.py |
+| Tabla horaria | demanda = −`Contador - POTENCIA ACTIVA EXPORTADA (kW)` (recortada a 0..5000); solar = suma de las `Inversor i - POTENCIA ACTIVA (kW)`; medias horarias; `dropna()` | tutorial.ipynb, GUIA_VARIABLES |
 
-## Por VERIFICAR con `environment.py`
+Nuestro `src/battery/sim.py` reproduce `environment.py` exactamente: `python scripts/calibrate_sim.py` da el mismo
+score, CO₂, coste e infracciones con la plantilla oficial y con nuestro MPC.
 
-| # | Pregunta | Suposición actual | Dónde se cambia | Estado |
-|---|---|---|---|---|
-| 1 | ¿La penalización por infracción es 0,20 o 1,00? | 0,20 | `params.W_INFRACTION` | ⏳ |
-| 2 | ¿El excedente se paga a 0 o a 0,04 €/kWh? ¿Ahorra CO₂? | 0 € y sin CO₂ | `params.EXPORT_PRICE_EUR_KWH`, `sim.py` | ⏳ |
-| 3 | ¿`preus_properes_24h[0]` es t+1 o t? ¿Siempre trae 24 valores, también al final del test? | t+1, 24 valores | `adapter.FORECAST_STARTS_NEXT_HOUR` | ⏳ |
-| 4 | ¿Qué tipo y qué columnas tiene `noves_dades_5min`? ¿Cuántas filas? ¿Unidades? ¿Trae meteo? | DataFrame con demanda y solar en kW | `adapter.recent_load_pv` | ⏳ |
-| 5 | ¿Demanda = −contador? ¿La solar es la suma de los 3 inversores? ¿Están en kW o en kWh por intervalo? | sí / sí / kW | `data.build_hourly`, `adapter` | ⏳ |
-| 6 | Acción inválida: ¿se cuenta y se recorta, o se cuenta y se anula? | se cuenta y se recorta | `sim.py` | ⏳ |
-| 7 | ¿El score usa el ahorro respecto a "sin batería"? ¿Cuenta la carga final? | sí / no cuenta | `sim.score`, `policy.terminal_value` | ⏳ |
-| 8 | ¿Cómo se pasa de una semana de test a la siguiente? ¿Qué trae `noves_dades_5min` en la primera hora de cada semana? | continuo, sin reinicio | `sim.py`, `forecaster` | ⏳ |
-| 9 | ¿Se puede leer un .pkl o .json junto a `agent.py` con `Path(__file__).parent`? ¿En qué directorio de trabajo corre? | sí | `policy.find_models_dir` | ⏳ |
-| 10 | ¿Qué versión de Python y de las librerías usa el servidor? | ≥ 3.9 | `requirements.txt` | ⏳ |
-| 11 | ¿Los 60 s incluyen el `__init__` del agente (cargar modelos)? | sí | `eval.py` (ya lo suma) | ⏳ |
+## Contradicciones y dudas abiertas
+
+| # | Duda | Qué hacemos |
+|---|---|---|
+| 1 | Penalización: `environment.py` resta 0,20 por infracción y el ENUNCIAT, 1,00 | Da igual: nuestro objetivo es 0 infracciones (clamp con margen de 1e-4) |
+| 2 | ¿El servidor ejecuta las 12 semanas seguidas en un solo episodio o cada semana por separado con la carga reiniciada al 50 %? `evaluate_results` admite una máscara, lo que sugiere un episodio continuo con máscaras público/privado | Validamos con las 12 semanas seguidas. Si fuese por semanas, el valor de la carga final de cada semana cambiaría (P1) |
+| 3 | En la primera hora de cada semana de test, ¿`noves_dades_5min` trae la última hora de la semana anterior (un mes antes)? | La previsión es robusta a eso. Irrelevante en la práctica (ver abajo) |
+| 4 | ¿Qué versiones de Python y de las librerías usa el servidor? | El código es compatible con Python ≥ 3.9. Evitar APIs muy nuevas |
+
+## Lo que dicen los datos (train oficial)
+
+- 5.993 horas útiles entre el 01/09/2025 y el 16/08/2026. **Falta noviembre de 2025 entero** y agosto se corta el 16.
+  Hay 15 horas con consumo 0 (probablemente fallos de comunicación).
+- Consumo: 1.123 kW de media (de 0 a 2.503). Solar: 26 kW de media y 144 kW como máximo. Precio: 0,138 €/kWh de media.
+  CO₂: 0,085 kg/kWh de media (de 0,028 a 0,222).
+- La red (demanda − solar) baja de 500 kW solo el 0,5 % de las horas y **nunca hay excedente**.
+  Por eso la previsión de demanda y solar casi no cambia las decisiones.
+- La batería son 2 MWh frente a 27 MWh de consumo diario (7 %). El score máximo posible es pequeño:
+  en validación, el oracle con información perfecta saca **6,12**.
 
 ## Fórmulas que usamos
 
 ```text
 red_t      = demanda_t − solar_t + acción_t                    (acción > 0 carga)
-compra_t   = max(red_t, 0)        venta_t = max(−red_t, 0)
-CO2        = Σ compra_t · co2_t   (kg)
-Coste      = Σ compra_t · precio_t − Σ venta_t · precio_venta  (€)
+compra_t   = max(red_t, 0)
+CO2        = Σ compra_t · co2_t   (kg)          Coste = Σ compra_t · precio_t   (€)
 ΔCO2%      = 100 · (CO2_sin_batería − CO2) / CO2_sin_batería    (ΔCoste% igual)
-Score      = max(0, 0,70·ΔCO2% + 0,30·ΔCoste% − pen·infracciones)
-carga_t+1  = carga_t + η·acción   si acción > 0
-           = carga_t + acción/η   si acción < 0
+Score      = max(0, 0,70·ΔCO2% + 0,30·ΔCoste% − 0,20·infracciones)
 ```
 
-Peso de una hora para el LP: `w_t = 0,70·co2_t/co2_ref + 0,30·precio_t/coste_ref`, donde las referencias son la
-media horaria sin batería del train (`models/objective_refs.json`). Mover 1 kWh de la hora A a la B solo compensa
-si `0,9·w_B > w_A`.
+Peso de una hora para el LP: `w_t = 0,70·co2_t/co2_ref + 0,30·precio_t/coste_ref`, donde las referencias son la media
+horaria sin batería del train (`models/objective_refs.json`: 93,2 kg/h y 156,3 €/h). Mover 1 kWh de la hora A a la B
+solo compensa si `0,9·w_B > w_A`. Como el score es lineal en las compras, el LP con información perfecta (`oracle`)
+es el **óptimo exacto** del score: nada puede superarlo con los mismos datos.

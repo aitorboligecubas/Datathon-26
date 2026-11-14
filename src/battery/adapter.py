@@ -2,18 +2,19 @@
 
 Owner: INTEGRADOR.
 
-Claves confirmadas con la plantilla oficial (starter_kit/agent.py):
-    timestamp (pd.Timestamp), hour (0..23), day_of_week (0 = lunes), soc_kwh, soc_pct,
-    preu_actual (€/kWh), co2_actual (kg CO2/kWh), preus_properes_24h (24 valores),
-    co2_properes_24h (24 valores), noves_dades_5min (sensores de la última hora)
-    Acción: float en kW, > 0 carga (hasta +500), < 0 descarga (hasta -500).
-
-Todavía por VERIFICAR con starter_kit/environment.py:
-    - Si `preus_properes_24h[0]` es la hora siguiente (t+1) o la actual (t).
-    - El formato de `noves_dades_5min` (DataFrame, lista de dicts...) y sus columnas
-      de demanda y solar. Mientras no se sepa, `recent_load_pv` prueba varias opciones
-      y, si no reconoce nada, devuelve NaN (la previsión sigue con su perfil).
-Al comprobarlo: se cambia aquí, se actualiza docs/reto.md y tests/test_adapter.py sigue en verde.
+Formato verificado en oficial/starter_kit/environment.py (CampusBatteryEnv._get_obs):
+    timestamp           pd.Timestamp (check_submission.py lo pasa como str)
+    hour, day_of_week   int (0 = lunes)
+    soc_kwh, soc_pct, soc_percent
+    preu_actual         €/kWh de la hora actual
+    co2_actual          kg CO2/kWh de la hora actual
+    preus_properes_24h  df[t : t+24] -> EMPIEZA EN LA HORA ACTUAL ([0] == preu_actual);
+                        al final de los datos trae menos de 24 valores
+    co2_properes_24h    igual
+    noves_dades_5min    {"ultim_consum_kw": demanda de t-1, "ultima_solar_kw": solar de t-1}
+                        (en t = 0 da los de la propia hora t)
+Acción: float en kW, > 0 carga, < 0 descarga. El entorno recorta a ±500 y a la capacidad,
+y cuenta una infracción por cada recorte.
 """
 import math
 from typing import Any, Mapping
@@ -22,26 +23,8 @@ import numpy as np
 import pandas as pd
 
 from .obs import Obs
-from .params import FORECAST_HOURS
 
-OBS_KEYS = {
-    "timestamp": "timestamp",
-    "hour": "hour",
-    "weekday": "day_of_week",
-    "soc": "soc_kwh",
-    "price": "preu_actual",
-    "co2": "co2_actual",
-    "price_forecast": "preus_properes_24h",
-    "co2_forecast": "co2_properes_24h",
-    "recent": "noves_dades_5min",
-}
-FORECAST_STARTS_NEXT_HOUR = True   # VERIFICAR
-
-# Columnas de noves_dades_5min. VERIFICAR con environment.py y tutorial.ipynb.
-RECENT_LOAD_COLS = ["demanda_kw", "demand_kw", "load_kw", "consum_kw", "demanda"]
-RECENT_PV_COLS = ["solar_kw", "pv_kw", "fotovoltaica_kw", "generacio_kw", "solar"]
-RECENT_METER_COL = "contador"       # si solo viene el contador: demanda = -contador (VERIFICAR)
-RECENT_INVERTER_PREFIX = "inversor"  # solar = suma de las columnas inversor*
+FORECAST_LEN = 24
 
 
 def _to_float(x: Any) -> float:
@@ -52,87 +35,58 @@ def _to_float(x: Any) -> float:
     return v if math.isfinite(v) else float("nan")
 
 
-def _col_mean(df: pd.DataFrame, names) -> float:
-    for n in names:
-        if n in df.columns:
-            return _to_float(pd.to_numeric(df[n], errors="coerce").mean())
-    return float("nan")
-
-
-def recent_load_pv(recent: Any) -> tuple:
-    """Demanda y solar medias (kW) de la última hora a partir de noves_dades_5min."""
+def _to_timestamp(x: Any):
     try:
-        if recent is None:
-            return float("nan"), float("nan")
-        df = recent if isinstance(recent, pd.DataFrame) else pd.DataFrame(recent)
-        if df.empty:
-            return float("nan"), float("nan")
-        load = _col_mean(df, RECENT_LOAD_COLS)
-        if not math.isfinite(load) and RECENT_METER_COL in df.columns:
-            load = -_col_mean(df, [RECENT_METER_COL])
-        pv = _col_mean(df, RECENT_PV_COLS)
-        inv = [c for c in df.columns if str(c).lower().startswith(RECENT_INVERTER_PREFIX)]
-        if not math.isfinite(pv) and inv:
-            pv = _to_float(df[inv].apply(pd.to_numeric, errors="coerce").sum(axis=1).mean())
-        return load, pv
-    except Exception:
-        return float("nan"), float("nan")
+        return pd.Timestamp(x)
+    except (TypeError, ValueError):
+        return None
 
 
 def from_official(raw: Mapping[str, Any]) -> Obs:
     """Diccionario oficial -> Obs interna."""
-    k = OBS_KEYS
-    price_now = _to_float(raw[k["price"]])
-    co2_now = _to_float(raw[k["co2"]])
-    price_fc = np.asarray(raw[k["price_forecast"]], dtype=float)
-    co2_fc = np.asarray(raw[k["co2_forecast"]], dtype=float)
-    if FORECAST_STARTS_NEXT_HOUR:
-        price = np.concatenate(([price_now], price_fc))
-        co2 = np.concatenate(([co2_now], co2_fc))
-    else:
-        price, co2 = price_fc.copy(), co2_fc.copy()
-        price[0], co2[0] = price_now, co2_now
-    load_prev, pv_prev = recent_load_pv(raw.get(k["recent"]))
+    price_now = _to_float(raw["preu_actual"])
+    co2_now = _to_float(raw["co2_actual"])
+    price = np.asarray(raw.get("preus_properes_24h") or [price_now], dtype=float)
+    co2 = np.asarray(raw.get("co2_properes_24h") or [co2_now], dtype=float)
+    n = min(len(price), len(co2))
+    price, co2 = price[:n].copy(), co2[:n].copy()
+    price[0], co2[0] = price_now, co2_now
+    recent = raw.get("noves_dades_5min") or {}
+    if not isinstance(recent, Mapping):
+        recent = {}
     return Obs(
-        hour=int(raw[k["hour"]]),
-        weekday=int(raw[k["weekday"]]),
-        soc_kwh=_to_float(raw[k["soc"]]),
+        hour=int(raw["hour"]),
+        weekday=int(raw["day_of_week"]),
+        soc_kwh=_to_float(raw["soc_kwh"]),
         price=price,
         co2=co2,
-        load_prev_kw=load_prev,
-        pv_prev_kw=pv_prev,
-        timestamp=raw.get(k["timestamp"]),
+        load_prev_kw=_to_float(recent.get("ultim_consum_kw")),
+        pv_prev_kw=_to_float(recent.get("ultima_solar_kw")),
+        timestamp=_to_timestamp(raw.get("timestamp")),
     )
 
 
 def make_official_obs(timestamp, soc_kwh: float, price: np.ndarray, co2: np.ndarray,
                       load_prev_kw: float, pv_prev_kw: float,
                       capacity_kwh: float = 2000.0) -> dict:
-    """Construye el diccionario oficial (lo usa el simulador local, no el agente).
+    """Construye el diccionario oficial igual que environment.py (lo usa el simulador local).
 
-    `price` y `co2` tienen longitud 1 + FORECAST_HOURS y empiezan en la hora actual.
-    `noves_dades_5min` se imita con 12 filas iguales a la media de la hora anterior.
+    `price` y `co2` empiezan en la hora actual (como mucho 24 valores).
     """
-    k = OBS_KEYS
     ts = pd.Timestamp(timestamp)
-    if FORECAST_STARTS_NEXT_HOUR:
-        price_fc, co2_fc = price[1:FORECAST_HOURS + 1], co2[1:FORECAST_HOURS + 1]
-    else:
-        price_fc, co2_fc = price[:FORECAST_HOURS], co2[:FORECAST_HOURS]
-    if math.isfinite(load_prev_kw) and math.isfinite(pv_prev_kw):
-        recent = pd.DataFrame({RECENT_LOAD_COLS[0]: [float(load_prev_kw)] * 12,
-                               RECENT_PV_COLS[0]: [float(pv_prev_kw)] * 12})
-    else:
-        recent = pd.DataFrame(columns=[RECENT_LOAD_COLS[0], RECENT_PV_COLS[0]])
     return {
-        k["timestamp"]: ts,
-        k["hour"]: int(ts.hour),
-        k["weekday"]: int(ts.weekday()),
-        k["soc"]: float(soc_kwh),
-        "soc_pct": float(soc_kwh) / capacity_kwh,
-        k["price"]: float(price[0]),
-        k["co2"]: float(co2[0]),
-        k["price_forecast"]: [float(v) for v in price_fc],
-        k["co2_forecast"]: [float(v) for v in co2_fc],
-        k["recent"]: recent,
+        "timestamp": ts,
+        "hour": int(ts.hour),
+        "day_of_week": int(ts.dayofweek),
+        "soc_kwh": float(soc_kwh),
+        "soc_pct": float(soc_kwh / capacity_kwh),
+        "soc_percent": float(soc_kwh / capacity_kwh * 100),
+        "preu_actual": float(price[0]),
+        "co2_actual": float(co2[0]),
+        "preus_properes_24h": [float(v) for v in price[:FORECAST_LEN]],
+        "co2_properes_24h": [float(v) for v in co2[:FORECAST_LEN]],
+        "noves_dades_5min": {
+            "ultim_consum_kw": float(load_prev_kw),
+            "ultima_solar_kw": float(pv_prev_kw),
+        },
     }

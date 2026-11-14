@@ -6,5 +6,8 @@ Al jurado le interesa tanto el razonamiento como el resultado.
 | Fecha | Decisión | Alternativas | Evidencia (score / ΔCO2% / ΔCoste%) | Quién |
 |---|---|---|---|---|
 | Sáb 14/11 | Reto de la batería, porque es optimización pura con una métrica clara (encaja con el perfil FME) | Qualcomm, RawTree | `docs/retos-datathon-fme-2026.md` | equipo |
-| Sáb 14/11 | Estrategia base: MPC con LP (HiGHS) a 25 h, con pesos que reproducen el score y regla greedy de respaldo | reglas fijas como la plantilla, RL | sintéticos: mpc 16,1 frente a oracle 18,1 (solo prueba el circuito) | P1 |
+| Sáb 14/11 | Estrategia base: MPC con LP (HiGHS) a 24 h, con pesos que reproducen el score y regla greedy de respaldo | reglas fijas como la plantilla, RL | **datos oficiales: mpc 5,97 / oracle 6,12 / plantilla oficial 0,03 (7 infracciones) / greedy 0,08** | P1 |
+| Sáb 14/11 | Pesos del LP con referencias del train (93,2 kg CO₂/h y 156,3 €/h) en lugar de valores por defecto | pesos fijos | mpc 5,87 → 5,97 (ΔCO₂ 5,21 → 5,62 %) | P2 |
+| Sáb 14/11 | La previsión de demanda y solar no es prioritaria: la solar es de 26 kW de media y la red solo baja de 500 kW el 0,5 % de las horas | GBDT de demanda | ruido del 10 % en precio/CO₂: 5,97 → 5,94 | equipo |
+| Sáb 14/11 | Nuestro simulador replica exactamente environment.py | usar solo el oficial | `scripts/calibrate_sim.py`: mismo score, CO₂, coste e infracciones | P3 |
 | Sáb 14/11 | Validación = últimas 168 h de cada mes del train, seguidas en un episodio (imita el test) | k-fold aleatorio (filtra futuro) | — | P3 |

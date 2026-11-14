@@ -2,7 +2,7 @@
 
 Owner: P1 (optimizador). Objetivo: cero infracciones.
 
-Clamp oficial (según la web, VERIFICAR con environment.py):
+Clamp oficial (verificado con oficial/starter_kit/environment.py):
     |p| <= 500 kW
     cargando:    p <= (2000 - soc) / eta - 1e-4
     descargando: |p| <= soc · eta - 1e-4          con eta = sqrt(0,9)

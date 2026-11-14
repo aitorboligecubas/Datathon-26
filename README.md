@@ -15,8 +15,11 @@ python -m pytest -q
 python eval.py --agent all
 ```
 
-Datos oficiales: descomprimid el ZIP del reto en `starter_kit/` (no se sube a git).
+Datos oficiales: descomprimid el ZIP del reto en la raíz y renombrad la carpeta a `oficial/` (no se sube a git).
 Sin ellos, todo funciona con datos sintéticos.
+
+**Resultado en validación (últimas 168 h de cada mes del train, datos oficiales):** MPC 5,97 puntos
+(ΔCO₂ 5,62 %, ΔCoste 6,78 %, 0 infracciones, 4 s) frente a 6,12 del óptimo con información perfecta.
 
 ## Estructura
 
@@ -28,7 +31,7 @@ src/battery/        código del agente (se empaqueta en un solo agent.py) + simu
   sim                       simulador local y score                   (P3)
   baselines, synthetic      referencias (nothing/greedy/oracle) y datos de prueba
 eval.py             único comando de evaluación
-scripts/            build_submission.py (genera dist/submission.zip), train_forecaster.py
+scripts/            build_submission.py (genera dist/submission.zip), train_forecaster.py, calibrate_sim.py
 models/             artefactos que van en el ZIP
 analysis/, presentation/    gráficas y pitch (P3)
 docs/               reto, equipo, prompts de arranque, decisiones, envíos
@@ -40,3 +43,4 @@ Cada persona trabaja con su propio Claude Code en su portátil, en su rama, con 
 - [`CLAUDE.md`](CLAUDE.md): contexto compartido, reparto de ficheros y contratos.
 - [`docs/equipo.md`](docs/equipo.md): preparación, flujo de git y puntos de sincronización.
 - [`docs/prompts-arranque.md`](docs/prompts-arranque.md): el primer mensaje para cada Claude.
+- [`docs/registro-montaje.md`](docs/registro-montaje.md): todo lo que se hizo al montar el repo y por qué.

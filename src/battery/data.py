@@ -9,11 +9,10 @@ Formato estándar (lo usan simulador, previsión, eval y análisis):
     price_eur_kwh   precio PVPC en €/kWh
     co2_kg_kwh       intensidad de CO2 del mix en kg CO2/kWh
 
-Datos oficiales: starter_kit/ (ZIP oficial descomprimido, no se sube: el repo es
-público). Ficheros: contador.csv (15 min, demanda = -contador), inversor.csv
-(5 min, 3 inversores), meteo.csv, entradas_salidas.csv, precio_pvpc.csv (1 h),
-co2_red.csv (1 h). `build_hourly` los junta en data/processed/hourly.csv.
-Mientras no exista, se usan datos sintéticos para que todo funcione igual.
+Datos oficiales: el ZIP del reto descomprimido en oficial/ (no se sube: el repo es
+público). `build_hourly` reproduce el preprocesado de oficial/starter_kit/tutorial.ipynb
+(demanda = -contador, solar = suma de los 3 inversores, medias horarias) y lo guarda
+en data/processed/hourly.csv. Si no hay datos oficiales, se usan sintéticos.
 
 Split (imita el test oficial = última semana de cada mes):
     validación = últimas 168 h de cada mes del train
@@ -25,7 +24,8 @@ from typing import Optional
 import pandas as pd
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-STARTER_DIR = REPO_ROOT / "starter_kit"
+OFFICIAL_DIR = REPO_ROOT / "oficial"
+TRAIN_DIR = OFFICIAL_DIR / "data" / "train"
 HOURLY_FILE = REPO_ROOT / "data" / "processed" / "hourly.csv"
 SYNTHETIC_FILE = REPO_ROOT / "data" / "synthetic" / "campus_synthetic.csv"
 
@@ -33,18 +33,34 @@ STD_COLUMNS = ["timestamp", "load_kw", "pv_kw", "price_eur_kwh", "co2_kg_kwh"]
 VAL_HOURS_PER_MONTH = 168
 
 
-def build_hourly(starter_dir: Path = STARTER_DIR) -> pd.DataFrame:
-    """TODO P2: leer los CSV oficiales, pasar todo a horario y devolver STD_COLUMNS.
-
-    Pistas: contador a 15 min -> media horaria, demanda = -contador (VERIFICAR con
-    tutorial.ipynb); inversor a 5 min, sumar los 3 inversores; precio a €/kWh.
-    Guardar el resultado con `df.to_csv(HOURLY_FILE, index=False)`.
-    """
-    raise NotImplementedError("P2: implementar build_hourly a partir de starter_kit/")
+def build_hourly(train_dir: Path = TRAIN_DIR) -> pd.DataFrame:
+    """Tabla horaria a partir de los CSV oficiales (igual que tutorial.ipynb). Mejorable por P2:
+    filtrado de anomalías, imputación de huecos, cambios de hora..."""
+    cont = pd.read_csv(train_dir / "contador.csv", parse_dates=["Fecha"]).set_index("Fecha")
+    load = (-cont["Contador - POTENCIA ACTIVA EXPORTADA (kW)"]).clip(lower=0, upper=5000)
+    inv = pd.read_csv(train_dir / "inversor.csv", parse_dates=["Fecha"]).set_index("Fecha")
+    cols = [c for c in inv.columns
+            if "POTENCIA ACTIVA" in c.upper() and "FASE" not in c.upper()
+            and any(f"INVERSOR {i}" in c.upper() for i in (1, 2, 3))]
+    pv = inv[cols].fillna(0).sum(axis=1).clip(lower=0)
+    price = pd.read_csv(train_dir / "precio_pvpc.csv", parse_dates=["Fecha"]).set_index("Fecha")
+    co2 = pd.read_csv(train_dir / "co2_red.csv", parse_dates=["Fecha"]).set_index("Fecha")
+    df = pd.DataFrame({
+        "load_kw": load.resample("1h").mean(),
+        "pv_kw": pv.resample("1h").mean(),
+        "price_eur_kwh": price["precio_eur_per_kwh"],
+        "co2_kg_kwh": co2["co2_kg_per_kwh"],
+    }).dropna()
+    df.index.name = "timestamp"
+    return df.reset_index()[STD_COLUMNS]
 
 
 def default_path() -> Path:
     if HOURLY_FILE.exists():
+        return HOURLY_FILE
+    if (TRAIN_DIR / "contador.csv").exists():
+        HOURLY_FILE.parent.mkdir(parents=True, exist_ok=True)
+        build_hourly().to_csv(HOURLY_FILE, index=False)
         return HOURLY_FILE
     if not SYNTHETIC_FILE.exists():
         from .synthetic import make_synthetic
@@ -66,9 +82,11 @@ def load(path: Optional[Path] = None) -> pd.DataFrame:
 
 
 def validation_mask(df: pd.DataFrame) -> pd.Series:
+    """Últimas 168 h de cada mes (solo meses con al menos 2 semanas de datos)."""
     month = df["timestamp"].dt.to_period("M")
     rank_from_end = df.groupby(month).cumcount(ascending=False)
-    return rank_from_end < VAL_HOURS_PER_MONTH
+    month_size = df.groupby(month)["timestamp"].transform("size")
+    return (rank_from_end < VAL_HOURS_PER_MONTH) & (month_size >= 2 * VAL_HOURS_PER_MONTH)
 
 
 def validation_split(df: pd.DataFrame) -> pd.DataFrame:

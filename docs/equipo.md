@@ -36,11 +36,19 @@ cd Datathon-26
 python -m venv .venv && source .venv/bin/activate      # Windows: .venv\Scripts\activate
 pip install -r requirements.txt -r requirements-dev.txt
 git checkout -b p1-optimizador                          # o p2-prevision / p3-validacion
-python -m pytest -q && python eval.py --agent all       # tiene que salir todo en verde
+python -m pytest -q && python eval.py --agent all       # en verde (con datos sintéticos hasta tener oficial/)
 ```
 
 Después:
-- Descomprimid el ZIP oficial dentro del repo, en `starter_kit/`. Git lo ignora y no se sube.
+- Descomprimid el ZIP oficial del reto (`paquet_participants_datathon_upc_2.zip`) en la raíz del repo
+  y renombrad la carpeta a `oficial/`. Git la ignora y no se sube:
+
+  ```bash
+  unzip paquet_participants_datathon_upc_2.zip -x "__MACOSX/*" && mv paquet_participants_datathon_upc oficial
+  python scripts/calibrate_sim.py            # nuestro simulador = el oficial
+  python eval.py --agent all                 # ahora con datos oficiales
+  ```
+
 - Arrancad Claude Code dentro de la carpeta (`claude`). Lee `CLAUDE.md` automáticamente.
 - Pegad como primer mensaje el prompt de vuestro rol de `docs/prompts-arranque.md`.
 
@@ -75,9 +83,9 @@ main ─────────────────────────
 
 | Cuándo | Qué |
 |---|---|
-| **Sáb 12:30** | Estructura en `main`, todos clonados y con su Claude arrancado. El integrador empieza a VERIFICAR (`docs/reto.md`). |
-| **Sáb 14:00** (comida) | Formato oficial verificado. P3: el simulador cuadra con `environment.py`. P2: `hourly.csv` con datos reales. Primer `eval.py --agent all` con datos reales. |
-| **Sáb 17:00** | Primer envío oficial con el MPC v0. Decidir en qué se centra cada uno por la tarde según dónde está la diferencia entre `mpc` y `oracle`. |
+| **Sáb 12:30** | Estructura en `main`, todos clonados, `oficial/` descomprimido y cada Claude arrancado. **Primer envío oficial con el MPC v0** (5,97 en validación) para probar el circuito y fijar el PIN del equipo. |
+| **Sáb 14:00** (comida) | Cada uno con su primera PR. Repaso de `docs/reto.md`: la previsión casi no importa y el margen hasta el techo es pequeño, así que el jurado pesa mucho. |
+| **Sáb 17:00** | Merge y envío. Decidir el reparto de la tarde: ¿qué cierra la distancia entre `mpc` y `oracle`? ¿Qué gráficas cuentan la historia? |
 | **Sáb 21:00** (cena) | Merge de todo. Envío oficial. P3 enseña las primeras gráficas. |
 | **Dom 0:00** | Último merge grande. Dejar programado qué se prueba por la mañana. Dormir algo. |
 | **Dom 9:00** | Últimas PRs. **9:30: congelación del código.** Solo se arreglan errores. |

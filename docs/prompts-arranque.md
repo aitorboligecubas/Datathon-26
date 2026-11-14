@@ -16,14 +16,15 @@ Objetivo: acercar el score de `mpc` al de `oracle` en `python eval.py --agent al
 y menos de 40 s proyectados a 2.016 h.
 
 Por orden:
-1. Ejecuta `python eval.py --agent all` y explícame la diferencia entre mpc y oracle.
+1. Ejecuta `python eval.py --agent all` (datos oficiales: mpc 5,97 frente a oracle 6,12) y explícame de dónde sale la diferencia.
 2. Añade a baselines.py un agente "MPC con previsión perfecta de demanda y solar" (sabe la demanda y la
    solar reales del df) para separar cuánto pierde el MPC por la previsión y cuánto por el horizonte de 24 h.
    Pide al integrador que lo registre en eval.py.
 3. Mejora el MPC y mide cada cambio con eval.py --log:
    - valor terminal de la carga;
    - horizonte más largo que 24 h, rellenando el precio y el CO2 con lo de hace 24 h o 168 h;
-   - vaciar la batería al final del episodio si la carga final no puntúa (VERIFICAR);
+   - vaciar la batería al final del episodio (la carga final no puntúa) y qué pasa si el servidor
+     evalúa cada semana por separado (duda abierta en docs/reto.md);
    - qué hacer al final de cada semana de test, porque la siguiente es otro mes;
    - robustez con --fc-noise 0.1.
 4. Vigila el tiempo: el LP se resuelve 2.016 veces.
@@ -39,26 +40,26 @@ No toques forecaster.py: si necesitas algo de la previsión, pídeselo a P2 en l
 Eres el Claude de P2 (previsión y datos) del equipo, en el reto de la batería de la Datathon FME 2026.
 Lee CLAUDE.md, docs/reto.md y src/battery/{forecaster,data}.py y scripts/train_forecaster.py.
 Trabajas en la rama p2-prevision. Solo puedes editar los ficheros de P2 que indica CLAUDE.md.
-Los datos oficiales están en starter_kit/ (no se suben a git: el repo es público).
+Los datos oficiales están en oficial/data/train/ (no se suben a git: el repo es público).
 
-Objetivo: prever la demanda y la solar de las próximas 25 h lo mejor posible, respetando el contrato
-Forecaster.update(obs) / forecast(obs, h) y tardando menos de 2 ms por llamada.
+Contexto importante (ver docs/reto.md): la solar es minúscula y la red casi nunca baja de 500 kW,
+así que prever la demanda y la solar apenas cambia las decisiones. Precio y CO2 a 24 h vienen exactos en obs.
+Tu valor está en la calidad de los datos, en ver más allá de 24 h y en el análisis que convenza al jurado.
 
 Por orden:
-1. Lee starter_kit/tutorial.ipynb y environment.py.
-   - Implementa data.build_hourly(): contador a 15 min, inversor a 5 min (3 inversores), precio_pvpc y co2_red,
-     todo pasado a una tabla horaria con columnas timestamp, load_kw, pv_kw, price_eur_kwh y co2_kg_kwh.
-   - Guárdala en data/processed/hourly.csv.
-   - Comprueba que las unidades coinciden con las de obs: CO2 en kg/kWh y precio en €/kWh.
-2. Averigua el formato exacto de obs["noves_dades_5min"] en environment.py (tipo, columnas, unidades)
-   y pásaselo al integrador para que ajuste adapter.recent_load_pv.
-3. Amplía tests/test_forecaster.py y escribe un script que mida el error (MAE por antelación, 1..24 h) en validación.
-4. Mejora la previsión y mide cada cambio:
-   - la solar según el mes, porque obs trae el timestamp;
-   - festivos y vacaciones del campus (entradas_salidas.csv);
-   - la meteo, si viene en noves_dades_5min;
-   - un GBDT (lightgbm/sklearn) guardado como .pkl con joblib en models/.
-5. python scripts/train_forecaster.py, que regenera models/ con datos reales.
+1. Revisa data.build_hourly() (ya replica tutorial.ipynb) y la calidad de los datos:
+   - falta noviembre de 2025;
+   - hay horas con consumo 0;
+   - cambios de hora (horario de verano);
+   - valores anómalos (GUIA_VARIABLES.md).
+   Propón y mide las correcciones.
+2. Mide cuánto ganaría el MPC si viera más allá de 24 h. Pide a P1 que pruebe el oracle con horizonte de 48 h.
+   Si compensa, prevé precio y CO2 para t+24..t+48 (patrón de hace 24 h y de hace 168 h, o un GBDT con el
+   histórico de obs) y expónlo en el Forecaster, sin romper el contrato (añade un método nuevo).
+3. Mantén la previsión de demanda y solar (contrato update/forecast, < 2 ms) y amplía tests/test_forecaster.py.
+4. Análisis para el jurado (con P3): patrones de CO2 y precio por hora y mes, por qué la batería solo puede
+   ahorrar ~6 %, y en qué meses y horas se gana más.
+5. python scripts/train_forecaster.py regenera models/ con el train oficial.
 Antes de cada PR: tests, eval.py --log y build_submission.py en verde, y la tabla pegada en la PR.
 ```
 
@@ -76,16 +77,11 @@ Objetivo: que nuestro simulador local dé exactamente lo mismo que el oficial y 
 resultados en una historia que convenza al jurado (el jurado decide de forma decisiva).
 
 Por orden:
-1. Lee starter_kit/environment.py y compáralo línea a línea con src/battery/sim.py y adapter.py.
-   Resuelve la lista VERIFICAR de docs/reto.md:
-   - penalización 0,20 o 1,00;
-   - excedente a 0 o a 0,04 €/kWh;
-   - si la previsión empieza en t+1;
-   - formato de noves_dades_5min;
-   - qué pasa con una acción inválida;
-   - si se puntúa la carga final.
-2. Ejecuta la plantilla oficial (starter_kit/agent.py) en los dos simuladores con los mismos datos.
-   El score tiene que coincidir. Si no coincide, corrige sim.py (y adapter.py/params.py si eres el integrador).
+1. Ejecuta python scripts/calibrate_sim.py: nuestro sim.py ya da lo mismo que environment.py.
+   Mantenlo así y revisa las dudas abiertas de docs/reto.md, sobre todo si el servidor evalúa
+   las 12 semanas seguidas o por separado.
+2. Si eres el integrador: haz el primer envío oficial con dist/submission.zip
+   (python scripts/build_submission.py), fija el PIN del equipo y apúntalo en docs/envios.md.
 3. analysis/: a partir de `python eval.py --agent all --save-hourly`, prepara estas gráficas:
    - una semana tipo: carga de la batería sobre el CO2 del mix;
    - CO2 y € ahorrados acumulados;

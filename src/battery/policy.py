@@ -5,7 +5,7 @@ Owner: P1 (optimizador).
 MPC (control predictivo) con LP en horizonte deslizante. Cada hora:
 1. Traduce la observación oficial a `Obs` (adapter).
 2. Actualiza la previsión con la demanda y la solar de la hora anterior (forecaster).
-3. Resuelve el LP de las próximas H horas con precio y CO2 previstos (optimizer).
+3. Resuelve el LP de las próximas H = 24 horas con precio y CO2 previstos (optimizer).
 4. Aplica solo la primera hora, recortada a los límites físicos (safety).
 
 Robustez: si algo falla o nos acercamos al límite de tiempo, pasa a la regla
@@ -67,7 +67,7 @@ def greedy_action(obs: Obs, load_kw: float, pv_kw: float,
 
 class MPCPolicy:
     def __init__(self, p: BatteryParams = DEFAULT_PARAMS, models_dir: Optional[Path] = None,
-                 horizon: int = 25, terminal_quantile: float = 0.25,
+                 horizon: int = 24, terminal_quantile: float = 0.25,
                  n_steps: int = N_STEPS, time_budget_s: float = TIME_BUDGET_S):
         self.p = p
         self.horizon = horizon
@@ -86,7 +86,7 @@ class MPCPolicy:
     def terminal_value(self, obs: Obs, H: int) -> float:
         """Valor de cada kWh que quede en la batería al final del horizonte."""
         if self.n_steps - self.t <= H:
-            return 0.0  # el episodio acaba dentro del horizonte (VERIFICAR si puntúa la carga final)
+            return 0.0  # el episodio acaba dentro del horizonte: la carga final no puntúa (environment.py)
         marginal = self.w_co2 * obs.co2[:H] + self.w_cost * obs.price[:H]
         return float(np.quantile(marginal, self.terminal_quantile)) * self.p.eta_discharge
 
@@ -121,7 +121,7 @@ class MPCPolicy:
 
 
 class BatteryAgent:
-    """Punto de entrada que llama el evaluador. VERIFICAR firma con starter_kit/agent.py."""
+    """Punto de entrada que llama el evaluador (firma de oficial/starter_kit/agent.py)."""
 
     def __init__(self):
         self.policy = MPCPolicy()
