@@ -7,3 +7,19 @@ fecha_utc,rama,commit,agente,datos,fc_noise,pasos,score,d_co2_pct,d_cost_pct,inf
 2026-11-14 11:18,claude/clever-euler-koiz2q,2a349b9,greedy,oficiales,0.0,1848,0.081,0.096,0.046,0,0.07,Gastar la carga al final (previsión recortada)
 2026-11-14 11:18,claude/clever-euler-koiz2q,2a349b9,mpc,oficiales,0.0,1848,6.078,5.728,6.894,0,3.97,Gastar la carga al final (previsión recortada)
 2026-11-14 11:18,claude/clever-euler-koiz2q,2a349b9,oracle,oficiales,0.0,1848,6.115,5.778,6.902,0,0.05,Gastar la carga al final (previsión recortada)
+2026-11-14 12:14,p2-datos,ead275e,nothing,oficiales,0.0,1848,0.000,0.000,0.000,0,0.00,"P2 calidad: validación con datos LIMPIOS (ceros imputados, 17-24 ago recuperado), modelos de main"
+2026-11-14 12:14,p2-datos,ead275e,greedy,oficiales,0.0,1848,0.082,0.097,0.046,0,0.07,"P2 calidad: validación con datos LIMPIOS (ceros imputados, 17-24 ago recuperado), modelos de main"
+2026-11-14 12:14,p2-datos,ead275e,mpc,oficiales,0.0,1848,6.043,5.602,7.071,0,4.59,"P2 calidad: validación con datos LIMPIOS (ceros imputados, 17-24 ago recuperado), modelos de main"
+2026-11-14 12:14,p2-datos,ead275e,oracle,oficiales,0.0,1848,6.043,5.616,7.040,0,0.05,"P2 calidad: validación con datos LIMPIOS (ceros imputados, 17-24 ago recuperado), modelos de main"
+2026-11-14 12:14,p2-datos,ead275e,nothing,oficiales,0.0,1848,0.000,0.000,0.000,0,0.00,"P2 calidad: validación con consumo nocturno REAL (energía del contador), modelos de main"
+2026-11-14 12:14,p2-datos,ead275e,greedy,oficiales,0.0,1848,0.088,0.104,0.048,0,0.08,"P2 calidad: validación con consumo nocturno REAL (energía del contador), modelos de main"
+2026-11-14 12:14,p2-datos,ead275e,mpc,oficiales,0.0,1848,6.460,6.027,7.472,0,4.21,"P2 calidad: validación con consumo nocturno REAL (energía del contador), modelos de main"
+2026-11-14 12:14,p2-datos,ead275e,oracle,oficiales,0.0,1848,6.461,6.053,7.414,0,0.05,"P2 calidad: validación con consumo nocturno REAL (energía del contador), modelos de main"
+2026-11-14 12:14,p2-datos,ead275e,nothing,oficiales,0.0,1848,0.000,0.000,0.000,0,0.00,"P2 calidad: modelos entrenados con datos LIMPIOS, validación oficial"
+2026-11-14 12:14,p2-datos,ead275e,greedy,oficiales,0.0,1848,0.081,0.096,0.046,0,0.07,"P2 calidad: modelos entrenados con datos LIMPIOS, validación oficial"
+2026-11-14 12:14,p2-datos,ead275e,mpc,oficiales,0.0,1848,6.078,5.727,6.897,0,4.09,"P2 calidad: modelos entrenados con datos LIMPIOS, validación oficial"
+2026-11-14 12:14,p2-datos,ead275e,oracle,oficiales,0.0,1848,6.115,5.778,6.902,0,0.05,"P2 calidad: modelos entrenados con datos LIMPIOS, validación oficial"
+2026-11-14 12:15,p2-datos,ead275e,nothing,oficiales,0.0,1848,0.000,0.000,0.000,0,0.00,P2: no descargar si el contador marcó 0 la hora anterior (fallo de comunicación)
+2026-11-14 12:15,p2-datos,ead275e,greedy,oficiales,0.0,1848,0.081,0.096,0.046,0,0.08,P2: no descargar si el contador marcó 0 la hora anterior (fallo de comunicación)
+2026-11-14 12:15,p2-datos,ead275e,mpc,oficiales,0.0,1848,6.090,5.734,6.922,0,3.94,P2: no descargar si el contador marcó 0 la hora anterior (fallo de comunicación)
+2026-11-14 12:15,p2-datos,ead275e,oracle,oficiales,0.0,1848,6.115,5.778,6.902,0,0.05,P2: no descargar si el contador marcó 0 la hora anterior (fallo de comunicación)
