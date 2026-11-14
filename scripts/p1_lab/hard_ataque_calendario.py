@@ -11,9 +11,10 @@ Todos los episodios llevan el calendario del test (hard_ataque_comun.episodio_te
     sin_final     LAST_MONTHS = ()                       (nunca sabe que el test acaba)
     informado     conoce las fechas reales de las próximas 24 filas del episodio (techo del calendario)
 
-Al final, la tabla G: las dos variantes del interruptor battery.hard.EMPTY_EVERY_WEEK (False y True) con el
-calendario del test, en los dos mundos posibles (la batería sigue de una semana a otra, o cada semana se simula
-por separado desde el 50 %), con el score total y el de cada mitad (primeras y últimas 1.008 h). Ojo: el banco
+Al final, la tabla G (sola, con --solo-g): las dos variantes del interruptor battery.hard.EMPTY_EVERY_WEEK
+(False y True) y un prototipo que lo detecta solo, con el calendario del test, en los tres mundos posibles (la
+batería sigue de una semana a otra; cada semana se simula por separado desde el 50 %; cada mitad por separado),
+con el score total y el de cada mitad (primeras y últimas 1.008 h). Ojo: el banco
 (scripts/p1_hard.py) no sirve para esto, porque en sus fechas las semanas no acaban con el mes.
 """
 import sys
@@ -77,17 +78,38 @@ def tabla_variantes(full, pm, ps) -> pd.DataFrame:
             a = c.agente(pm, ps)
             logs = [c.simular(a, full.iloc[i:i + c.WEEK].reset_index(drop=True))["log"] for i in range(0, n, c.WEEK)]
             sep = pd.concat(logs, ignore_index=True)
-            for mundo, log in (("la batería sigue", r["log"]), ("cada semana por separado", sep)):
+            a2 = c.agente(pm, ps)
+            half = [c.simular(a2, full.iloc[i:i + n // 2].reset_index(drop=True))["log"] for i in (0, n // 2)]
+            for mundo, log in (("la batería sigue", r["log"]), ("cada semana por separado", sep),
+                               ("cada mitad por separado", pd.concat(half, ignore_index=True))):
                 rows.append({"EMPTY_EVERY_WEEK": vaciar, "mundo": mundo, "total": score_mask(full, log, np.ones(n, bool)),
                              "mitad_publica": score_mask(full, log, pub), "mitad_privada": score_mask(full, log, ~pub)})
     finally:
         hard.EMPTY_EVERY_WEEK = keep
-    return pd.DataFrame(rows).sort_values(["mundo", "EMPTY_EVERY_WEEK"])
+    # Prototipo que lo detecta solo (hard_ataque_arreglos.Blindado, arreglo I; lleva también los demás arreglos).
+    import hard_ataque_arreglos as arreglos
+    r = c.simular(arreglos.blindado(pm, ps), full)
+    a = arreglos.blindado(pm, ps)
+    logs = [c.simular(a, full.iloc[i:i + c.WEEK].reset_index(drop=True))["log"] for i in range(0, n, c.WEEK)]
+    a2 = arreglos.blindado(pm, ps)
+    half = [c.simular(a2, full.iloc[i:i + n // 2].reset_index(drop=True))["log"] for i in (0, n // 2)]
+    for mundo, log in (("la batería sigue", r["log"]), ("cada semana por separado", pd.concat(logs, ignore_index=True)),
+                       ("cada mitad por separado", pd.concat(half, ignore_index=True))):
+        rows.append({"EMPTY_EVERY_WEEK": "auto (prototipo)", "mundo": mundo, "total": score_mask(full, log, np.ones(n, bool)),
+                     "mitad_publica": score_mask(full, log, pub), "mitad_privada": score_mask(full, log, ~pub)})
+    out = pd.DataFrame(rows)
+    out["EMPTY_EVERY_WEEK"] = out["EMPTY_EVERY_WEEK"].astype(str)
+    return out.sort_values(["mundo", "EMPTY_EVERY_WEEK"])
 
 
 def main() -> int:
     full, origen = c.episodio_test("copia")
     pm, ps = c.priors(origen)
+    if "--solo-g" in sys.argv:
+        g = tabla_variantes(full, pm, ps)
+        print("G. Variantes de EMPTY_EVERY_WEEK con el calendario del test")
+        print(g.round(3).to_string(index=False))
+        return 0
     sin_nov, _ = c.episodio_test("omitir")
     casos = [
         ("A. test completo (12 semanas, acaba en agosto)", full, ["actual", "solo_agosto", "sin_final", "informado"]),

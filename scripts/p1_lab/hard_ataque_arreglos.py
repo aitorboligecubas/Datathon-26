@@ -19,6 +19,10 @@ Arreglos (cada uno, con su motivo):
      deja (el adaptador ya lo rellena).
   H. "Se acaban los datos" = llega una lista MÁS CORTA que la más larga vista hasta ahora (no "menos de 3").
      Si el entorno diese siempre 2 valores, o 1, el agente actual cree en cada paso que el test acaba ya.
+  I. ¿La batería sigue de una semana a otra o cada semana se simula por separado? El agente lo ve solo: al
+     empezar la SEGUNDA semana, si la carga observada es el 50 % justo y no la que él dejó, el entorno ha
+     reiniciado la batería. Desde ahí cierra cada semana vacía (lo que hace EMPTY_EVERY_WEEK = True). Si no,
+     sigue como ahora. No hace falta gastar envíos ni leer el ranking público para saberlo.
   F. `preu_actual` / `co2_actual` ausentes: el primer valor de la lista. `hour` / `day_of_week` ilegibles: los
      de la fecha.
   G. Batería: si falta `cap_max_kwh`, capacidad = soc_kwh / soc_pct; si falta `power_max_kw`, capacidad / 4
@@ -35,7 +39,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import hard_ataque_comun as c  # noqa: E402
 import battery.hard as hard  # noqa: E402
 from battery.adapter import _to_float, _to_timestamp  # noqa: E402
-from battery.safety import feasible_range  # noqa: E402
+from battery.safety import feasible_range, soc_after  # noqa: E402
 
 MARGIN_KW = 1.0
 TEST_START = pd.Timestamp("2025-09-24 00:00")
@@ -65,6 +69,9 @@ class Blindado(hard.HardPolicy):
     seen_reading = False    # ha llegado alguna lectura de consumo válida
     cap_guess = None
     max_known = 0           # la lista de previsión más larga vista hasta ahora
+    n_blocks = 0            # semanas del test empezadas
+    expected_soc = None     # carga que debería verse en la próxima observación
+    empty_weeks = False     # el entorno reinicia la batería cada semana: se cierra cada una vacía
 
     def plan_action(self, obs) -> float:                                                                     # H
         self.max_known = max(self.max_known, len(obs.price))
@@ -113,6 +120,11 @@ class Blindado(hard.HardPolicy):
 
     def track_block(self, obs) -> bool:                                                                      # A
         new_block = super().track_block(obs)
+        if new_block:                                                                                        # I
+            self.n_blocks += 1
+            if self.n_blocks == 2 and self.expected_soc is not None and math.isfinite(obs.soc_kwh):
+                self.empty_weeks = (abs(obs.soc_kwh - self.expected_soc) > 1.0
+                                    and abs(obs.soc_kwh - 0.5 * self.p.capacity_kwh) < 1.0)
         if math.isfinite(obs.load_prev_kw):
             self.seen_reading = True
         if self.no_reading and not self.seen_reading:
@@ -120,19 +132,21 @@ class Blindado(hard.HardPolicy):
         return new_block
 
     def horizon_times(self, obs) -> list:                                                                    # C
-        keep = hard.LAST_MONTHS
-        hard.LAST_MONTHS = ONLY_LAST
+        keep, keep_empty = hard.LAST_MONTHS, hard.EMPTY_EVERY_WEEK
+        hard.LAST_MONTHS, hard.EMPTY_EVERY_WEEK = ONLY_LAST, bool(keep_empty or self.empty_weeks)
         try:
             return super().horizon_times(obs)
         finally:
-            hard.LAST_MONTHS = keep
+            hard.LAST_MONTHS, hard.EMPTY_EVERY_WEEK = keep, keep_empty
 
     def act_obs(self, obs) -> float:                                                                         # B
         a = super().act_obs(obs)
         lo, hi = feasible_range(obs.soc_kwh, self.p)
         if not (math.isfinite(lo) and math.isfinite(hi)):
             return 0.0
-        return min(max(a, min(0.0, lo + MARGIN_KW)), max(0.0, hi - MARGIN_KW))
+        a = min(max(a, min(0.0, lo + MARGIN_KW)), max(0.0, hi - MARGIN_KW))
+        self.expected_soc = soc_after(obs.soc_kwh, a, self.p)
+        return a
 
     def act(self, raw_obs) -> float:
         try:
