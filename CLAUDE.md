@@ -294,17 +294,28 @@ y `analysis/`) pueden usar lo que quieran.
 
 ## 8. El día a día
 
-### Preparar el portátil (una vez)
-Descomprimid el ZIP oficial en la raíz del repo y renombrad la carpeta a `oficial/`. **Git la ignora a propósito:
-el repo es público y los datos oficiales no se suben.** Ahí están `oficial/docs/ENUNCIAT.md`,
-`oficial/docs/GUIA_VARIABLES.md`, `oficial/starter_kit/environment.py` (el simulador oficial) y el
-tutorial. Sin `oficial/`, por ejemplo en la CI, todo funciona con datos sintéticos, que sirven para probar
-el circuito pero **no para tomar decisiones**.
+### Preparar el entorno (en la nube o en el portátil)
+Trabajamos con **sesiones de Claude en la nube** (claude.ai/code, conectadas al repo) y también en portátiles
+(Aitor en Mac, el resto en Windows). Todo está pensado para funcionar igual en los tres sitios:
+- **Los datos oficiales están en el repo, comprimidos en `oficial.zip`.** `python scripts/preparar_oficial.py`
+  los descomprime en `oficial/` (en Python, así que funciona en Mac, Windows y Linux). Además, `eval.py`,
+  `calibrate_sim.py`, `build_submission.py` y los tests lo hacen solos si falta. `oficial/` es solo la copia
+  descomprimida y git la ignora.
+- Dentro están `oficial/docs/ENUNCIAT.md`, `oficial/docs/GUIA_VARIABLES.md`, `oficial/starter_kit/environment.py`
+  (el simulador oficial) y el tutorial.
+- Librerías: `pip install -r requirements.txt pytest matplotlib`. En Windows, el entorno virtual se activa con
+  `.venv\Scripts\activate` y en Mac con `source .venv/bin/activate`.
+- **Una sesión en la nube empieza de cero cada vez:** clona el repo, no tiene nada instalado y usa una rama propia
+  (`claude/...`). Por eso cada prompt de arranque empieza con un PASO 0 que fija la rama del rol, instala, descomprime
+  y comprueba. En una sesión en la nube, haz commit y push a menudo: el contenedor se borra tras un rato de inactividad.
+- Si `eval.py` dice "Datos sintéticos" en lugar de "Datos oficiales", algo ha fallado al preparar `oficial/`: esos
+  datos sirven para probar el circuito, **no para tomar decisiones**.
 
 ### Comandos
 
 ```bash
-pip install -r requirements.txt -r requirements-dev.txt   # instalar
+pip install -r requirements.txt pytest matplotlib       # instalar (requirements-dev.txt añade jupyter)
+python scripts/preparar_oficial.py          # descomprimir oficial.zip en oficial/ (también se hace solo)
 python -m pytest -q                         # ¿funciona todo? (también lo comprueba GitHub en cada PR)
 python eval.py                              # ¿cuánto saca nuestro agente en validación?
 python eval.py --agent all                  # comparativa nothing / greedy / mpc / oracle
@@ -335,7 +346,7 @@ python eval.py --agent dist                 # medir el agent.py empaquetado
 ## 9. Lo que Claude no debe hacer
 
 - Editar ficheros de otro rol, hacer push a `main` o fusionar pull requests (eso lo hace el integrador).
-- Subir `oficial/`, `data/` o cualquier dato oficial.
+- Subir la carpeta descomprimida `oficial/` ni `data/` (los datos ya están en `oficial.zip`), ni ficheros grandes generados.
 - Usar librerías prohibidas en el código que se empaqueta.
 - Cambiar los contratos de la sección 6 sin acordarlo antes.
 - Afirmar que algo mejora sin un número de `eval.py`.

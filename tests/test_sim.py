@@ -7,12 +7,13 @@ import numpy as np
 import pytest
 
 from battery.baselines import NothingAgent
-from battery.data import load, validation_split
+from battery.data import ensure_official, load, validation_split
 from battery.params import DEFAULT_PARAMS as P
 from battery.sim import baseline_totals, score, simulate
 
 REPO = Path(__file__).resolve().parents[1]
 OFFICIAL_ENV = REPO / "oficial" / "starter_kit" / "environment.py"
+ensure_official()
 
 
 def _week():

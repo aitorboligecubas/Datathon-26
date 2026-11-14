@@ -16,7 +16,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO / "src"))
 
-from battery.data import load, validation_split  # noqa: E402
+from battery.data import ensure_official, load, validation_split  # noqa: E402
 from battery.sim import baseline_totals, score, simulate, to_env_frame  # noqa: E402
 
 KIT = REPO / "oficial" / "starter_kit"
@@ -46,8 +46,9 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--hours", type=int, default=0, help="usar solo las primeras N horas")
     args = ap.parse_args()
+    ensure_official()
     if not (KIT / "environment.py").exists():
-        sys.exit("Falta oficial/starter_kit/environment.py: descomprimid el ZIP oficial en oficial/")
+        sys.exit("Falta oficial/starter_kit/environment.py: ejecuta  python scripts/preparar_oficial.py")
     df = validation_split(load())
     if args.hours:
         df = df.iloc[:args.hours].reset_index(drop=True)

@@ -9,8 +9,8 @@ Formato estándar (lo usan simulador, previsión, eval y análisis):
     price_eur_kwh   precio PVPC en €/kWh
     co2_kg_kwh       intensidad de CO2 del mix en kg CO2/kWh
 
-Datos oficiales: el ZIP del reto descomprimido en oficial/ (no se sube: el repo es
-público). `build_hourly` reproduce el preprocesado de oficial/starter_kit/tutorial.ipynb
+Datos oficiales: el ZIP del reto está en el repo (oficial.zip) y se descomprime solo en oficial/
+(ensure_official; funciona en Mac, Windows y en la nube). `build_hourly` reproduce el preprocesado de oficial/starter_kit/tutorial.ipynb
 (demanda = -contador, solar = suma de los 3 inversores, medias horarias) y lo guarda
 en data/processed/hourly.csv. Si no hay datos oficiales, se usan sintéticos.
 
@@ -18,6 +18,8 @@ Split (imita el test oficial = última semana de cada mes):
     validación = últimas 168 h de cada mes del train
     train      = el resto
 """
+import shutil
+import zipfile
 from pathlib import Path
 from typing import Optional
 
@@ -25,12 +27,37 @@ import pandas as pd
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 OFFICIAL_DIR = REPO_ROOT / "oficial"
+OFFICIAL_ZIP = REPO_ROOT / "oficial.zip"
+ZIP_ROOT = "paquet_participants_datathon_upc/"
 TRAIN_DIR = OFFICIAL_DIR / "data" / "train"
 HOURLY_FILE = REPO_ROOT / "data" / "processed" / "hourly.csv"
 SYNTHETIC_FILE = REPO_ROOT / "data" / "synthetic" / "campus_synthetic.csv"
 
 STD_COLUMNS = ["timestamp", "load_kw", "pv_kw", "price_eur_kwh", "co2_kg_kwh"]
 VAL_HOURS_PER_MONTH = 168
+
+
+def ensure_official(force: bool = False) -> bool:
+    """Descomprime oficial.zip en oficial/ si hace falta. Devuelve True si oficial/ está listo."""
+    if (TRAIN_DIR / "contador.csv").exists() and not force:
+        return True
+    if not OFFICIAL_ZIP.exists():
+        return False
+    tmp = OFFICIAL_DIR.with_name("oficial_tmp")
+    shutil.rmtree(tmp, ignore_errors=True)
+    with zipfile.ZipFile(OFFICIAL_ZIP) as z:
+        for info in z.infolist():
+            name = info.filename
+            if name.startswith("__MACOSX/") or "/._" in name or info.is_dir():
+                continue
+            rel = name[len(ZIP_ROOT):] if name.startswith(ZIP_ROOT) else name
+            dest = tmp / rel
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            with z.open(info) as src, open(dest, "wb") as out:
+                shutil.copyfileobj(src, out)
+    shutil.rmtree(OFFICIAL_DIR, ignore_errors=True)
+    tmp.rename(OFFICIAL_DIR)
+    return (TRAIN_DIR / "contador.csv").exists()
 
 
 def build_hourly(train_dir: Path = TRAIN_DIR) -> pd.DataFrame:
@@ -57,7 +84,7 @@ def build_hourly(train_dir: Path = TRAIN_DIR) -> pd.DataFrame:
 def default_path() -> Path:
     if HOURLY_FILE.exists():
         return HOURLY_FILE
-    if (TRAIN_DIR / "contador.csv").exists():
+    if ensure_official():
         HOURLY_FILE.parent.mkdir(parents=True, exist_ok=True)
         build_hourly().to_csv(HOURLY_FILE, index=False)
         return HOURLY_FILE

@@ -266,7 +266,7 @@ Durante el desarrollo se encontraron y corrigieron estos fallos:
 
 ## 8. Lo que tenéis que hacer ahora (en orden)
 
-1. **Hacer el repo privado** mientras dure el evento: Settings → General → Danger Zone → Change visibility.
+1. ~~Hacer el repo privado~~: el equipo decidió mantenerlo **público** (sección 12).
 2. ~~Fusionar esta rama en `main`~~ (hecho).
 3. **Invitar al equipo** (Settings → Collaborators) y rellenar la tabla "Quién es quién" de `docs/equipo.md`.
 4. Opcional: proteger `main` (exigir PR y el check `tests`) y dejar activados los "merge commits".
@@ -339,4 +339,22 @@ y 00:00; estrategia cerrada a medianoche) y todos convergen en la presentación 
 `docs/equipo.md` (secciones 0–2), `CLAUDE.md` (sección 5) y los nuevos encargos en `docs/prompts-arranque.md`.
 Las ramas cambian de nombre: `p2-prevision` pasa a `p2-datos` y `p3-validacion` pasa a `p3-relato`
 (todavía no se había creado ninguna).
+
+---
+
+## 12. Actualización: sesiones en la nube y datos en el repo
+
+El equipo trabaja con **sesiones de Claude Code en la nube** (claude.ai/code, conectadas al repo), Aitor en Mac y el resto
+en Windows, y decidió que el repo siga **público**. Consecuencias y cambios:
+
+| Problema | Solución |
+|---|---|
+| Una sesión en la nube clona el repo desde cero: sin `oficial/` todo iría con datos sintéticos | **El ZIP oficial va en el repo como `oficial.zip`** (14 MB). `.gitignore` lo deja pasar (`!oficial.zip`) y sigue ignorando la copia descomprimida `oficial/` |
+| `unzip` no existe en Windows | `scripts/preparar_oficial.py` descomprime en Python (Mac, Windows y Linux). Quita la carpeta raíz del ZIP y la basura `__MACOSX/` |
+| Que nadie tenga que acordarse de descomprimir | `data.ensure_official()` lo hace solo; lo llaman `data.load`, `eval.py`, `calibrate_sim.py`, `build_submission.py` y los tests. Probado desde cero: tests, eval (6,08), calibración y ZIP en verde |
+| Una sesión en la nube usa su propia rama `claude/...` y no tiene nada instalado | Cada prompt de arranque empieza con un **PASO 0**: rama del rol (con permiso explícito), instalar, descomprimir y comprobar ("Datos oficiales", mpc 6,08 / oracle 6,12) antes de empezar |
+| La CI no tenía datos reales | Ahora la CI también descomprime `oficial.zip`, así que los tests de GitHub usan datos oficiales |
+| Arranque lento de cada sesión | *Setup script* opcional para el entorno en la nube, en `docs/equipo.md` (sección 4) |
+
+**Nadie tiene que descargar ni descomprimir el ZIP a mano**: llega con el repo.
 

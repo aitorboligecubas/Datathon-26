@@ -210,6 +210,9 @@ def main() -> int:
             raise BundleError(f"el ZIP pesa {size_mb:.1f} MB (> {MAX_ZIP_MB} MB)")
         if not args.no_smoke:
             smoke_test(zip_path)
+        sys.path.insert(0, str(REPO / "src"))
+        from battery.data import ensure_official
+        ensure_official()
         if OFFICIAL_CHECKER.exists():
             out = subprocess.run([sys.executable, str(OFFICIAL_CHECKER), str(zip_path)],
                                  cwd=OFFICIAL_CHECKER.parent, capture_output=True, text=True, timeout=120)

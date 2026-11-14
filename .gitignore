@@ -1,9 +1,12 @@
-# Datos oficiales: NO se suben (el repo es público)
+# Datos oficiales: van comprimidos en oficial.zip (sí está en el repo).
+# oficial/ es la copia descomprimida (python scripts/preparar_oficial.py) y data/ se genera.
 oficial/
+oficial_tmp/
 starter_kit/
 data/
 __MACOSX/
 *.zip
+!oficial.zip
 
 # Generados
 dist/

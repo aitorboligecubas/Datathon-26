@@ -80,7 +80,7 @@ que P1 y P2 entregan.
 
 | Fase | Cuándo | P1 · Optimización | P2 · Datos | P3 · Relato + integración |
 |---|---|---|---|---|
-| **0 · Arranque** (juntos) | Sáb hasta ~13:30 | Preparar el portátil | Preparar el portátil | Repo privado, invitar al equipo, dry-run y **primer envío oficial** |
+| **0 · Arranque** (juntos) | Sáb hasta ~13:30 | Abrir la sesión y pegar el prompt (PASO 0) | Abrir la sesión y pegar el prompt (PASO 0) | Dry-run y **primer envío oficial** (provisionalmente Aitor) |
 | **1 · Explorar** (en paralelo) | Sáb ~13:30–17:00 | Desglose de cada pieza y escenario "por semanas" | Calidad de datos y patrones de CO₂ y precio | Esqueleto del guion y de las slides con los números de ahora |
 | **Sincronización** (15 min) | **Sáb 17:00** | Enseña el desglose | Enseña los patrones | Fusiona las PRs, hace un envío y decide qué historia contamos |
 | **2 · Converger** (en paralelo) | Sáb 17:00–00:00 | Mejoras justificadas y robustez. **Estrategia cerrada a las 00:00** | Escenarios de tamaño de batería y gráficas finales | Slides con el material de P1 y P2 |
@@ -93,9 +93,7 @@ que P1 y P2 entregan.
 
 ## 3. Preparar GitHub (una vez, lo hace quien tenga el repo)
 
-1. **Hacer el repo privado durante el evento.**
-   Settings → General → Danger Zone → Change visibility → Private.
-   Ahora mismo es público: cualquiera ve la estrategia, y los datos oficiales no deben subirse.
+1. El repo es **público** (decisión del equipo) y lleva los datos oficiales comprimidos en `oficial.zip`.
 2. **Invitar al equipo:** Settings → Collaborators → Add people, con los usuarios de GitHub de la tabla.
 3. ~~Fusionar la estructura inicial en `main`~~: ya está hecho.
 4. **Proteger `main`** (recomendado):
@@ -104,28 +102,59 @@ que P1 y P2 entregan.
 5. **Modo de fusión:** Settings → General → Pull Requests → dejar "Allow merge commits" activado.
    Así las ramas personales se sincronizan sin conflictos.
 
-## 4. Preparar cada portátil (cada persona, unos 10 min)
+## 4. Preparar cada sesión: en la nube o en el portátil
+
+### Sesión de Claude en la nube (claude.ai/code): lo que usamos
+1. Conectar GitHub a Claude (https://claude.ai/connect-github) y aceptar la invitación al repo. Una vez por persona.
+2. Nueva sesión en https://claude.ai/code con el repo `aitorboligecubas/Datathon-26`.
+3. Pegar como **primer mensaje** el prompt de tu rol de `docs/prompts-arranque.md`. Su **PASO 0** lo hace todo:
+   - fija la rama del rol (si no, la sesión usaría una rama `claude/...`);
+   - instala las librerías y descomprime `oficial.zip`;
+   - comprueba que sale "Datos oficiales", mpc 6,08 y oracle 6,12.
+4. **Nadie tiene que descargar ni descomprimir el ZIP a mano**: viene con el repo.
+
+**Opcional: arranque más rápido.** Las sesiones en la nube empiezan de cero cada vez. Para no repetir la instalación,
+cada persona puede añadir este *setup script* a su entorno en la nube (menú del entorno en la barra de título de la
+sesión → Edit → Setup script). Se ejecuta en Linux, en la nube, no en vuestro ordenador:
+
+```bash
+if [ -d Datathon-26 ]; then (cd Datathon-26 && pip install -q -r requirements.txt pytest matplotlib && python3 scripts/preparar_oficial.py); fi
+```
+
+### En el portátil (Mac o Windows), por si alguien trabaja en local
 
 ```bash
 git clone https://github.com/aitorboligecubas/Datathon-26.git
-cd Datathon-26
-python -m venv .venv && source .venv/bin/activate      # Windows: .venv\Scripts\activate
-pip install -r requirements.txt -r requirements-dev.txt
-git checkout -b p1-optimizador                          # o p2-datos / p3-relato
 ```
-
-Descomprimid el ZIP oficial del reto en la raíz del repo y renombrad la carpeta a `oficial/`
-(git la ignora y no se sube):
 
 ```bash
-unzip paquet_participants_datathon_upc_2.zip -x "__MACOSX/*" && mv paquet_participants_datathon_upc oficial
-python -m pytest -q                        # todo en verde
-python scripts/calibrate_sim.py            # nuestro simulador = el oficial
-python eval.py --agent all                 # mpc 6,08 / oracle 6,12 con datos oficiales
+cd Datathon-26
 ```
 
-Arrancad Claude Code dentro de la carpeta (`claude`), que lee `CLAUDE.md` automáticamente, y pegad como primer
-mensaje el prompt de vuestro rol de `docs/prompts-arranque.md`.
+```bash
+python -m venv .venv
+```
+
+Activar el entorno virtual:
+- **Mac:** `source .venv/bin/activate`
+- **Windows:** `.venv\Scripts\activate`
+
+Después, en los dos:
+
+```bash
+pip install -r requirements.txt pytest matplotlib
+```
+
+```bash
+python scripts/preparar_oficial.py
+```
+
+```bash
+python eval.py --agent all
+```
+
+`eval.py` tiene que decir "Datos oficiales" y dar mpc 6,08 / oracle 6,12. Para trabajar en local con Claude Code:
+`claude` dentro de la carpeta y pegar el prompt del rol (el PASO 0 también sirve en local).
 
 ## 5. El día a día con git
 
