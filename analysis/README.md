@@ -28,4 +28,7 @@ Cada gráfica, con una frase de "qué demuestra" para P3.
 | [`techo.md`](techo.md) | `python analysis/p2_techo.py` | Por qué el ahorro máximo es de ~6 % |
 | [`escenarios.md`](escenarios.md) | `python analysis/p2_escenarios.py` | Qué ahorraría una batería de 1, 2, 4, 8 o 16 MWh |
 
+| [`resumen_graficas.md`](resumen_graficas.md) | `python analysis/p2_resultados.py` (2 de las 11 gráficas) | Las 11 gráficas ordenadas por bloque del guion, con la cifra que hay que decir |
+| [`informe_p2_para_p1.md`](informe_p2_para_p1.md) | — | Qué ha hecho P2, qué tiene que tener en cuenta P1 y qué hacer ahora |
+
 Las figuras están en `figs/` (PNG a 200 ppp, listas para una slide). El estilo común está en `p2_estilo.py`.
