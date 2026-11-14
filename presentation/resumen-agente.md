@@ -1,0 +1,35 @@
+# Qué hace el agente y por qué (resumen de P1 para el guion)
+
+Estrategia **cerrada** el sábado 14/11. Números de la validación con datos oficiales; el detalle está en
+`results/p1_ablaciones.md`.
+
+1. **Cada hora planifica las próximas 24 h y ejecuta solo la primera**, como un GPS que recalcula. El plan es un
+   programa lineal que minimiza justo lo que puntúa el reto (70 % CO₂, 30 % coste), así que no hay reglas a mano
+   ni parámetros ajustados. Planificar aporta casi todo: 6,01 de los 6,09 puntos.
+2. **Solo mueve energía cuando compensa la pérdida del 10 %**: carga en las horas limpias y baratas y descarga en
+   las sucias y caras si la diferencia supera el 11 %. Precio y CO₂ a 24 h vienen exactos, y por eso no hace falta
+   prever el consumo: con una previsión plana el resultado es el mismo (0,00 de diferencia).
+3. **Nunca comete una infracción**: toda acción pasa por un control que la recorta a lo físicamente posible.
+   0 infracciones en la validación, en el train, por semanas y con ruido.
+4. **Dos protecciones sencillas.** Vacía la batería cuando se acaban los datos, porque la carga final no puntúa
+   (+0,11; en el campus real no lo haríamos y lo decimos). Y no descarga más de lo que el campus consumió la hora
+   anterior, para no tirar energía si el contador se avería (pasó 14 horas seguidas en los datos).
+5. **Está al 99,6 % del máximo teórico y aguanta.** Saca 6,09 frente a 6,12 del óptimo con todo el futuro conocido.
+   En el train, 5,54 de 5,54. Si el servidor evaluase por semanas, 6,47 de 6,49. Con un 20 % de ruido en las
+   previsiones, 6,01. Tarda 4 segundos de los 60 permitidos.
+
+## Por qué la damos por cerrada
+
+Lo que falta hasta el techo son 0,03 puntos, y no se pueden capturar con rigor:
+- **Mirar más allá de 24 h** vale como mucho 0,01, y eso con previsiones perfectas del segundo día.
+- **Las otras 0,02** vienen de las horas de avería del contador, que no se pueden prever.
+
+Cualquier "mejora" de ese tamaño sería ajustarse a la validación. Preferimos una solución sin parámetros que
+podamos explicar entera.
+
+## Frases para el jurado
+
+- "No hemos entrenado nada: el agente resuelve cada hora el problema exacto que puntúa el reto."
+- "Sabemos cuánto aporta cada pieza, y dos de las que probamos no aportan nada: lo decimos."
+- "Con una batería de 2 MWh para un campus que consume 27 MWh al día, el máximo posible es un 6 %. Nosotros
+  capturamos el 99,6 % de ese máximo."
