@@ -16,15 +16,15 @@ Objetivo: acercar el score de `mpc` al de `oracle` en `python eval.py --agent al
 y menos de 40 s proyectados a 2.016 h.
 
 Por orden:
-1. Ejecuta `python eval.py --agent all` (datos oficiales: mpc 5,97 frente a oracle 6,12) y explícame de dónde sale la diferencia.
+1. Ejecuta `python eval.py --agent all` (datos oficiales: mpc 6,08 frente a oracle 6,12) y explícame de dónde sale la diferencia.
 2. Añade a baselines.py un agente "MPC con previsión perfecta de demanda y solar" (sabe la demanda y la
    solar reales del df) para separar cuánto pierde el MPC por la previsión y cuánto por el horizonte de 24 h.
    Pide al integrador que lo registre en eval.py.
 3. Mejora el MPC y mide cada cambio con eval.py --log:
    - valor terminal de la carga;
    - horizonte más largo que 24 h, rellenando el precio y el CO2 con lo de hace 24 h o 168 h;
-   - vaciar la batería al final del episodio (la carga final no puntúa) y qué pasa si el servidor
-     evalúa cada semana por separado (duda abierta en docs/reto.md);
+   - ya gastamos la carga cuando la previsión llega recortada (fin de los datos): revisa qué pasa si el
+     servidor evalúa cada semana por separado (duda abierta en docs/reto.md);
    - qué hacer al final de cada semana de test, porque la siguiente es otro mes;
    - robustez con --fc-noise 0.1.
 4. Vigila el tiempo: el LP se resuelve 2.016 veces.

@@ -83,7 +83,7 @@ main ─────────────────────────
 
 | Cuándo | Qué |
 |---|---|
-| **Sáb 12:30** | Estructura en `main`, todos clonados, `oficial/` descomprimido y cada Claude arrancado. **Primer envío oficial con el MPC v0** (5,97 en validación) para probar el circuito y fijar el PIN del equipo. |
+| **Sáb 12:30** | Estructura en `main`, todos clonados, `oficial/` descomprimido y cada Claude arrancado. **Dry-run y primer envío oficial con el MPC v0** (6,08 en validación) para probar el circuito y fijar el PIN del equipo. |
 | **Sáb 14:00** (comida) | Cada uno con su primera PR. Repaso de `docs/reto.md`: la previsión casi no importa y el margen hasta el techo es pequeño, así que el jurado pesa mucho. |
 | **Sáb 17:00** | Merge y envío. Decidir el reparto de la tarde: ¿qué cierra la distancia entre `mpc` y `oracle`? ¿Qué gráficas cuentan la historia? |
 | **Sáb 21:00** (cena) | Merge de todo. Envío oficial. P3 enseña las primeras gráficas. |
@@ -92,5 +92,6 @@ main ─────────────────────────
 | **Dom 10:00–11:30** | Envío final y slides. Ensayo del pitch. |
 | **Dom 12:00** | **Fin de las entregas.** 14:00, demos. |
 
-Envíos oficiales: 10 al día. Apuntad cada uno en `docs/envios.md` con el commit, el score local y el del leaderboard.
+Envíos oficiales: 10 al día. **Antes de cada uno, pasad el dry-run de la web (gratis, ilimitado, 48 pasos).**
+Apuntad cada envío en `docs/envios.md` con el commit, el score local y el del leaderboard.
 El leaderboard público es solo el 50 %, así que no os ajustéis a él.

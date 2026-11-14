@@ -256,9 +256,9 @@ Durante el desarrollo se encontraron y corrigieron estos fallos:
 ## 7. Subida a GitHub
 
 - Todo está en la rama **`claude/clever-euler-koiz2q`** de `aitorboligecubas/Datathon-26`.
-  **No se ha tocado `main`** ni se han creado las ramas `p1/p2/p3`: esta sesión solo puede subir a esa rama.
-- Para que el equipo empiece, el contenido tiene que llegar a `main`. Las dos opciones son una PR
-  `claude/clever-euler-koiz2q → main` que el integrador fusiona, o pedirle a Claude que la abra.
+  En la primera subida no se tocó `main`. **Después se subió también a `main` a petición expresa** (sección 10).
+  Las ramas `p1/p2/p3` las crea cada persona desde `main`.
+- `main` y `claude/clever-euler-koiz2q` apuntan al mismo commit: el equipo puede clonar y empezar ya.
 - **No se ha subido nada de los datos oficiales.** Solo están los dos JSON de `models/` con medias agregadas, que el
   agente necesita dentro del ZIP.
 
@@ -267,7 +267,7 @@ Durante el desarrollo se encontraron y corrigieron estos fallos:
 ## 8. Lo que tenéis que hacer ahora (en orden)
 
 1. **Hacer el repo privado** mientras dure el evento: Settings → General → Danger Zone → Change visibility.
-2. **Fusionar esta rama en `main`** (PR).
+2. ~~Fusionar esta rama en `main`~~ (hecho).
 3. **Invitar al equipo** (Settings → Collaborators) y rellenar la tabla "Quién es quién" de `docs/equipo.md`.
 4. Opcional: proteger `main` (exigir PR y el check `tests`) y dejar activados los "merge commits".
 5. Cada persona: clonar, crear su rama, descomprimir el ZIP oficial en `oficial/`,
@@ -293,3 +293,29 @@ Durante el desarrollo se encontraron y corrigieron estos fallos:
   - gráficas (semana tipo, ahorro acumulado, "capturamos el 97,5 % del máximo teórico", análisis por mes,
     robustez);
   - registro de decisiones y pitch.
+
+---
+
+## 10. Actualización: lo que aportaron las slides oficiales (`UPC Sostenible.pdf`)
+
+Después de la primera subida llegaron las 9 slides de la presentación del reto. Aportan cuatro cosas:
+
+| Dato de las slides | Qué hemos hecho |
+|---|---|
+| **El test tiene ~1.700 h**, no 2.016 (faltan datos, igual que noviembre en el train) | El agente ya no cuenta hasta 2.016 para saber cuándo acaba el episodio. Usa una señal exacta del entorno: `environment.py` recorta `preus_properes_24h` al final de los datos, así que si llegan menos de 24 valores, el episodio acaba dentro del horizonte. Entonces la carga final vale 0 y el LP la gasta en las horas de más CO₂. **Validación: 5,97 → 6,08** (techo 6,12, ahora un 99,3 %). Test nuevo en `tests/test_agent.py` |
+| **Dry-run en la web gratis e ilimitado (48 pasos)** antes del envío oficial | Añadido a `CLAUDE.md`, `docs/reto.md` y `docs/equipo.md`: pasarlo siempre antes de gastar uno de los 10 envíos diarios |
+| **Penalización de −1,00 por infracción** (igual que el ENUNCIAT; `environment.py` usa 0,20) | Documentado como contradicción. No cambia nada: el objetivo es 0 infracciones y lo cumplimos |
+| "Solar fins a 450 kW", "pics fins a 1.600 kW" | En los datos, cada inversor satura a 50 kW (≈150 kW en total) y la demanda pasa de 1.600 kW el 8,5 % de las horas. **Mandan los datos.** El filtro de columnas de `build_hourly` ahora coge exactamente `Inversor i - POTENCIA ACTIVA (kW)` (antes también cogía una columna de consigna que siempre vale 0; el resultado no cambia) |
+
+**Para el jurado:** gastar la carga al final es correcto dentro de las reglas, porque la carga final no puntúa.
+Conviene explicarlo con transparencia: en la operación real del campus habría que darle un valor.
+
+Resultado actualizado en validación (datos oficiales):
+
+| Agente | Score | ΔCO₂ % | ΔCoste % | Infracciones | Tiempo |
+|---|---|---|---|---|---|
+| `mpc` | **6,08** | 5,73 | 6,89 | 0 | 4,0 s |
+| `oracle` | 6,12 | 5,78 | 6,90 | 0 | — |
+
+Además, **todo el contenido de la rama se ha subido también a `main`**, a petición expresa. Así el equipo puede
+clonar directamente y crear sus ramas `p1/p2/p3` desde `main`.

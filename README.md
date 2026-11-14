@@ -18,8 +18,8 @@ python eval.py --agent all
 Datos oficiales: descomprimid el ZIP del reto en la raíz y renombrad la carpeta a `oficial/` (no se sube a git).
 Sin ellos, todo funciona con datos sintéticos.
 
-**Resultado en validación (últimas 168 h de cada mes del train, datos oficiales):** MPC 5,97 puntos
-(ΔCO₂ 5,62 %, ΔCoste 6,78 %, 0 infracciones, 4 s) frente a 6,12 del óptimo con información perfecta.
+**Resultado en validación (últimas 168 h de cada mes del train, datos oficiales):** MPC 6,08 puntos
+(ΔCO₂ 5,73 %, ΔCoste 6,89 %, 0 infracciones, 4 s) frente a 6,12 del óptimo con información perfecta.
 
 ## Estructura
 

@@ -19,7 +19,9 @@ Owner: integrador. Resumen de lo que dicen los documentos oficiales (`oficial/do
 | Excedente | No se paga (`export_price = 0`) y no ahorra CO₂ | environment.py, ENUNCIAT |
 | Referencia | Sin batería: compra = max(demanda − solar, 0) | environment.py |
 | Score | `max(0, 100·(0,7·ΔCO₂ + 0,3·ΔCoste − 0,002·infracciones))`, es decir, **0,20 puntos por infracción** | environment.py |
-| Test | 12 semanas = los últimos 7 días de cada mes de sep 2025 a ago 2026 (2.016 h). El train es el resto | ENUNCIAT |
+| Test | Los últimos 7 días de cada mes de sep 2025 a ago 2026. **~1.700 h según las slides** (el ENUNCIAT dice 2.016: faltan datos, como noviembre en el train). El train son las 3 primeras semanas de cada mes (~6.000 h) | ENUNCIAT, slides |
+| Fin de los datos | Al final, `preus_properes_24h` trae menos de 24 valores: el agente sabe que el episodio acaba (lo usamos para gastar la carga final) | environment.py |
+| Envíos web | 3 niveles: (1) `check_submission.py` en local, (2) **dry-run en la web, gratis e ilimitado (48 pasos)**, (3) envío oficial al leaderboard (50 % público / 50 % privado) | slides |
 | Envío | `submission.zip` (o solo `agent.py`) ≤ 25 MB, 60 s por simulación, 10 envíos/día (los fallidos no cuentan), PIN de equipo en el primer envío | ENUNCIAT |
 | Librerías | numpy, pandas, scipy, scikit-learn, joblib, xgboost, lightgbm, math, random, datetime, collections, itertools, json, pathlib, typing, dataclasses (+ functools, heapq, bisect, re, copy, pickle) | ENUNCIAT |
 | Vetado (AST) | os, sys, subprocess, importlib, inspect, socket, threading…; llamadas `.stack()`, `.system()`, `.popen()`, `.rmtree()`…; `eval`, `exec`, `compile`, `globals`, `locals`, `vars`, `__import__` | check_submission.py |
@@ -33,10 +35,11 @@ score, CO₂, coste e infracciones con la plantilla oficial y con nuestro MPC.
 
 | # | Duda | Qué hacemos |
 |---|---|---|
-| 1 | Penalización: `environment.py` resta 0,20 por infracción y el ENUNCIAT, 1,00 | Da igual: nuestro objetivo es 0 infracciones (clamp con margen de 1e-4) |
+| 1 | Penalización: `environment.py` resta 0,20 por infracción; el ENUNCIAT y las slides, **1,00** | Da igual: nuestro objetivo es 0 infracciones (clamp con margen de 1e-4). Nuestro sim usa 0,20 para cuadrar con environment.py |
 | 2 | ¿El servidor ejecuta las 12 semanas seguidas en un solo episodio o cada semana por separado con la carga reiniciada al 50 %? `evaluate_results` admite una máscara, lo que sugiere un episodio continuo con máscaras público/privado | Validamos con las 12 semanas seguidas. Si fuese por semanas, el valor de la carga final de cada semana cambiaría (P1) |
 | 3 | En la primera hora de cada semana de test, ¿`noves_dades_5min` trae la última hora de la semana anterior (un mes antes)? | La previsión es robusta a eso. Irrelevante en la práctica (ver abajo) |
 | 4 | ¿Qué versiones de Python y de las librerías usa el servidor? | El código es compatible con Python ≥ 3.9. Evitar APIs muy nuevas |
+| 5 | Las slides dicen "solar fins a 450 kW" y "pics de 1.600 kW", pero en los datos cada inversor satura a 50 kW (máx. ~150 kW en total) y la demanda pasa de 1.600 kW el 8,5 % de las horas | Mandan los datos. Las slides son aproximadas |
 
 ## Lo que dicen los datos (train oficial)
 

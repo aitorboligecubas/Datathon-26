@@ -83,10 +83,15 @@ class MPCPolicy:
         self.elapsed_s = 0.0
         self.n_fallbacks = 0
 
+    def episode_ends_soon(self, obs: Obs) -> bool:
+        """environment.py recorta la previsión al final de los datos: si llega con menos de
+        24 valores, el episodio acaba dentro del horizonte. (El test tiene ~1.700 h, no 2.016.)"""
+        return len(obs.price) < self.horizon or self.n_steps - self.t <= self.horizon
+
     def terminal_value(self, obs: Obs, H: int) -> float:
         """Valor de cada kWh que quede en la batería al final del horizonte."""
-        if self.n_steps - self.t <= H:
-            return 0.0  # el episodio acaba dentro del horizonte: la carga final no puntúa (environment.py)
+        if self.episode_ends_soon(obs):
+            return 0.0  # la carga final no puntúa (environment.py): mejor gastarla
         marginal = self.w_co2 * obs.co2[:H] + self.w_cost * obs.price[:H]
         return float(np.quantile(marginal, self.terminal_quantile)) * self.p.eta_discharge
 

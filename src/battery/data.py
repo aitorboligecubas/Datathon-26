@@ -39,9 +39,8 @@ def build_hourly(train_dir: Path = TRAIN_DIR) -> pd.DataFrame:
     cont = pd.read_csv(train_dir / "contador.csv", parse_dates=["Fecha"]).set_index("Fecha")
     load = (-cont["Contador - POTENCIA ACTIVA EXPORTADA (kW)"]).clip(lower=0, upper=5000)
     inv = pd.read_csv(train_dir / "inversor.csv", parse_dates=["Fecha"]).set_index("Fecha")
-    cols = [c for c in inv.columns
-            if "POTENCIA ACTIVA" in c.upper() and "FASE" not in c.upper()
-            and any(f"INVERSOR {i}" in c.upper() for i in (1, 2, 3))]
+    # Una columna por inversor; cada uno satura a ~50 kW en los datos (las slides hablan de 450 kW).
+    cols = [f"Inversor {i} - POTENCIA ACTIVA (kW)" for i in (1, 2, 3)]
     pv = inv[cols].fillna(0).sum(axis=1).clip(lower=0)
     price = pd.read_csv(train_dir / "precio_pvpc.csv", parse_dates=["Fecha"]).set_index("Fecha")
     co2 = pd.read_csv(train_dir / "co2_red.csv", parse_dates=["Fecha"]).set_index("Fecha")

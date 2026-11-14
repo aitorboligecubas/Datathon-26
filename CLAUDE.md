@@ -9,18 +9,20 @@ Responde siempre en español. Plazo de entrega: **domingo 15/11 a las 12:00**. C
 ## El reto en 30 segundos (verificado con el material oficial)
 
 - `BatteryAgent.act(obs) -> float` devuelve la potencia de la batería en kW: > 0 carga, < 0 descarga.
-  Se llama una vez por hora durante 2.016 h de test: los últimos 7 días de cada mes, sin reinicios.
+  Se llama una vez por hora durante el test: los últimos 7 días de cada mes, **~1.700 h** según las slides
+  (2.016 si no faltasen datos), sin reinicios. Cuando quedan menos de 24 h, la previsión llega recortada.
 - Batería: 2.000 kWh, ±500 kW, η = √0,9 en cada sentido (90 % ida y vuelta) y carga inicial de 1.000 kWh.
 - Red = demanda − solar + batería. Si es > 0, compramos al precio PVPC y emitimos CO₂ del mix.
   Si es ≤ 0, el excedente se vierte sin cobrar nada.
 - `Score = max(0, 0,70·ΔCO₂% + 0,30·ΔCoste% − pen·infracciones)`, con los porcentajes respecto a no tener batería.
-  pen = 0,20 en `environment.py` y 1,00 en el enunciado. Nuestro objetivo es 0 infracciones.
+  pen = 0,20 en `environment.py`, y 1,00 en el enunciado y en las slides. Nuestro objetivo es 0 infracciones.
 - `obs` incluye:
   - `preus_properes_24h` y `co2_properes_24h`, con las 24 h **desde la hora actual** (son exactos);
   - `noves_dades_5min = {ultim_consum_kw, ultima_solar_kw}`, la demanda y la solar de la hora anterior.
 - Entrega: un ZIP de ≤ 25 MB con `agent.py` y los artefactos (.pkl/.json) en la raíz. La simulación entera
-  tiene que durar menos de 60 s. Hay 10 envíos al día, que no se gastan si el envío falla. El leaderboard
-  público cuenta el 50 % y el privado, el otro 50 %.
+  tiene que durar menos de 60 s. Hay 10 envíos al día, que no se gastan si el envío falla. La web también tiene
+  un **dry-run gratis e ilimitado (48 pasos)**: usadlo antes de gastar un envío. El leaderboard público cuenta
+  el 50 % y el privado, el otro 50 %.
 - **El jurado decide de forma decisiva** con la presentación, el razonamiento y la justificación.
   Cada decisión tiene que tener un número detrás (`docs/decisiones.md`).
 
@@ -35,7 +37,7 @@ y `oficial/starter_kit/tutorial.ipynb`. Resumen y dudas abiertas: `docs/reto.md`
   → Prever la demanda y la solar apenas cambia las decisiones. El juego es **mover energía en el tiempo** según
   `w_t = 0,7·co2_t/co2_ref + 0,3·precio_t/coste_ref`, y precio y CO₂ a 24 h nos los dan exactos.
 - La batería (2 MWh) es el 7 % del consumo diario (27 MWh), así que el score máximo es pequeño.
-  En validación, el `oracle` con información perfecta saca 6,12 y nuestro MPC v0, **5,97 (97,5 % del techo)**.
+  En validación, el `oracle` con información perfecta saca 6,12 y nuestro MPC, **6,08 (99,3 % del techo)**.
   **El margen en el leaderboard es pequeño: la presentación y el análisis deciden.**
 - Faltan datos: noviembre de 2025 entero, el train acaba el 16/08/2026 y hay 15 horas con consumo 0.
 
@@ -44,7 +46,8 @@ y `oficial/starter_kit/tutorial.ipynb`. Resumen y dudas abiertas: `docs/reto.md`
 Usamos un MPC. Cada hora prevemos la demanda y la solar de las próximas 24 h. Con eso resolvemos un LP
 (HiGHS, con `scipy.optimize.linprog`) que minimiza `Σ w_t·compra_t` con la física de la batería, aplicamos
 solo la primera hora y repetimos. Como η² = 0,9, el LP solo mueve energía si la hora de destino es al menos
-un 11 % "peor". Hay un respaldo greedy si el LP falla o vamos justos de tiempo.
+un 11 % "peor". Cuando la previsión llega recortada (fin de los datos), la carga final vale 0 y el LP la gasta
+(5,97 → 6,08). Hay un respaldo greedy si el LP falla o vamos justos de tiempo.
 
 Referencias en `eval.py --agent all`:
 - `nothing`: no usa la batería.
