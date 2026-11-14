@@ -231,6 +231,10 @@ def neighbour_month(month: int, day: float, centers) -> tuple:
 # el vertido al descargar baja a la mitad. Descargar de más es tirar la energía entera; descargar de menos solo
 # la mueve a una hora algo peor, y el test (días 25-31) se parece menos al train que el train a sí mismo.
 Z_SOLAR = 1.4
+# Margen con el que el PLAN de las horas siguientes (no la acción de esta hora) cuenta con la solar. Se deja igual
+# que el de la acción (1,4). Rama mejora-score-hard: 2,0 ganaba en validación (+0,031) pero en 9 ventanas solo
+# +0,001 de media sobre la semilla y -0,027 en el episodio con el calendario del test: no se cambia.
+Z_PLAN_SOLAR = 1.4
 
 
 class SolarCand:
@@ -254,6 +258,7 @@ class SolarCand:
                  room: bool = False, value_z: bool = False):
         self.base = base
         self.z = z                    # márgenes en "desviaciones típicas" (1 = cuantiles 16 % y 84 %)
+        self.z_plan = Z_PLAN_SOLAR    # margen de las horas siguientes en el plan
         self.reg, self.freeze, self.quant, self.uncap, self.pvreg, self.shade_now = reg, freeze, quant, uncap, pvreg, shade_now
         self.room = room              # margen de la solar de las horas siguientes con el error a esa antelación
         self.value_z = value_z        # margen al descargar según lo que vale esta hora frente a la alternativa
@@ -487,7 +492,7 @@ class SolarCand:
         self.net_lo0_charge = float(load[0] - pv[0]) - self.z * float(margin[0])    # excedente que puede haber
         self.fresh = True
         # El plan cuenta ya con el margen en todas las horas (se suma a la solar; solo mueve decisiones).
-        shade = self.z * margin
+        shade = self.z_plan * margin
         shade[0] = z_now * float(margin[0]) if self.shade_now else 0.0
         return load, pv + shade
 
