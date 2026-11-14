@@ -36,10 +36,13 @@ def _to_float(x: Any) -> float:
 
 
 def _to_timestamp(x: Any):
-    try:
-        return pd.Timestamp(x)
-    except (TypeError, ValueError):
+    if x is None:
         return None
+    try:
+        ts = pd.Timestamp(x)
+    except Exception:
+        return None
+    return None if ts is pd.NaT else ts
 
 
 def _to_series(x: Any, fallback: float) -> np.ndarray:
@@ -51,7 +54,21 @@ def _to_series(x: Any, fallback: float) -> np.ndarray:
     if x is None:
         return np.asarray([fallback], dtype=float)
     arr = np.asarray(x, dtype=float).ravel()
-    return arr if arr.size else np.asarray([fallback], dtype=float)
+    if arr.size == 0:
+        return np.asarray([fallback], dtype=float)
+    bad = ~np.isfinite(arr)
+    if bad.any():
+        # Un hueco (NaN o infinito) en la previsión: se repite el último valor válido, para que el
+        # optimizador pueda seguir planificando en vez de quedarse sin plan.
+        arr = arr.copy()
+        good = arr[~bad]
+        last = fallback if math.isfinite(fallback) else (float(good[0]) if good.size else float("nan"))
+        for i in range(arr.size):
+            if bad[i]:
+                arr[i] = last
+            else:
+                last = arr[i]
+    return arr
 
 
 def from_official(raw: Mapping[str, Any]) -> Obs:
@@ -62,19 +79,28 @@ def from_official(raw: Mapping[str, Any]) -> Obs:
     co2 = _to_series(raw.get("co2_properes_24h"), co2_now)
     n = min(len(price), len(co2))
     price, co2 = price[:n].copy(), co2[:n].copy()
-    price[0], co2[0] = price_now, co2_now
+    if math.isfinite(price_now):
+        price[0] = price_now
+    if math.isfinite(co2_now):
+        co2[0] = co2_now
     recent = raw.get("noves_dades_5min")
     if not isinstance(recent, Mapping):   # None, o un formato inesperado: seguimos sin esas lecturas
         recent = {}
+    ts = _to_timestamp(raw.get("timestamp"))
+    hour, weekday = raw.get("hour"), raw.get("day_of_week")
+    if hour is None:
+        hour = ts.hour if ts is not None else 0
+    if weekday is None:
+        weekday = ts.dayofweek if ts is not None else 0
     return Obs(
-        hour=int(raw["hour"]),
-        weekday=int(raw["day_of_week"]),
+        hour=int(hour) % 24,
+        weekday=int(weekday) % 7,
         soc_kwh=_to_float(raw["soc_kwh"]),
         price=price,
         co2=co2,
         load_prev_kw=_to_float(recent.get("ultim_consum_kw")),
         pv_prev_kw=_to_float(recent.get("ultima_solar_kw")),
-        timestamp=_to_timestamp(raw.get("timestamp")),
+        timestamp=ts,
     )
 
 

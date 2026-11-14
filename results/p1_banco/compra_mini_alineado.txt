@@ -1,0 +1,18 @@
+60 mini-episodios (día de la semana del test) en 191 s
+pérdida media frente al óptimo, por mes de la semana a cero (puntos de score):
+name     actual   antes  cand_compra  sin_dia_semana
+2025-10  0.0738  0.0681       0.0681          0.0713
+2025-11  0.0118  0.0588       0.0115          0.0168
+2025-12  0.0363  0.0546       0.0349          0.0345
+2026-01  0.0094  0.0270       0.0095          0.0086
+2026-02  0.0072  0.0074       0.0073          0.0064
+2026-03  0.0113  0.0142       0.0115          0.0115
+2026-04  0.0303  0.0436       0.0319          0.0309
+2026-05  0.0352  0.0408       0.0338          0.0343
+2026-06  0.0232  0.0358       0.0227          0.0230
+2026-07  0.0352  0.0534       0.0352          0.0351
+todos   actual 0.0274  antes 0.0404  cand_compra 0.0266  sin_dia_semana 0.0272
+antes frente a actual: -0.0130 ± 0.0024  mejor en 8, peor en 38 de 60  [-0.0553, +0.0120]
+cand_compra frente a actual: +0.0007 ± 0.0008  mejor en 16, peor en 16 de 60  [-0.0082, +0.0371]
+sin_dia_semana frente a actual: +0.0002 ± 0.0006  mejor en 19, peor en 19 de 60  [-0.0107, +0.0287]
+infracciones: 0

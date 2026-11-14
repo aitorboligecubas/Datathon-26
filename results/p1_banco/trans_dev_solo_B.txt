@@ -1,0 +1,9 @@
+suite dev, agente scripts/p1_lab/cand_trans.py:solo_B: 3 episodios en 9 s
+familia      n    score   mitad1   mitad2  a óptimo  m1 a ópt  m2 a ópt  infr  vertido  t máx
+cero_otra    3   6.0376   4.7195   7.2089    0.0054    0.0112   -0.0002     0        1    4.8
+TODOS        3   6.0376   4.7195   7.2089    0.0054    0.0112   -0.0002     0        1    4.8
+
+Diferencia con la referencia, episodio a episodio (3 comunes): media [mín, máx]
+cero_otra  score +0.0000 [+0.0000, +0.0000]   mitad1 +0.0000 [+0.0000, +0.0000]   mitad2 +0.0000 [+0.0000, +0.0000]
+TODOS      score +0.0000 [+0.0000, +0.0000]   mitad1 +0.0000 [+0.0000, +0.0000]   mitad2 +0.0000 [+0.0000, +0.0000]
+guardado en results/p1_banco/trans_dev_solo_B.csv

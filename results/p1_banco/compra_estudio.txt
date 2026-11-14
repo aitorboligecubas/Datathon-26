@@ -1,0 +1,42 @@
+1. Parámetros (282 días completos, 209 ventanas de 7 días)
+   fin de semana: log(valle fin de semana / laborable) = -0.203 (factor 0.82); en el candidato WEEKEND_SHIFT = -0.2
+   por mes: 25-09: -0.14  25-10: -0.21  25-11: -0.19  25-12: -0.21  26-01: -0.10  26-02: -0.07  26-03: -0.08  26-04: +0.04  26-05: -0.12  26-06: -0.30  26-07: -0.57  26-08: -0.47
+   dispersión de log(valle) dentro de una semana: 0.168; SIGMA_VALLEY = 0.17
+   nivel de una semana frente al de la semana vista antes: error típico 0.157 (frente a la media de las 5 anteriores: 0.206); TAU_LEVEL = 0.2
+   valor de uso de un día del mes siguiente frente al de la semana: desviación 0.336; TAU_USE = 0.34
+
+2. Exceso sobre comprar sabiendo toda la semana, en puntos de score (día de la semana real)
+   por día en que empieza la semana:
+               v1      v2  candidato  sin día  ventanas
+lunes      0.0137  0.0034     0.0026   0.0035        31
+martes     0.0111  0.0064     0.0021   0.0025        29
+miércoles  0.0111  0.0056     0.0015   0.0014        31
+jueves     0.0112  0.0078     0.0028   0.0027        29
+viernes    0.0069  0.0051     0.0036   0.0062        29
+sábado     0.0040  0.0068     0.0044   0.0072        30
+domingo    0.0063  0.0040     0.0025   0.0037        30
+   cada mes, con las ventanas del train que empiezan el mismo día de la semana que su semana del test:
+                empieza en  ventanas      v1      v2  candidato  sin día
+semana del test                                                         
+2025-09-24       miércoles         3  0.0071  0.0071     0.0018   0.0017
+2025-10-25          sábado         3  0.0008  0.0228     0.0040   0.0156
+2025-11-24           lunes         3  0.0123  0.0011     0.0009   0.0021
+2025-12-25          jueves         3  0.0145  0.0332     0.0055   0.0054
+2026-01-25         domingo         3  0.0193  0.0115     0.0050   0.0107
+2026-02-22         domingo         3  0.0033  0.0031     0.0019   0.0015
+2026-03-25       miércoles         3  0.0065  0.0015     0.0034   0.0004
+2026-04-24         viernes         3  0.0056  0.0018     0.0045   0.0017
+2026-05-25           lunes         3  0.0080  0.0018     0.0018   0.0005
+2026-06-24       miércoles         3  0.0104  0.0032     0.0004   0.0019
+2026-07-25          sábado         3  0.0002  0.0002     0.0002   0.0001
+2026-08-25          martes         3  0.0134  0.0029     0.0027   0.0058
+   media: {'v1': 0.0084, 'v2': 0.0075, 'candidato': 0.0027, 'sin día': 0.004}
+   todas las ventanas: {'v1': 0.0092, 'v2': 0.0056, 'candidato': 0.0028, 'sin día': 0.0039}
+   diferencia con v2, ventana a ventana (positivo = mejor que v2), con su error típico:
+      empiezan en lunes, de octubre a agosto (28): candidato +0.0002 ± 0.0005 (mejor en 11, peor en 9); sin día -0.0006 ± 0.0008 (mejor en 13, peor en 10)
+      empiezan en lunes, noviembre (3): candidato +0.0002 ± 0.0002 (mejor en 1, peor en 0); sin día -0.0010 ± 0.0021 (mejor en 1, peor en 2)
+      todas (solapadas) (209): candidato +0.0028 ± 0.0007 (mejor en 95, peor en 67); sin día +0.0017 ± 0.0007 (mejor en 101, peor en 69)
+
+3. Con el día de la semana al azar (lo que ve el agente en scripts/p1_banco.py)
+   todas las ventanas: {'v1': 0.0092, 'v2': 0.0056, 'candidato': 0.0051, 'sin día': 0.0039}
+   noviembre: {'v1': 0.006, 'v2': 0.0082, 'candidato': 0.004, 'sin día': 0.0025} | noviembre con el día real: {'v1': 0.006, 'v2': 0.0082, 'candidato': 0.0011, 'sin día': 0.0025}

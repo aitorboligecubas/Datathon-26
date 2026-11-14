@@ -60,3 +60,23 @@ def test_forecasts_as_list_tuple_array_or_series():
     for odd in (None, pd.DataFrame({"x": [1]}), "texto"):   # lecturas en un formato inesperado: sin romper
         obs = from_official(dict(base, noves_dades_5min=odd))
         assert np.isnan(obs.load_prev_kw)
+
+
+def test_gaps_in_forecasts_are_filled():
+    """Un NaN o un infinito en la previsión no deja al agente sin plan: se repite el último valor."""
+    price = np.linspace(0.05, 0.3, 24)
+    base = make_official_obs(pd.Timestamp("2025-03-26 03:00"), 200.0, price, price, 900.0, 0.0)
+    holes = price.copy()
+    holes[[3, 4, 20]] = [np.nan, np.inf, -np.inf]
+    obs = from_official(dict(base, preus_properes_24h=list(holes), co2_properes_24h=list(holes)))
+    assert np.isfinite(obs.price).all() and obs.price[3] == price[2] and obs.price[4] == price[2]
+    assert obs.price[20] == price[19] and obs.price[5] == price[5]
+    obs = from_official(dict(base, preu_actual=float("nan")))          # sin precio actual: vale el de la lista
+    assert obs.price[0] == price[0]
+
+
+def test_hour_and_weekday_from_timestamp_if_missing():
+    base = make_official_obs(pd.Timestamp("2025-03-26 13:00"), 200.0, np.ones(24), np.ones(24), 900.0, 0.0)
+    base.pop("hour"); base.pop("day_of_week")
+    obs = from_official(base)
+    assert (obs.hour, obs.weekday) == (13, 2)

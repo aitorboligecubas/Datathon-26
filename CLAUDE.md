@@ -6,6 +6,9 @@
 > Está escrita para leerse de arriba abajo: primero el contexto, después los detalles técnicos.
 >
 > Responde siempre en español. **Entrega: domingo 15/11 a las 12:00.** Congelación del código: domingo a las 9:30.
+>
+> **Novedad del sábado a las 16:33: hay un HARD MODE con ranking propio.** Está explicado en la sección 4 bis.
+> El modo estándar sigue abierto, pero ahí todos los buenos equipos están empatados en el máximo.
 
 ---
 
@@ -65,15 +68,18 @@ Score = 0,70 · (% de CO₂ ahorrado) + 0,30 · (% de euros ahorrados) − penal
 - **Infracción:** pedir algo imposible, como cargar con la batería llena, descargar con la batería vacía o
   pasar de 500 kW. Se penaliza cada vez: −0,20 según el simulador oficial y −1,00 según el enunciado y las
   slides. Por eso nuestro objetivo es **cero infracciones, siempre**.
-- **El test** son los **últimos 7 días de cada mes** de un año (sep 2025 a ago 2026), unas **1.700 horas** (las slides;
-  el enunciado dice 2.016, pero faltan datos). Nos dan para entrenar las 3 primeras semanas de cada mes.
+- **El test** son los **últimos 7 días de cada mes** de un año (sep 2025 a ago 2026): 2.016 horas según el
+  enunciado y la web, de las que el **conjunto público son 1.008**. Nos dan para entrenar las 3 primeras semanas
+  de cada mes. Por las cifras que publica la web, una de las seis semanas públicas apenas aporta consumo.
 - **El jurado decide de forma decisiva**: el leaderboard cuenta, pero también la presentación, el razonamiento
   y la justificación de la estrategia.
 
 ### Cómo se entrega
 - Un `submission.zip` de 25 MB como máximo, con `agent.py` y los ficheros de modelos en la raíz.
 - Toda la simulación tiene que tardar menos de **60 segundos**.
-- **10 envíos oficiales al día** (los fallidos no cuentan). Antes, la web ofrece una **prueba rápida (dry-run)
+- **10 envíos oficiales por turno** (turno 1: sábado hasta las 21:00; los fallidos no cuentan). **El jurado solo
+  evalúa, en el ranking privado, las 2 entregas que seleccionemos** en la web (por defecto, las 2 mejores del
+  público). Registro en `docs/envios.md`: dos envíos, **6,43 puntos** con 0 infracciones. Antes, la web ofrece una **prueba rápida (dry-run)
   gratis e ilimitada** de 48 pasos.
 - El leaderboard es 50 % público y 50 % privado: **no hay que obsesionarse con el público**.
 
@@ -139,10 +145,21 @@ Dos detalles importantes:
   y descargar contra un consumo nulo es tirar la energía.
 - **No cuenta pasos.** El final se detecta solo por la previsión recortada, así que el agente funciona igual dure
   lo que dure el test.
+- **Sabe reconocer una semana sin datos de contador.** El test son 12 semanas sueltas puestas una detrás de otra.
+  Si el contador marca 0 desde la primera hora de una semana (en el train, noviembre no tiene datos de contador),
+  no hay consumo que cubrir hasta que acabe el mes: el agente no descarga y compra la carga para la semana
+  siguiente en una hora barata, con un precio de reserva, en vez de en la primera que aparece. En un episodio
+  simulado con noviembre a cero esto vale 0,06 puntos; en semanas normales no cambia ninguna decisión.
+- **Ignora la lectura "de la hora anterior" en la primera hora de cada semana**, porque es de un mes antes.
 - **Si algo falla o vamos justos de tiempo**, el agente usa una regla simple de respaldo. **Nunca** lanza un error.
 
 Cuánto aporta cada pieza y cómo aguanta el agente (por semanas, con ruido, fuera de la validación):
 `results/p1_ablaciones.md`, que se regenera con `python scripts/p1_ablaciones.py`.
+Auditoría completa (calibración, episodios tipo test, semana sin datos, lectura del leaderboard, 12.000
+observaciones hostiles, latencia): `results/p1_auditoria.md`, con `python scripts/p1_auditoria.py`.
+
+- **Sabe tratar lecturas vacías.** Si el contador no da ni un 0 (lectura vacía) desde la primera hora de una
+  semana, no descarga y deja la batería llena.
 
 Para tener contexto, comparamos siempre con otras estrategias (`python eval.py --agent all`):
 
@@ -153,6 +170,82 @@ Para tener contexto, comparamos siempre con otras estrategias (`python eval.py -
 | `greedy` | Reglas sencillas | 0,08 |
 | **`mpc`** | **Nuestro agente** | **6,09** |
 | `oracle` | El mismo planificador, pero con **bola de cristal**: conoce todo el futuro. Es el techo teórico | 6,12 |
+
+**Dónde estamos en el modo estándar (sábado por la tarde).** Dos envíos, los dos con **6,43** y 0 infracciones.
+El segundo llevaba la lógica de "semana sin contador" y sacó exactamente lo mismo que el primero: en el test
+público no hay ninguna semana así. La organización ha confirmado que en el público los equipos están en el
+máximo (los primeros tienen 6,44; nosotros, 6,4314) y que en el **privado nadie ha llegado al máximo**: ahí
+puede contar que nuestro agente sepa tratar un contador a cero. Detalle en `docs/envios.md`.
+
+---
+
+## 4 bis. El HARD MODE (desde el sábado a las 16:33)
+
+La organización ha abierto un segundo ranking, independiente, con un campus "ampliado":
+
+| Qué cambia | Modo estándar | Hard mode |
+|---|---|---|
+| Batería | 2.000 kWh, ±500 kW | **6.000 kWh, ±1.500 kW** |
+| Solar | casi no cuenta | **12 veces mayor**: a mediodía sobra energía, y lo que sobra se regala a la red |
+| Precio y CO₂ conocidos | 24 horas | **solo 3 horas** (la actual y las 2 siguientes): el resto hay que preverlo |
+| Lectura de la hora anterior | consumo y solar | además, la **meteo** (irradiancia, temperaturas y viento) |
+
+Dos trampas nuevas, que la organización avisa:
+- **Descargar a ciegas es tirar energía.** La batería puede dar 1.500 kW, pero el campus consume entre 600 y
+  1.300 kW (y menos cuando hay sol). Lo que se descarga de más se vierte a la red sin cobrar ni ahorrar CO₂.
+- **Sin previsión no hay plan.** Con solo 3 horas no se sabe cuándo llegan el valle y el pico de mañana.
+
+**Nuestro agente del hard mode es el mismo GPS**, con tres piezas nuevas (`src/battery/hard*.py`):
+1. **Previsión de precio y CO₂** (`hard_market.py`). Un perfil por mes, tipo de día y hora aprendido en el
+   train, y una regresión que predice cuánto se desviará cada hora de ese perfil. Usa 13 pistas: las 3 horas
+   conocidas, las últimas 6 y 24 horas, ayer y anteayer a la misma hora y el nivel del día. Cada semana del test
+   arranca con la "memoria" de los 7 días del train que la preceden. Los festivos nacionales cuentan como domingo.
+2. **Previsión de solar y consumo** (`hard_solar.py`).
+   - El consumo: el perfil de la semana, corregido con una regresión (por hora del día y antelación) sobre cuánto
+     se desviaba el consumo la hora anterior y ayer. De 23 a 5 h el contador del train está congelado, así que el
+     consumo de la noche se conoce exacto.
+   - La solar: "cielo despejado" de la fecha por la claridad de hoy (la última hora y la media del día). El cielo
+     despejado va en hora solar y se interpola entre meses, porque el test son los días 25–31 y el train los
+     días 1–24.
+   - Los festivos del campus (la Mercè, Navidad, Sant Joan) cuentan como domingo.
+3. **Margen de seguridad.** La previsión de esta hora se equivoca (la solar, unos 140 kW de día). Como descargar
+   de más es tirar energía y cargar de menos es perder excedente gratis, se descarga un poco menos de lo previsto
+   y se carga un poco más: 1,4 veces el error típico medido, por hora y por nivel de claridad. El plan ya cuenta
+   con ese margen.
+
+El final del test ya no se ve en la previsión (solo trae 3 horas): se sabe por calendario (31/08/2026). Si el
+servidor reiniciara la batería cada semana, el agente lo detecta y cierra cada semana vacía.
+
+| Agente (validación reservada, hard mode) | Score |
+|---|---|
+| No usar la batería | 0,00 |
+| Planificar solo con las 3 horas conocidas | 15,5 |
+| Versión 2 (primer envío) | 20,37 |
+| Versión 6 (previsor de precio y CO₂ con memoria) | 20,66 |
+| **Nuestro agente (versión 8)** | **20,83** |
+| El mismo agente con el precio y el CO₂ reales a 24 h | 21,56 |
+| Óptimo con todo el futuro conocido (techo) | 22,40 |
+
+**Ojo: la nota de casa y la de la web no son comparables.** La versión 2 tenía 20,37 en nuestra validación y
+sacó 23,35 en la web. La versión 6 tenía 20,66 y sacó **23,70: primeros de 32 equipos el sábado por la tarde**
+(el segundo tenía 23,50). El conjunto público es otro grupo de semanas, más favorable. Envíos y versiones:
+`docs/envios.md`.
+
+Antes de cada envío del modo difícil se pasa el **ataque de robustez** (`scripts/p1_lab/hard_ataque_*.py`):
+observaciones deformadas, averías del contador, calendario del test, cambio de hora, el `agent.py` empaquetado
+frente al código y el simulador oficial. Lo que se exige: 0 infracciones y 0 excepciones.
+
+```bash
+python scripts/p1_hard.py --split dev       # comparativa del hard mode en los días 8-14 de cada mes (para diseñar)
+python scripts/p1_hard.py                   # en las últimas 168 h de cada mes (RESERVADA: solo para verificar)
+python scripts/p1_hard.py --fit             # regenera models/hard_market.json y models/hard_solar.json
+python scripts/build_submission.py --hard   # ZIP del hard mode en dist/hard/ (el estándar no cambia)
+```
+
+Dueños: `src/battery/hard.py`, `hard_market.py`, `hard_solar.py` y `scripts/p1_hard.py` son de **P1**; mejorar
+las previsiones es trabajo de **P2** con P1 (contratos en la cabecera de cada fichero). Los ficheros
+`models/hard_*.json` solo entran en el ZIP del hard mode. Cupo de envíos del hard mode: 10 el sábado hasta las
+21:00, 10 de sábado 21:00 a domingo 8:00 y 10 el domingo desde las 8:00, con validación rápida gratuita.
 
 ---
 
@@ -203,7 +296,7 @@ entregan. Calendario detallado: `docs/equipo.md`, sección 2.
 
 | Rol | Ficheros que **solo** edita esta persona | Ficheros nuevos |
 |---|---|---|
-| **P1** | `src/battery/policy.py`, `optimizer.py`, `safety.py`, `baselines.py`, `tests/test_safety.py`, `tests/test_agent.py` | `scripts/p1_*.py` |
+| **P1** | `src/battery/policy.py`, `optimizer.py`, `safety.py`, `baselines.py`, `hard.py`, `hard_market.py`, `hard_solar.py`, `tests/test_safety.py`, `tests/test_agent.py` | `scripts/p1_*.py` |
 | **P2** | `src/battery/forecaster.py`, `data.py`, `synthetic.py`, `scripts/train_forecaster.py`, `models/`, `analysis/`, `tests/test_forecaster.py` | `analysis/`, `scripts/p2_*.py` |
 | **P3 + integrador** | `src/battery/sim.py`, `scripts/calibrate_sim.py`, `presentation/`, `docs/decisiones.md`, `tests/test_sim.py` y, como integrador: `CLAUDE.md`, `src/battery/params.py`, `obs.py`, `adapter.py`, `eval.py`, `scripts/build_submission.py`, `tests/test_adapter.py`, `tests/test_bundle.py`, `docs/reto.md`, `docs/envios.md`, `docs/equipo.md`, `.github/`, `requirements*.txt`, `README.md` | `presentation/` |
 
@@ -332,6 +425,7 @@ python eval.py --fc-noise 0.1               # ¿y si las previsiones de precio/C
 python eval.py --save-hourly                # guardar el detalle hora a hora (para gráficas)
 python scripts/calibrate_sim.py             # ¿nuestro simulador sigue dando lo mismo que el oficial?
 python scripts/p1_ablaciones.py             # ¿cuánto aporta cada pieza y cómo aguanta? (P1, 2-3 min)
+python scripts/p1_auditoria.py              # auditoría completa del agente (P1, unos 10 min)
 python scripts/train_forecaster.py          # regenerar los modelos de models/ (P2)
 python scripts/build_submission.py          # crear dist/submission.zip y comprobarlo
 python eval.py --agent dist                 # medir el agent.py empaquetado

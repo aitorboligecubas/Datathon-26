@@ -1,0 +1,16 @@
+valles diarios del train: 282 días; desviación del logaritmo: total 0.290, dentro del mes 0.198, entre meses 0.212
+valle medio de fin de semana / laborable: 0.817
+
+2508 casos (ventana x historia). Una carga entera cuesta 0.0582 puntos comprando el día 1.
+regla                           ahorro % del posible peor caso días vacía vacía >= 4 d no compra
+día 1 (lo que hace v1)          0.0000            0%    0.0000       0.00           0%        0%
+v2: 35 días, paciencia total    0.0079           59%    0.0616       2.76          38%       17%
+14 días, paciencia total        0.0088           65%    0.0545       2.75          39%       11%
+CANDIDATO: 7 días, total        0.0091           67%    0.0488       2.42          33%        7%
+7 días, media paciencia (D)     0.0082           61%    0.0488       1.92          24%        4%
+7 días, un día de paciencia     0.0067           50%    0.0263       1.19          12%        2%
+35 días, media paciencia        0.0072           54%    0.0616       2.18          30%       11%
+7 días, total + nivel semana    0.0087           65%    0.0545       2.20          28%        4%
+7 días, media + nivel semana    0.0080           59%    0.0488       1.57          16%        1%
+7 días, total + fin de semana   0.0089           66%    0.0491       3.05          45%       13%
+óptimo (mínimo de 7)            0.0134          100%    0.0000       3.24          47%        0%

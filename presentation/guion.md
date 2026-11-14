@@ -6,7 +6,7 @@ Borrador de P1 con el material de P1 (`presentation/resumen-agente.md`, `results
 - **Duración:** pensado para **5 minutos** (unas 650 palabras habladas). La organización no ha publicado el tiempo
   de las demos: si son 3 minutos, se quitan los bloques marcados con ✂.
 - **Quién habla:** por decidir. Propuesta: Aitor los bloques 1, 3 y 4; Ivan los bloques 2, 5 y 6.
-- **Pendiente antes de ensayar:** poner la puntuación del leaderboard en el bloque 4 (todavía no hay envío oficial).
+- **Pendiente antes de ensayar:** poner la posición en el leaderboard en el bloque 4 (primer envío: 6,43 puntos).
 - **Gráficas:** las 11 de P2, ordenadas por bloque y con la cifra que hay que decir, en `analysis/resumen_graficas.md`.
 
 ---
@@ -71,7 +71,8 @@ Borrador de P1 con el material de P1 (`presentation/resumen-agente.md`, `results
 > Para saber si es bueno, calculamos lo imposible: el plan perfecto de alguien que conociera todo el futuro.
 > Ese máximo es 6,12. Nuestro agente saca **6,09: el 99,6 %**. La plantilla oficial, 0,03.
 >
-> En el leaderboard: **[PENDIENTE: puntuación y posición]**.
+> En el test oficial, con semanas que nunca habíamos visto: **6,43 puntos, cero infracciones**.
+> **[PENDIENTE: posición en el leaderboard]**.
 >
 > Y no es suerte de una semana concreta. En los datos que no usamos para validar, captura el 99,97 %.
 > Si las previsiones fallaran un 20 %, sacaría 6,01. Tarda 4 segundos de los 60 permitidos.
@@ -89,6 +90,10 @@ Borrador de P1 con el material de P1 (`presentation/resumen-agente.md`, `results
 > marcó cero durante 14 horas. El agente descargaba la batería contra un consumo que "no existía". Añadimos una
 > protección: nunca descarga más de lo que el campus consumió la hora anterior. En los otros diez meses, nuestro
 > agente y el óptimo coinciden.
+>
+> Y noviembre entero no tiene datos de contador. Preparamos al agente para una semana así: si el contador
+> marca cero desde la primera hora, no descarga y compra la energía de la semana siguiente en una hora barata,
+> no en la primera que aparece. **[PENDIENTE: efecto en el leaderboard con el envío 2.]**
 >
 > Y un hallazgo para UPC Sostenible: de diez de la noche a seis de la mañana el contador no se lee, y el dataset
 > repite el último valor. El consumo nocturno real es un 19 % menor de lo que dicen los datos: el campus gasta
@@ -143,6 +148,7 @@ Quitar los dos bloques ✂ y, además:
 | Doble de sucia y triple de cara a las 21 h; conflicto de madrugada | `analysis/patrones.md` |
 | 6,09 / 6,12 / 99,6 %; 99,97 % en el train; 6,01 con ruido del 20 %; 4 s | `results/p1_ablaciones.md` |
 | Plantilla oficial 0,03 (con 7 infracciones) | `python scripts/calibrate_sim.py` |
+| Semana sin datos de contador: +0,06 en un episodio simulado con noviembre a cero | `results/p1_auditoria.md`, sección 3 |
 | Avería de 14 h; en los otros 10 meses el agente iguala al óptimo; consumo nocturno un 19 % menor | `analysis/calidad_datos.md` |
 | Batería = casi el 8 % del consumo diario (7,6 %); consumo real de 24,7 MWh al día | `analysis/techo.md`, `analysis/informe_p2_para_p1.md` |
 | La solar equivale a un 2 % de lo que se compra a la red (2,4 %) | tabla horaria oficial (`battery.data.load`) |

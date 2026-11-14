@@ -1,0 +1,14 @@
+# Verificación independiente del candidato 'mercado' en la validación RESERVADA (sábado 14/11, 18:21).
+# Orden: python scripts/p1_hard.py --split val --market scripts/p1_lab/hard_market_cand.py:make --only "mercado sin memoria (v4),agente actual,CANDIDATO"
+# Ojo: desde el commit 40d200e (v5) el 'agente actual' YA lleva el candidato. La línea base (el agente de antes) es 'mercado sin memoria (v4)'.
+val: 1848 h | referencia 75.3 kg/h y 127.1 EUR/h | excedente solar sin batería 67828 kWh (10.5 % de las horas)
+                  agente  score  co2_pct  coste_pct  infr  vertido_kwh  vert_descarga  vert_solar  ms_paso  s_2016h
+mercado sin memoria (v4) 20.551   19.262      23.56     0     5670.253       3580.497    2089.755    2.779    5.605
+           agente actual 20.661   19.453      23.48     0     5421.248       3329.755    2091.492    2.577    5.198
+               CANDIDATO 20.661   19.453      23.48     0     5421.248       3329.755    2091.492    2.348    4.827
+
+# Con todos los decimales:
+agente,score,co2_pct,coste_pct,infr,vertido_kwh,vert_descarga,vert_solar,ms_paso,s_2016h
+mercado sin memoria (v4),20.551408462422515,19.261914172772794,23.560228471605207,0,5670.252756059022,3580.497276264252,2089.7554797947714,2.77920177383406,5.604881713047441
+agente actual,20.660892973732132,19.452853224037653,23.479652389685917,0,5421.247538285793,3329.7553918243557,2091.492146461437,2.5774501563519863,5.198023362204284
+CANDIDATO,20.660892973732132,19.452853224037653,23.479652389685917,0,5421.247538285793,3329.7553918243557,2091.492146461437,2.34802257306922,4.826527917308506

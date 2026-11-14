@@ -1,0 +1,225 @@
+Salidas de la verificación independiente del candidato 'mercado' (scripts/p1_lab/hard_market_cand.py). Sábado 14/11, 18:17-18:38.
+Solo salidas de órdenes; el veredicto va en la respuesta del verificador. Código medido: commit 40d200e (v5), igual que 4a2af81 en src/.
+'v4' = el agente de antes (sin la clave "cand"). 'cand' = el candidato. Diferencias = candidato - v4, en puntos de score.
+
+==============================================================================================================
+1. Banco, dev (dos ejecuciones: mismos números)
+  orden: python scripts/p1_hard.py --split dev --market scripts/p1_lab/hard_market_cand.py:make --only "mercado sin memoria (v4),agente actual,CANDIDATO"
+==============================================================================================================
+dev: 1848 h | referencia 79.2 kg/h y 127.5 EUR/h | excedente solar sin batería 52440 kWh (9.0 % de las horas)
+                  agente  score  co2_pct  coste_pct  infr  vertido_kwh  vert_descarga  vert_solar  ms_paso  s_2016h
+mercado sin memoria (v4) 19.719   18.756     21.968     0     5775.042       2916.651    2858.391    2.491    5.025
+           agente actual 19.922   19.080     21.887     0     5561.454       2674.274    2887.179    2.815    5.677
+               CANDIDATO 19.922   19.080     21.887     0     5561.454       2674.274    2887.179    2.624    5.399
+segunda ejecución:
+dev: 1848 h | referencia 79.2 kg/h y 127.5 EUR/h | excedente solar sin batería 52440 kWh (9.0 % de las horas)
+                  agente  score  co2_pct  coste_pct  infr  vertido_kwh  vert_descarga  vert_solar  ms_paso  s_2016h
+mercado sin memoria (v4) 19.719   18.756     21.968     0     5775.042       2916.651    2858.391    2.686    5.418
+               CANDIDATO 19.922   19.080     21.887     0     5561.454       2674.274    2887.179    2.752    5.651
+
+==============================================================================================================
+2. Banco, val (RESERVADA). Copia en results/p1_hard/mercado_val.txt
+  orden: python scripts/p1_hard.py --split val --market scripts/p1_lab/hard_market_cand.py:make --only "mercado sin memoria (v4),agente actual,CANDIDATO"
+==============================================================================================================
+val: 1848 h | referencia 75.3 kg/h y 127.1 EUR/h | excedente solar sin batería 67828 kWh (10.5 % de las horas)
+                  agente  score  co2_pct  coste_pct  infr  vertido_kwh  vert_descarga  vert_solar  ms_paso  s_2016h
+mercado sin memoria (v4) 20.551   19.262      23.56     0     5670.253       3580.497    2089.755    2.779    5.605
+           agente actual 20.661   19.453      23.48     0     5421.248       3329.755    2091.492    2.577    5.198
+               CANDIDATO 20.661   19.453      23.48     0     5421.248       3329.755    2091.492    2.348    4.827
+
+==============================================================================================================
+3. Mes a mes en dev y en val (aportación de cada mes al score; la suma es el score del banco)
+  orden: python results/p1_hard/mercado_verif_meses.py --ventanas dev,val --techo
+==============================================================================================================
+
+=== ventana dev: 1848 h, 11 meses ===
+         horas     v4   cand    dif  dif_co2  dif_eur  dif_propio  soc_fin_v4  soc_fin_cand  hueco
+2025-09    168  1.495  1.494 -0.001   -0.001   -0.000      -0.017    6000.000      6000.000  0.022
+2025-10    168  2.485  2.493  0.008    0.006    0.002       0.067      66.204        66.204  0.081
+2025-12    168  0.828  0.893  0.065    0.068   -0.003       0.505    2601.652      2239.264  0.411
+2026-01    168  1.572  1.581  0.009    0.025   -0.016       0.103       0.000         0.000 -0.040
+2026-02    168  0.284  0.273 -0.011   -0.007   -0.004      -0.205    5218.992      5572.882  0.002
+2026-03    168  2.130  2.106 -0.025   -0.003   -0.021      -0.249    4336.515      6000.000  0.007
+2026-04    168  1.337  1.357  0.020    0.014    0.006       0.320    2877.209      3911.176  0.098
+2026-05    168  1.608  1.678  0.069    0.055    0.014       1.011    5169.532      5169.532 -0.033
+2026-06    168  1.294  1.302  0.008    0.002    0.006       0.099    6000.000      6000.000  0.079
+2026-07    168  3.110  3.128  0.018    0.030   -0.012       0.122    2095.451      2095.451 -0.104
+2026-08    168  3.576  3.619  0.043    0.039    0.004       0.467    2426.671      2426.671  0.250
+total v4 19.719 | candidato 19.922 | diferencia +0.203 (CO2 +0.227, euros -0.024) | techo 20.492
+meses que gana 8 / pierde 3 / igual 0 de 11 | media por mes +0.0184, error típico 0.0089, t = 2.07 | sin el mejor mes +0.134 | sin el peor +0.228
+
+=== ventana val: 1848 h, 11 meses ===
+         horas     v4   cand    dif  dif_co2  dif_eur  dif_propio  soc_fin_v4  soc_fin_cand  hueco
+2025-09    168  1.680  1.697  0.017    0.019   -0.002       0.141    5247.936      5247.936 -0.004
+2025-10    168  2.000  2.053  0.053    0.035    0.018       0.550       0.000         0.000  0.202
+2025-12    168  0.628  0.682  0.054    0.048    0.006       0.485    4441.025      3867.241  0.092
+2026-01    168  1.385  1.358 -0.027    0.001   -0.028      -0.237    6000.000      6000.000  0.192
+2026-02    168  1.210  1.218  0.008    0.005    0.003       0.127    1347.126      1347.126  0.028
+2026-03    168  1.373  1.294 -0.079   -0.048   -0.031      -1.230    3221.263      4201.564 -0.130
+2026-04    168  1.772  1.855  0.083    0.068    0.015       1.216    5750.266      5750.266  0.210
+2026-05    168  1.951  1.953  0.002   -0.006    0.008       0.028    6000.000      6000.000  0.026
+2026-06    168  2.375  2.375 -0.000    0.001   -0.001      -0.004     882.374       882.374  0.077
+2026-07    168  2.637  2.634 -0.003    0.006   -0.009      -0.020    2423.081      2423.081 -0.019
+2026-08    168  3.540  3.541  0.001    0.005   -0.003       0.008    4471.097      4471.097  0.129
+total v4 20.551 | candidato 20.661 | diferencia +0.109 (CO2 +0.134, euros -0.024) | techo 21.354
+meses que gana 7 / pierde 4 / igual 0 de 11 | media por mes +0.0100, error típico 0.0131, t = 0.76 | sin el mejor mes +0.026 | sin el peor +0.189
+
+==============================================================================================================
+4. Barrido: 17 ventanas de 7 días (días a..a+6 de cada mes). Diferencia candidato - v4 por mes y total
+  orden: python results/p1_hard/mercado_verif_meses.py --ventanas 1-7,2-8,...,17-23
+==============================================================================================================
+ventana    1-7    2-8    3-9   4-10   5-11   6-12   7-13   8-14   9-15  10-16  11-17  12-18  13-19  14-20  15-21  16-22  17-23
+mes                                                                                                                           
+2025-09  0.003 -0.006 -0.016 -0.011 -0.008 -0.007  0.004 -0.001  0.003 -0.004  0.001  0.002 -0.017  0.002  0.006  0.006  0.009
+2025-10  0.011  0.008  0.011  0.034 -0.010 -0.001  0.007  0.008  0.019  0.027  0.036  0.059  0.037  0.026  0.072  0.041 -0.018
+2025-12 -0.113 -0.011 -0.017 -0.007  0.020  0.022  0.046  0.065  0.030 -0.016 -0.014 -0.021  0.007  0.001 -0.055 -0.063  0.119
+2026-01  0.121  0.009  0.018  0.024  0.003  0.006 -0.004  0.009  0.011  0.030  0.020  0.013 -0.002  0.012  0.044  0.096  0.007
+2026-02 -0.002 -0.017 -0.016 -0.008 -0.009 -0.014 -0.004 -0.011  0.007  0.002 -0.041  0.040  0.017  0.008  0.010 -0.002  0.018
+2026-03  0.006  0.011  0.006  0.009 -0.010  0.015  0.009 -0.025  0.004 -0.010  0.032 -0.061  0.009  0.000  0.002 -0.007 -0.004
+2026-04 -0.113 -0.013  0.004 -0.094  0.002  0.005 -0.094  0.020  0.059  0.004  0.014  0.016  0.009  0.010  0.001 -0.042  0.002
+2026-05  0.115  0.001  0.003  0.110  0.004  0.007  0.125  0.069 -0.050  0.003 -0.004 -0.003 -0.001 -0.001  0.002 -0.085  0.003
+2026-06 -0.003  0.000  0.008  0.012 -0.016 -0.173 -0.041  0.008 -0.118  0.007  0.004  0.003 -0.048  0.018  0.018  0.150  0.000
+2026-07  0.003 -0.010  0.080 -0.102  0.025  0.204  0.078  0.018  0.004  0.004  0.003  0.006  0.089 -0.003 -0.053  0.000  0.004
+2026-08 -0.006 -0.077 -0.067  0.117  0.013  0.057  0.051  0.043  0.068  0.003  0.000 -0.002  0.026  0.000  0.061  0.000    NaN
+TOTAL    +0.022  -0.104  +0.014  +0.084  +0.013  +0.122  +0.178  +0.203  +0.037  +0.051  +0.052  +0.052  +0.125  +0.073  +0.108  +0.096  +0.140
+gana      6/11    5/11    7/11    6/11    6/11    7/11    7/11    8/11    9/11    8/11    8/11    7/11    7/11    8/11    9/11    5/11    8/10 
+media de las 17 ventanas +0.074 | mediana +0.073 | desviación típica 0.072 | positivas 16 de 17
+con 7 días de memoria antes (inicio >= día 8): media +0.094, positivas 10 de 10
+nunca vistas por el diseñador (inicio >= día 9): media +0.082, de +0.037 a +0.140, positivas 9 de 9
+Las ventanas se solapan: no son 17 pruebas independientes. dev (8-14) es la mejor de las 17.
+
+==============================================================================================================
+5. Fugas de datos (ajuste e inferencia), previsión sin semilla y error de previsión
+  orden: python results/p1_hard/mercado_verif_fugas.py
+==============================================================================================================
+--- 1. Fugas en el ajuste
+dev: 1848 horas excluidas estropeadas | fit_cand idéntico: True | fit_market entero idéntico: True
+   tramos de semilla: 23
+val: 1848 horas excluidas estropeadas | fit_cand idéntico: True | fit_market entero idéntico: True
+   tramo de semilla 2026-06-17 15:00:00 (2 h): 0 horas excluidas, 2 dentro de una semana evaluada
+   tramos de semilla: 14
+--- 2-4. Fugas en la inferencia, sin semilla y error de previsión
+dev: semilla completa (23 tramos) 19.922437774 | solo los tramos pegados antes de cada semana (11) 19.922437774 | acciones idénticas: True
+   sin semilla: primera hora de reloj de cada semana en que deja de coincidir con el previsor base: [25]
+   error absoluto medio de la previsión, en % de la media real (35805 previsiones; peso = 0,7 CO2 + 0,3 precio, lo que entra en el plan)
+     todas las antelaciones (3-23 h)  n= 35805 | base: peso 13.24 precio 10.69 CO2 15.61 | cand: peso 13.14 precio 10.63 CO2 15.62 | cand sin semilla: peso 13.10 precio 10.67 CO2 15.54
+     antelación 3-8 h                 n= 10725 | base: peso  9.76 precio  9.68 CO2 11.24 | cand: peso  9.48 precio  9.34 CO2 11.02 | cand sin semilla: peso  9.54 precio  9.45 CO2 11.05
+     antelación 9-23 h                n= 25080 | base: peso 14.73 precio 11.12 CO2 17.47 | cand: peso 14.69 precio 11.18 CO2 17.58 | cand sin semilla: peso 14.62 precio 11.19 CO2 17.45
+     primer día de cada semana        n=  5544 | base: peso 16.49 precio 13.18 CO2 19.18 | cand: peso 16.70 precio 12.95 CO2 19.68 | cand sin semilla: peso 16.49 precio 13.18 CO2 19.18
+     segundo día                      n=  5544 | base: peso 12.77 precio 10.33 CO2 15.41 | cand: peso 12.70 precio 10.41 CO2 15.52 | cand sin semilla: peso 12.70 precio 10.45 CO2 15.45
+     del tercer día en adelante       n= 24717 | base: peso 12.65 precio 10.22 CO2 14.89 | cand: peso 12.46 precio 10.17 CO2 14.79 | cand sin semilla: peso 12.46 precio 10.17 CO2 14.79
+val: semilla completa (14 tramos) 20.660892974 | solo los tramos pegados antes de cada semana (11) 20.660892974 | acciones idénticas: True
+   sin semilla: primera hora de reloj de cada semana en que deja de coincidir con el previsor base: [25]
+   error absoluto medio de la previsión, en % de la media real (35733 previsiones; peso = 0,7 CO2 + 0,3 precio, lo que entra en el plan)
+     todas las antelaciones (3-23 h)  n= 35733 | base: peso 14.19 precio 11.98 CO2 16.62 | cand: peso 13.68 precio 11.56 CO2 16.15 | cand sin semilla: peso 13.97 precio 11.75 CO2 16.44
+     antelación 3-8 h                 n= 10702 | base: peso 10.54 precio 10.72 CO2 12.08 | cand: peso  9.90 precio 10.11 CO2 11.42 | cand sin semilla: peso 10.15 precio 10.28 CO2 11.69
+     antelación 9-23 h                n= 25031 | base: peso 15.76 precio 12.52 CO2 18.57 | cand: peso 15.29 precio 12.18 CO2 18.18 | cand sin semilla: peso 15.60 precio 12.38 CO2 18.47
+     primer día de cada semana        n=  5472 | base: peso 14.74 precio 11.89 CO2 17.17 | cand: peso 13.29 precio 10.63 CO2 15.87 | cand sin semilla: peso 14.74 precio 11.89 CO2 17.17
+     segundo día                      n=  5544 | base: peso 13.45 precio  9.41 CO2 16.58 | cand: peso 13.00 precio  9.31 CO2 16.21 | cand sin semilla: peso 13.29 precio  9.28 CO2 16.60
+     del tercer día en adelante       n= 24717 | base: peso 14.24 precio 12.60 CO2 16.49 | cand: peso 13.94 precio 12.30 CO2 16.21 | cand sin semilla: peso 13.94 precio 12.30 CO2 16.21
+Notas: (a) las 2 horas de junio (17/06 15:00 y 16:00) faltan en la tabla del campus, así que el banco no las excluye en val: están en el perfil
+       de los dos agentes y en la semilla del candidato, pero no cambian ninguna acción. (b) el error de previsión baja más en val que en dev.
+
+==============================================================================================================
+6. Calendario del test: la validación reservada con la fecha movida 7 días (cada semana acaba con su mes). Código: commit 4a2af81
+  orden: python results/p1_hard/mercado_verif_calendario.py
+==============================================================================================================
+episodio: 1680 h, de 2025-09-24 00:00:00 a 2026-07-31 23:00:00 | tramos de semilla movidos: 10
+v4 (sin memoria)         score 18.761 | CO2 17.146 % | coste 22.530 % | infr 0 | vertido 5381 kWh | carga final 77 kWh | 2.96 ms/paso | previsiones con el candidato 0, con la receta base 0
+candidato                score 18.912 | CO2 17.376 % | coste 22.495 % | infr 0 | vertido 5072 kWh | carga final 77 kWh | 2.66 ms/paso | previsiones con el candidato 1660, con la receta base 20
+candidato sin semilla    score 18.881 | CO2 17.323 % | coste 22.517 % | infr 0 | vertido 5072 kWh | carga final 77 kWh | 2.94 ms/paso | previsiones con el candidato 1660, con la receta base 20
+precio y CO2 reales      score 19.734 | CO2 18.488 % | coste 22.642 % | infr 0 | vertido 5159 kWh | carga final 77 kWh | 2.66 ms/paso | previsiones con el candidato 0, con la receta base 0
+            v4   cand  cand_sin_semilla    dif  dif_sin_semilla  hueco
+ym
+2025-09  1.779  1.797             1.794  0.018            0.015  0.049
+2025-10  2.290  2.348             2.343  0.058            0.053  0.135
+2025-12  0.704  0.736             0.734  0.032            0.030  0.080
+2026-01  1.501  1.524             1.508  0.024            0.007  0.235
+2026-02  1.098  1.108             1.108  0.009            0.010  0.261
+2026-03  1.684  1.684             1.685 -0.001            0.000 -0.319
+2026-04  1.822  1.831             1.827  0.009            0.005  0.361
+2026-05  2.163  2.165             2.163  0.002            0.000  0.009
+2026-06  2.498  2.498             2.498  0.000            0.000  0.182
+2026-07  3.223  3.221             3.221 -0.002           -0.002 -0.019
+candidato - v4: +0.151 | meses que gana 7 / pierde 2 de 10 | sin semilla: +0.120
+
+==============================================================================================================
+7. Lo mismo, con la semana de noviembre con el contador a 0. Código: commit 4a2af81
+  orden: python results/p1_hard/mercado_verif_calendario.py --nov
+==============================================================================================================
+episodio: 1848 h, de 2025-09-24 00:00:00 a 2026-07-31 23:00:00 | tramos de semilla movidos: 11
+v4 (sin memoria)         score 18.954 | CO2 17.312 % | coste 22.786 % | infr 0 | vertido 5381 kWh | carga final 77 kWh | 2.59 ms/paso | previsiones con el candidato 0, con la receta base 0
+candidato                score 19.071 | CO2 17.507 % | coste 22.720 % | infr 0 | vertido 5136 kWh | carga final 77 kWh | 3.33 ms/paso | previsiones con el candidato 1826, con la receta base 22
+candidato sin semilla    score 19.051 | CO2 17.471 % | coste 22.737 % | infr 0 | vertido 5072 kWh | carga final 77 kWh | 2.81 ms/paso | previsiones con el candidato 1826, con la receta base 22
+precio y CO2 reales      score 19.884 | CO2 18.630 % | coste 22.811 % | infr 0 | vertido 5159 kWh | carga final 77 kWh | 2.29 ms/paso | previsiones con el candidato 0, con la receta base 0
+            v4   cand  cand_sin_semilla    dif  dif_sin_semilla  hueco
+ym
+2025-09  1.779  1.778             1.775 -0.000           -0.003  0.049
+2025-10  2.284  2.344             2.339  0.060            0.055  0.134
+2025-11 -0.229 -0.226            -0.226  0.002            0.002 -0.065
+2025-12  1.129  1.162             1.156  0.033            0.027  0.105
+2026-01  1.501  1.522             1.505  0.021            0.005  0.235
+2026-02  1.098  1.105             1.105  0.006            0.007  0.261
+2026-03  1.684  1.684             1.685 -0.001            0.000 -0.319
+2026-04  1.822  1.819             1.829 -0.004            0.007  0.361
+2026-05  2.163  2.165             2.163  0.002            0.000  0.009
+2026-06  2.498  2.498             2.498  0.000            0.000  0.182
+2026-07  3.225  3.221             3.221 -0.004           -0.003 -0.021
+candidato - v4: +0.117 | meses que gana 6 / pierde 4 de 11 | sin semilla: +0.097
+Nota: al quitar del ajuste las 168 h de noviembre, septiembre pasa de +0,018 a -0,000 y el total de +0,151 a +0,117 (noviembre suma +0,002).
+      Es una medida del ruido de las decisiones: unos +-0,04 en el total.
+
+==============================================================================================================
+8. Entradas raras: previsor (MarketCand.forecast) y agente entero (HardPolicy.act)
+  orden: python results/p1_hard/mercado_verif_robustez.py
+==============================================================================================================
+previsor: 1412 llamadas en 4.3 s | agente: 3640 pasos en 5.9 s | fallos: 0
+(0 fallos distintos mostrados de 0)
+Casos sueltos (models/hard_market.json, primera hora de una semana del test, 2025-09-24 00:00):
+  normal, 24 h          -> candidato [0.12 0.13 0.11 0.1034 0.1078 0.1136 ...] | base [0.12 0.13 0.11 0.1035 0.1066 0.1115 ...]
+  NaN en la hora actual -> [0.13 0.13 0.11 0.1203 0.1193 0.1209 ...]
+  las 3 horas NaN       -> [0.1221 0.1221 0.1221 0.1221 0.1211 0.1227 ...]   (el perfil)
+  times de 1 y de 2     -> ([0.12], [0.1]) y ([0.12 0.13], [0.1 0.11])
+  precio 0 o negativo   -> [0. 0. 0. 0.0263 0.042 0.0636 0.0969 0.1404 ...]
+  DEFECTO MENOR: times=[None] o [pd.NaT] con 1 precio conocido (0.12) -> ([0.], [0.]) en vez de ([0.12], [0.1]).
+                 HardPolicy no llama al previsor con fecha None; con NaT y un solo precio sí llegaría (un paso, acción válida).
+
+==============================================================================================================
+9. Reglas del empaquetado y tiempo
+==============================================================================================================
+bloque de inferencia del laboratorio (idéntico, línea a línea, a MarketCand en src/battery/hard_market.py): sintaxis de Python 3.9 OK (ast, feature_version=(3, 9))
+   imports: math, numpy, pandas, typing | ninguna llamada a .stack, eval, exec, compile, globals, locals, vars, __import__, print, open
+python scripts/build_submission.py --hard   (en una copia limpia del commit 4a2af81, fuera del repo):
+   dist/hard/submission.zip: 1310 líneas de agent.py, 0.12 MB | prueba aislada OK con y sin ficheros (dif. máx. 0.0e+00) | check_submission.py oficial: VÁLIDA
+python -m pytest -q   (misma copia): 30 passed
+determinismo: dev dos veces -> 19.719496338322887 y 19.922437774251165 las dos (y lo mismo que mercado_dev.csv del diseñador); val -> 20.660892973732132 (igual que val_v5.csv)
+tiempo: banco s_2016h entre 4,8 y 6,0 s (límite propio 15 s) | previsor 0,20 ms por llamada (base 0,14) | la memoria se monta 1 vez (14-16 ms) con el calendario del test
+peor caso (fechas que alternan entre 2025 y 2031 en cada paso): 7,3 ms por llamada -> +14,7 s en 2.016 pasos; sin salidas malas
+coeficientes de la regresión: máx |coef| 0,97 (precio) y 1,29 (CO2); desviaciones de la semilla entre -1,11 y +0,82 (nada recortado a +-2)
+
+==============================================================================================================
+10. Por mitades del episodio, cada una con su referencia (como el ranking público y el privado). Código: commit 4a2af81
+  orden: python results/p1_hard/mercado_verif_meses.py --ventanas dev,val,15-21,10-16
+==============================================================================================================
+dev   : primera mitad v4 15.016 -> candidato 15.216 (+0.201) | segunda mitad v4 25.127 -> candidato 25.331 (+0.205)
+val   : primera mitad v4 14.518 -> candidato 14.715 (+0.198) | segunda mitad v4 26.959 -> candidato 26.976 (+0.016)
+15-21 : primera mitad v4 13.722 -> candidato 13.854 (+0.132) | segunda mitad v4 24.346 -> candidato 24.423 (+0.077)
+10-16 : primera mitad v4 14.537 -> candidato 14.607 (+0.070) | segunda mitad v4 24.948 -> candidato 24.975 (+0.027)
+(primera mitad = septiembre a febrero; segunda = marzo a agosto. En val casi toda la ganancia está en la primera.)
+
+==============================================================================================================
+11. Repetido con el agente v6 (commit e8dab4c, 18:41: cambia la política, no el previsor). La ganancia no cambia
+==============================================================================================================
+dev  (18:42): mercado sin memoria (v4) 19.719 -> CANDIDATO 19.922 (+0.203) | 0 infracciones | s_2016h 5.9
+val  (18:37): mercado sin memoria (v4) 20.551 -> CANDIDATO 20.661 (+0.109) | 0 infracciones | s_2016h 5.0
+calendario del test (18:42): v4 18.586 -> candidato 18.736 (+0.151) | sin semilla +0.120 | gana 7 meses, pierde 2 (por 0,002 o menos), de 10
+calendario del test con noviembre a 0 (18:42): v4 18.766 -> candidato 18.880 (+0.114) | sin semilla +0.094
+(con la v6, julio ya no cuenta como final del test: en estos dos episodios, que acaban el 31/07, los cuatro agentes acaban con 2.379 kWh sin usar)
+
+==============================================================================================================
+12. Placebo: ¿cuánto se mueve el score por puro ruido? El previsor de antes (v4) con su regresión ajustada sin 2 días al azar de cada mes
+==============================================================================================================
+val: v4 20.551 | 8 placebos: diferencias [0.01, -0.004, 0.016, 0.001, -0.003, 0.017, 0.025, 0.003] | media +0.008, desviación típica 0.010, máx |dif| 0.025
+dev: v4 19.719 | 8 placebos: diferencias [-0.0, 0.005, 0.007, -0.009, 0.003, -0.023, -0.002, -0.004] | media -0.003, desviación típica 0.010, máx |dif| 0.023
+(el candidato gana +0,109 en val y +0,203 en dev: de 4 a 8 veces el mayor movimiento de un placebo)
+Ventana 2-8 (la única en que pierde, -0,104): -0,077 son de agosto, donde el candidato acaba el episodio con 853 kWh más sin usar que v4 (4.346 frente a 3.493).

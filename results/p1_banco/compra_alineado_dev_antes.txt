@@ -1,0 +1,19 @@
+banco alineado, suite dev, agente scripts/p1_lab/antes.py: 36 episodios en 85 s
+familia      n    score   mitad1   mitad2  a óptimo  m1 a ópt  m2 a ópt  infr  vertido  t máx
+averia       9   6.1797   5.2164   7.1475    0.0212    0.0185    0.0244     0      215    5.5
+cero_otra    3   6.0794   4.8366   7.1215    0.0308    0.0666    0.0003     0      168    5.5
+dos_ceros    3   6.2731   4.9205   7.4774    0.0701    0.1235    0.0567     0       48    5.1
+normal       6   6.0579   5.0146   7.0723    0.0054    0.0098    0.0011     0       69    4.8
+nov0        12   6.2688   5.2142   7.1347    0.0595    0.1296    0.0025     0       69    4.8
+parcial      3   6.1993   5.0532   7.1701    0.0493    0.1099    0.0017     0      370    4.7
+TODOS       36   6.1901   5.1121   7.1579    0.0386    0.0745    0.0120     0      137    5.5
+
+Diferencia con la referencia, episodio a episodio (36 comunes): media [mín, máx]
+averia     score +0.0001 [-0.0000, +0.0007]   mitad1 +0.0002 [+0.0000, +0.0015]   mitad2 +0.0000 [+0.0000, +0.0000]
+cero_otra  score -0.0125 [-0.0343, -0.0014]   mitad1 -0.0268 [-0.0737, -0.0029]   mitad2 +0.0000 [+0.0000, +0.0000]
+dos_ceros  score +0.0093 [+0.0009, +0.0191]   mitad1 +0.0165 [+0.0000, +0.0469]   mitad2 +0.0066 [-0.0000, +0.0197]
+normal     score +0.0000 [+0.0000, +0.0000]   mitad1 +0.0000 [+0.0000, +0.0000]   mitad2 +0.0000 [+0.0000, +0.0000]
+nov0       score -0.0386 [-0.0586, -0.0051]   mitad1 -0.0857 [-0.1279, -0.0118]   mitad2 +0.0000 [+0.0000, +0.0000]
+parcial    score +0.0051 [-0.0015, +0.0169]   mitad1 +0.0117 [-0.0036, +0.0388]   mitad2 -0.0000 [-0.0000, +0.0000]
+TODOS      score -0.0127 [-0.0586, +0.0191]   mitad1 -0.0284 [-0.1279, +0.0469]   mitad2 +0.0005 [-0.0000, +0.0197]
+guardado en results/p1_banco/compra_alineado_dev_antes.csv
