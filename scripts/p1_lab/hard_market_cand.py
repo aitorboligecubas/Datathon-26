@@ -340,7 +340,10 @@ def training_rows(d: pd.DataFrame, feats: tuple, crossfit: bool, blend: bool = F
         centers = market_centers(idx[np.isfinite(vals["price"]) & np.isfinite(vals["co2"])])
     day = idx.day.to_numpy(float)
     everything = np.ones(len(idx), dtype=bool)
-    tot = {name: profile_sums(vals[name], mo, typ, hr, everything) for name in NAMES}
+    import p1_hard as bench_mod
+    geo = bool(getattr(bench_mod, "PROFILE_GEO", False))
+    pvals = {name: (np.log(np.clip(vals[name], 1e-6, None)) if geo else vals[name]) for name in NAMES}
+    tot = {name: profile_sums(pvals[name], mo, typ, hr, everything) for name in NAMES}
     rows = {name: [[] for _ in range(LEADS)] for name in NAMES}
     pad = 200
     for m_id in np.unique(ym):
@@ -353,9 +356,9 @@ def training_rows(d: pd.DataFrame, feats: tuple, crossfit: bool, blend: bool = F
             for name in NAMES:
                 s, c = tot[name]
                 if crossfit:
-                    sb, cb = profile_sums(vals[name], mo, typ, hr, in_block)
+                    sb, cb = profile_sums(pvals[name], mo, typ, hr, in_block)
                     s, c = s - sb, c - cb
-                table = profile_from(s, c)
+                table = np.exp(profile_from(s, c)) if geo else profile_from(s, c)
                 if weekend:     # sábados y domingos suavizados con los meses vecinos, como en fit_market
                     from p1_hard import smooth_weekend
                     table = smooth_weekend(table)

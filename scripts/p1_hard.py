@@ -63,6 +63,9 @@ def market_types(index) -> np.ndarray:
     return np.where(hol, 2, t)
 
 
+PROFILE_GEO = False      # (laboratorio) perfil con media geométrica en vez de aritmética; probado y descartado si sigue en False
+
+
 def market_centers(index) -> list:
     """Día medio de los datos de cada mes (battery.hard_market.month_blend interpola el perfil entre meses con él)."""
     s = pd.Series(index.day.to_numpy(float)).groupby(index.month.to_numpy()).mean()
@@ -112,8 +115,13 @@ def fit_market(exclude=None, refs_df: pd.DataFrame = None, blend: bool = True, w
         out["day_center"] = market_centers(m.index)
     typ = market_types(m.index)
     for name in ("price", "co2"):
-        g = m.groupby([m.index.month, typ, m.index.hour])[name].mean()
-        by_h = m.groupby([m.index.month, m.index.hour])[name].mean()
+        if PROFILE_GEO:     # (laboratorio) media geométrica: el centro natural de z = log(real / perfil)
+            logv = np.log(np.clip(m[name], 1e-6, None))
+            g = np.exp(logv.groupby([m.index.month, typ, m.index.hour]).mean())
+            by_h = np.exp(logv.groupby([m.index.month, m.index.hour]).mean())
+        else:
+            g = m.groupby([m.index.month, typ, m.index.hour])[name].mean()
+            by_h = m.groupby([m.index.month, m.index.hour])[name].mean()
         arr = np.full((12, 3, 24), np.nan)
         for mo in range(1, 13):
             for t in range(3):

@@ -48,6 +48,9 @@ validación rápida que no gasta cupo. El ZIP se genera con `python scripts/buil
 | H6 | Sáb 14/11, 22:40 | `34a0f5f` | v10: la v9 con el margen 1,0 (rama `mejora-score-hard-z10`) | 20,79 | **24,15** | 22,92 % (13.809,7 kg) | 27,02 % (25.665,85 €) | 0 | **2.º de 41 equipos** (1.º: Fanboy & Chum Chum, 24,25). Mejor nota pública nuestra |
 | H7 | Dom 15/11, madrugada | `9b75248` | v12: la v10 con el plan que cuenta con la incertidumbre del consumo neto (sin margen fijo) | **20,92** | **24,11** | 22,93 % (13.815,8 kg) | 26,86 % (25.511,18 €) | 0 | En casa gana a la v10 en 6 ventanas de 6 (+0,04 a +0,13); en la web −0,04. Ver "Cómo leer el ranking público" |
 
+| H8 | sin enviar | `3b146a8` | v13: la v12 con el perfil de precio y CO₂ interpolado entre meses según el día | 21,06 | | | | | Gana donde la ventana se aleja del centro del mes (días 1–7: +0,11; validación: +0,14), que es la situación del test |
+| H9 | **sin enviar: es la que hay que subir** | `98b7037` | v14: la v13 con los perfiles de sábado y domingo suavizados con los meses vecinos | **21,07** | | | | | Gana o empata a la v13 en 6 ventanas de 6 (media +0,05). Fichero: `entregas/HARD_v14_SUBIR_ESTE.zip` |
+
 Las horas son las que muestra la web, que van en UTC: una hora menos que la hora local. La v11 (margen 0,7 de
 septiembre a febrero, rama `mejora-score-hard-v11`) no se integra: en el banco pierde frente a la v10 en las tres
 ventanas (validación 20,75 frente a 20,79) y se apoya en suponer qué meses son públicos.
@@ -69,7 +72,15 @@ ventanas (validación 20,75 frente a 20,79) y se apoya en suponer qué meses son
 - **Consecuencia.** Las diferencias de la web entre v7, v8, v9, v10 y v12 (de 24,06 a 24,15) y la distancia al líder
   (0,10) están dentro del ruido. Si el privado son las otras horas de la misma simulación, lo que una versión pierde
   por azar en el público lo gana en el privado: manda la nota sobre el episodio completo, que es lo que mide el banco.
-- **Selección para el jurado: v10 (mejor nota pública) y v12 (mejor nota en el banco).**
+- **Confirmado con la web (FAQ y código oficial).** "El rànquing que veieu correspon al 50 % públic de cada setmana
+  de test", y `evaluate_results(mask=...)` calcula la nota sobre una máscara de horas de una única simulación. El
+  excedente no se paga (`export_price = 0.0`). Según qué mitad de las horas de cada semana sea pública, la
+  diferencia entre la v12 y la v10 en nuestro banco va de −0,20 (horas pares) a +0,46 (horas impares), con +0,13
+  en el episodio entero (`scripts/p1_lab/hard_publico_mitades.py`): la v12 compra menos en las horas de carga y
+  pierde un poco en las de descarga, y el resultado depende de qué horas caigan en cada mitad.
+- **Selección para el jurado: las dos mejores por nota del episodio completo, que hoy son la v14 y la v12.** Hay que
+  marcarlas a mano en "Selecció Oficial per al Jurat": por defecto el sistema coge las dos mejores del público.
+  La v10 (mejor nota pública, 24,15) es la alternativa prudente si se prefiere no depender de este análisis.
 
 Las variantes "e" y "c" (vaciar la batería cada semana o en la hora 1.008) **no se envían**. Suben el ranking público
 en cualquier caso, porque esa carga se paga en la mitad pública y se usa en la privada, y pueden hundir el privado
@@ -86,3 +97,4 @@ Cómo se relacionan la nota de casa y la de la web (mismo agente):
 | v8 (H4) | 20,83 | 24,06 |
 | v10 (H6) | 20,79 | 24,15 |
 | v12 (H7) | 20,92 | 24,11 |
+| v14 (H9) | 21,07 | sin enviar |

@@ -200,6 +200,8 @@ Dos trampas nuevas, que la organización avisa:
    train, y una regresión que predice cuánto se desviará cada hora de ese perfil. Usa 13 pistas: las 3 horas
    conocidas, las últimas 6 y 24 horas, ayer y anteayer a la misma hora y el nivel del día. Cada semana del test
    arranca con la "memoria" de los 7 días del train que la preceden. Los festivos nacionales cuentan como domingo.
+   El perfil se interpola con el del mes vecino según el día (el test son los días 25–31 y el train los días 1–24)
+   y los de sábado y domingo se suavizan con los meses vecinos, porque cada mes solo tiene 3 o 4 de cada.
 2. **Previsión de solar y consumo** (`hard_solar.py`).
    - El consumo: el perfil de la semana, corregido con una regresión (por hora del día y antelación) sobre cuánto
      se desviaba el consumo la hora anterior y ayer. De 23 a 5 h el contador del train está congelado, así que el
@@ -227,18 +229,20 @@ servidor reiniciara la batería cada semana, el agente lo detecta y cierra cada 
 | Versión 2 (primer envío) | 20,37 | 23,35 |
 | Versión 6 (previsor de precio y CO₂ con memoria) | 20,66 | 23,70 |
 | Versión 10 (previsor ampliado de consumo y solar, semilla y margen 1,0) | 20,79 | **24,15** |
-| **Versión 12 (la 10 con el plan que cuenta con la incertidumbre)** | **20,92** | 24,11 |
+| Versión 12 (la 10 con el plan que cuenta con la incertidumbre) | 20,92 | 24,11 |
+| **Versión 14 (la 12 con el perfil de precio y CO₂ interpolado entre meses y los fines de semana suavizados)** | **21,07** | sin enviar |
 | La versión 12 con el precio y el CO₂ reales a 24 h | 21,65 | |
 | Óptimo con todo el futuro conocido (techo) | 22,40 | |
 
 **Dónde estamos (domingo de madrugada): segundos de 41 equipos con la v10 (24,15); el líder tiene 24,25.**
 
 **Cómo leer la web.** La nota de casa y la de la web no son comparables en valor (el conjunto público tiene una
-referencia más baja). Y las diferencias pequeñas de la web tampoco ordenan bien las versiones: el público es una
-mezcla de horas de todo el año y, si son la mitad de las horas al azar, comparar dos versiones tiene un ruido de
-0,1 a 0,2 puntos. La v12 gana a la v10 en las seis ventanas del banco y en la web salió 0,04 por debajo. Por eso
-**se seleccionan para el jurado la v10 (mejor nota pública) y la v12 (mejor nota en el banco)**, y no se persiguen
-décimas del público con variantes. El análisis completo está en `docs/envios.md`.
+referencia más baja). Y las diferencias pequeñas de la web no ordenan las versiones: según las preguntas frecuentes
+y el código oficial, el público es el 50 % de cada semana del test, calculado con una máscara de horas sobre una
+única simulación. En nuestro banco, la diferencia entre la v12 y la v10 va de −0,20 a +0,46 según qué horas sean
+públicas, con +0,13 en el episodio completo. Lo que una versión pierde en una mitad lo gana en la otra.
+Por eso **se seleccionan para el jurado las dos mejores por nota del episodio completo (v14 y v12), marcándolas a
+mano**, y no se persiguen décimas del público con variantes. El análisis completo está en `docs/envios.md`.
 
 Antes de cada envío del modo difícil se pasa el **ataque de robustez** (`scripts/p1_lab/hard_ataque_*.py`):
 observaciones deformadas, averías del contador, calendario del test, cambio de hora, el `agent.py` empaquetado
