@@ -161,29 +161,46 @@ que se rompen entre sí y nadie sabe qué versión es buena.
 3. **Una sola vara de medir:** `python eval.py`. Nadie dice "me mejora" sin ese número.
 4. **Una persona integra**: revisa las pull requests y las fusiona en `main`.
 
-### Los roles
+### Los roles (y por qué son estos)
 
-- **P1 · Optimizador**, rama `p1-optimizador`. Es el "cerebro" que decide: el plan de 24 h, la seguridad y el
-  `BatteryAgent`. Su objetivo es acercar `mpc` a `oracle`.
-- **P2 · Previsión y datos**, rama `p2-prevision`. Se encarga de los datos (limpieza, huecos), de la previsión y
-  del análisis de patrones. Su objetivo es la calidad de los datos, ver más allá de 24 h y aportar números para el jurado.
-- **P3 · Validación y relato**, rama `p3-validacion`. Mantiene el simulador local idéntico al oficial y prepara
-  las gráficas, el registro de decisiones y la presentación. Su objetivo es que la historia convenza al jurado.
-- **Integrador** (P3, o una 4.ª persona). Se ocupa de las pull requests, de `main`, del empaquetado y de los
-  envíos oficiales. Su objetivo es que `main` siempre funcione.
+Los datos cambiaron el reparto inicial. Como la solar casi no cuenta y el agente ya captura el 99,3 % del máximo,
+**queda poco que ganar en el leaderboard y mucho que ganar ante el jurado**. Por eso los roles se centran en
+**solidez, pruebas y relato**:
+
+- **P1 · Optimización y robustez**, rama `p1-optimizador`. **Es el rol con más carga de razonamiento.**
+  - Que la solución sea sólida y esté justificada: cuántas décimas aporta cada pieza, robustez (evaluación por
+    semanas, previsiones con ruido, 0 infracciones) y mejoras solo si se pueden justificar.
+  - Con un margen tan pequeño, una mejora puede ser casualidad (sobreajuste): hay que desconfiar y explicar el porqué.
+- **P2 · Datos y análisis**, rama `p2-datos`. Los números que convencen:
+  - calidad de los datos;
+  - cuándo es sucia y cara la red (CO₂ y precio por hora y mes);
+  - por qué el ahorro máximo es de ~6 %;
+  - la pregunta de negocio para UPC Sostenible: ¿qué ahorraría una batería de 1, 2, 4 u 8 MWh?
+
+  Produce las gráficas y cifras de la presentación y mantiene la previsión.
+- **P3 · Relato, presentación e integración**, rama `p3-relato`. **Es el rol con más volumen de trabajo y más impacto.**
+  - Guion, slides, ensayo, preguntas difíciles y registro de decisiones.
+  - Como integrador: revisa y fusiona las pull requests, mantiene `main` en verde, genera el ZIP y hace los envíos.
+  - El simulador ya está calibrado; solo comprueba que sigue cuadrando.
+  - Si sois 4, la cuarta persona se queda con la integración.
+
+**¿A la vez o uno detrás de otro? Por fases.** Hasta el sábado por la noche, los tres en paralelo, con
+sincronizaciones a las 17:00, 21:00 y 00:00. P1 cierra la estrategia a medianoche. El domingo, todos convergen en
+la presentación. P3 no espera: empieza el relato con los números actuales y los actualiza a medida que P1 y P2
+entregan. Calendario detallado: `docs/equipo.md`, sección 2.
 
 ### Qué ficheros son de quién
 
-| Rol | Ficheros que **solo** edita esta persona |
-|---|---|
-| **P1** | `src/battery/policy.py`, `optimizer.py`, `safety.py`, `baselines.py`, `tests/test_safety.py`, `tests/test_agent.py` |
-| **P2** | `src/battery/forecaster.py`, `data.py`, `synthetic.py`, `scripts/train_forecaster.py`, `models/`, `tests/test_forecaster.py` |
-| **P3** | `src/battery/sim.py`, `scripts/calibrate_sim.py`, `analysis/`, `presentation/`, `docs/decisiones.md`, `tests/test_sim.py` |
-| **Integrador** | `CLAUDE.md`, `src/battery/params.py`, `obs.py`, `adapter.py`, `eval.py`, `scripts/build_submission.py`, `tests/test_adapter.py`, `tests/test_bundle.py`, `docs/reto.md`, `docs/envios.md`, `docs/equipo.md`, `.github/`, `requirements*.txt`, `README.md` |
+| Rol | Ficheros que **solo** edita esta persona | Ficheros nuevos |
+|---|---|---|
+| **P1** | `src/battery/policy.py`, `optimizer.py`, `safety.py`, `baselines.py`, `tests/test_safety.py`, `tests/test_agent.py` | `scripts/p1_*.py` |
+| **P2** | `src/battery/forecaster.py`, `data.py`, `synthetic.py`, `scripts/train_forecaster.py`, `models/`, `analysis/`, `tests/test_forecaster.py` | `analysis/`, `scripts/p2_*.py` |
+| **P3 + integrador** | `src/battery/sim.py`, `scripts/calibrate_sim.py`, `presentation/`, `docs/decisiones.md`, `tests/test_sim.py` y, como integrador: `CLAUDE.md`, `src/battery/params.py`, `obs.py`, `adapter.py`, `eval.py`, `scripts/build_submission.py`, `tests/test_adapter.py`, `tests/test_bundle.py`, `docs/reto.md`, `docs/envios.md`, `docs/equipo.md`, `.github/`, `requirements*.txt`, `README.md` | `presentation/` |
 
 **Si necesitas cambiar un fichero que no es tuyo, no lo toques.** Escribe en tu pull request (sección "Peticiones a
-otros roles") qué necesitas y por qué, y avisa a su dueño. Sí puedes crear ficheros nuevos dentro de tu zona y
-añadir líneas a `results/experiments.csv` mediante `eval.py --log`.
+otros roles") qué necesitas y por qué, y avisa a su dueño. Leer e importar el código de otros sí está permitido:
+por ejemplo, P2 usa el `OracleAgent` de P1 para sus escenarios. Todos pueden añadir líneas a
+`results/experiments.csv` mediante `eval.py --log`.
 
 Nombres de cada persona y pasos de preparación: `docs/equipo.md`. El primer mensaje para cada Claude:
 `docs/prompts-arranque.md`.
@@ -209,8 +226,8 @@ El recorrido de una hora, con quién es dueño de cada paso:
  BatteryAgent.act → kW ................... [P1] lo que llama el evaluador
 ```
 
-Y alrededor, sin ir en la entrega: `data` (P2) carga los datos, `sim` (P3) simula como el oficial y `eval.py`
-(integrador) lo mide todo.
+Y alrededor, sin ir en la entrega: `data` (P2) carga los datos, `sim` (P3) simula como el oficial, `eval.py`
+(integrador) lo mide todo y `analysis/` (P2) saca las gráficas para la presentación (P3).
 
 Las firmas exactas, que **no se cambian sin acordarlo antes**:
 

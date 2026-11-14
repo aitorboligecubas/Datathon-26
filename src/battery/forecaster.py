@@ -1,6 +1,6 @@
 """Previsión de demanda (load) y producción solar (pv) para las próximas H horas.
 
-Owner: P2 (previsión).
+Owner: P2 (datos y análisis).
 
 El entorno solo da la demanda y la solar de la hora ANTERIOR: hay que prever la
 hora actual y las siguientes. v0 (punto de partida, mejorable):

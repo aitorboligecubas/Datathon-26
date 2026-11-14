@@ -28,12 +28,13 @@ src/battery/        código del agente (se empaqueta en un solo agent.py) + simu
   params, obs, adapter      formato oficial y constantes             (integrador)
   policy, optimizer, safety MPC, LP, límites físicos, BatteryAgent    (P1)
   forecaster, data          previsión de demanda y solar, carga de datos (P2)
-  sim                       simulador local y score                   (P3)
+  sim                       simulador local y score                   (P3 + integrador)
   baselines, synthetic      referencias (nothing/greedy/oracle) y datos de prueba
 eval.py             único comando de evaluación
 scripts/            build_submission.py (genera dist/submission.zip), train_forecaster.py, calibrate_sim.py
 models/             artefactos que van en el ZIP
-analysis/, presentation/    gráficas y pitch (P3)
+analysis/           gráficas y cifras para el jurado (P2)
+presentation/       guion, slides y preguntas del jurado (P3)
 docs/               reto, equipo, prompts de arranque, decisiones, envíos
 ```
 

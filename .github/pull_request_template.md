@@ -1,7 +1,7 @@
 ## Qué cambia
 <!-- Una o dos frases. Un tema por PR. -->
 
-**Rol:** P1 optimizador / P2 previsión / P3 validación / integrador
+**Rol:** P1 optimización / P2 datos y análisis / P3 relato e integración
 
 ## Resultado de `python eval.py` (validación)
 <!-- Pega la tabla. Indica si son datos oficiales o sintéticos y compárala con main. -->

@@ -1,6 +1,6 @@
 """Datos sintéticos con la forma del problema, para trabajar antes de tener los oficiales.
 
-Owner: P2 (previsión). No los uséis para sacar conclusiones: solo sirven para que todo el
+Owner: P2 (datos y análisis). No los uséis para sacar conclusiones: solo sirven para que todo el
 circuito (previsión -> LP -> simulador -> score) funcione desde el minuto uno.
 Patrones imitados: campus con más consumo laborable de 8 a 20 h, solar con
 estación y nubes, PVPC con picos de mañana y noche, CO2 alto por la noche

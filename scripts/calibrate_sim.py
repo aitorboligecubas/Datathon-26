@@ -1,6 +1,6 @@
 """Comprueba que src/battery/sim.py da lo mismo que el simulador oficial.
 
-Owner: P3 (validación).
+Owner: P3 (relato e integración).
 
     python scripts/calibrate_sim.py              # nuestro agente + la plantilla oficial
     python scripts/calibrate_sim.py --hours 336  # más rápido

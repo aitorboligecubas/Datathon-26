@@ -1,6 +1,6 @@
 """Carga de datos al formato estándar del equipo. NO se empaqueta.
 
-Owner: P2 (previsión).
+Owner: P2 (datos y análisis).
 
 Formato estándar (lo usan simulador, previsión, eval y análisis):
     timestamp       datetime, una fila por hora, ordenado

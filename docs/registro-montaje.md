@@ -319,3 +319,24 @@ Resultado actualizado en validación (datos oficiales):
 
 Además, **todo el contenido de la rama se ha subido también a `main`**, a petición expresa. Así el equipo puede
 clonar directamente y crear sus ramas `p1/p2/p3` desde `main`.
+
+---
+
+## 11. Actualización: roles reequilibrados
+
+Los roles iniciales se definieron antes de conocer los datos. Con lo que sabemos ahora (la solar es minúscula,
+prever el consumo apenas cambia el score y el agente ya está al 99,3 % del techo), P2 se había quedado casi sin
+trabajo útil y P3 (presentación + integración + gráficas) estaba sobrecargado. Nuevo reparto:
+
+| Rol | Rama | Enfoque | Razonamiento | Volumen |
+|---|---|---|---|---|
+| **P1 · Optimización y robustez** | `p1-optimizador` | Cuánto aporta cada pieza, robustez (evaluación por semanas, ruido, 0 infracciones), mejoras justificadas y estrategia cerrada a medianoche | **El más alto** (riesgo de sobreajuste con un margen tan pequeño) | Medio |
+| **P2 · Datos y análisis** | `p2-datos` | Calidad de los datos, patrones de CO₂ y precio, por qué ~6 %, escenarios de 1–8 MWh para UPC Sostenible. Ahora es dueño de `analysis/` | Medio-alto | Medio-alto |
+| **P3 · Relato, presentación e integración** | `p3-relato` | Guion, slides, preguntas del jurado, decisiones, PRs, envíos | Medio (comunicar y decidir) | **El más alto**, y el de **más impacto** |
+
+Se trabaja **por fases**: los tres en paralelo hasta el sábado por la noche (sincronizaciones a las 17:00, 21:00
+y 00:00; estrategia cerrada a medianoche) y todos convergen en la presentación el domingo. Detalle en
+`docs/equipo.md` (secciones 0–2), `CLAUDE.md` (sección 5) y los nuevos encargos en `docs/prompts-arranque.md`.
+Las ramas cambian de nombre: `p2-prevision` pasa a `p2-datos` y `p3-validacion` pasa a `p3-relato`
+(todavía no se había creado ninguna).
+

@@ -1,6 +1,6 @@
 """Genera los artefactos que el agente lee de models/ (y que van dentro del ZIP).
 
-Owner: P2 (previsión).
+Owner: P2 (datos y análisis).
 
     python scripts/train_forecaster.py
 

@@ -1,6 +1,6 @@
 """Simulador local que replica oficial/starter_kit/environment.py, y cálculo del score. NO se empaqueta.
 
-Owner: P3 (validación). Debe dar el MISMO resultado que el oficial
+Owner: P3 (relato e integración). Debe dar el MISMO resultado que el oficial
 (tests/test_sim.py lo comprueba si oficial/ existe). Es más rápido y deja un log hora a hora.
 
 Igual que CampusBatteryEnv:
