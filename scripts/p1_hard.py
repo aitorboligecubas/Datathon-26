@@ -63,12 +63,38 @@ def market_types(index) -> np.ndarray:
     return np.where(hol, 2, t)
 
 
-def fit_market(exclude=None, refs_df: pd.DataFrame = None) -> dict:
-    """Perfil de precio y CO2 por mes, tipo de día (laborable, sábado, domingo) y hora."""
+def market_centers(index) -> list:
+    """Día medio de los datos de cada mes (battery.hard_market.month_blend interpola el perfil entre meses con él)."""
+    s = pd.Series(index.day.to_numpy(float)).groupby(index.month.to_numpy()).mean()
+    return [float(s.get(mo, 15.0)) for mo in range(1, 13)]
+
+
+def blend_lookup(prof, mo0, day, typ, hr, centers) -> np.ndarray:
+    """prof[mes 0-11][tipo][hora] de cada fila, interpolado entre meses igual que battery.hard_market.month_blend.
+    Con centers = None, el perfil del mes tal cual."""
+    prof = np.asarray(prof, dtype=float)
+    own = prof[mo0, typ, hr]
+    if centers is None:
+        return own
+    from battery.hard_market import MARKET_MONTH_DAYS
+    cen = np.asarray(centers, dtype=float)
+    c = cen[mo0]
+    after = day >= c
+    other = np.where(after, (mo0 + 1) % 12, (mo0 - 1) % 12)
+    co = cen[other]
+    w = np.clip(np.where(after, (day - c) / (MARKET_MONTH_DAYS - c + co), (c - day) / (c + MARKET_MONTH_DAYS - co)), 0.0, 1.0)
+    return (1.0 - w) * own + w * prof[other, typ, hr]
+
+
+def fit_market(exclude=None, refs_df: pd.DataFrame = None, blend: bool = True) -> dict:
+    """Perfil de precio y CO2 por mes, tipo de día (laborable, sábado, domingo) y hora. Con `blend`, el perfil se
+    interpola entre meses según el día (clave "day_center") y las regresiones se ajustan con ese perfil."""
     m = market_frame()
     if exclude is not None:
         m = m[~m.index.isin(exclude)]
     out = {}
+    if blend:
+        out["day_center"] = market_centers(m.index)
     typ = market_types(m.index)
     for name in ("price", "co2"):
         g = m.groupby([m.index.month, typ, m.index.hour])[name].mean()
@@ -81,7 +107,7 @@ def fit_market(exclude=None, refs_df: pd.DataFrame = None) -> dict:
                     arr[mo - 1, t, h] = v if np.isfinite(v) else by_h.get((mo, h), np.nan)
         out[name] = arr.tolist()
     out["reg"] = fit_market_regression(m, out)
-    out["cand"] = fit_market_memory(exclude)
+    out["cand"] = fit_market_memory(exclude, blend)
     if refs_df is not None:
         b = baseline_totals(refs_df)
         out["co2_ref_kg_per_h"] = b["co2_kg"] / len(refs_df)
@@ -89,14 +115,14 @@ def fit_market(exclude=None, refs_df: pd.DataFrame = None) -> dict:
     return out
 
 
-def fit_market_memory(exclude=None) -> dict:
+def fit_market_memory(exclude=None, blend: bool = True) -> dict:
     """Tablas del previsor con memoria del train (13 pistas y los últimos 7 días de cada mes como "semilla").
     El ajuste está en scripts/p1_lab/hard_market_cand.py (fit_cand), que es donde se diseñó."""
     lab = str(REPO / "scripts" / "p1_lab")
     if lab not in sys.path:
         sys.path.insert(0, lab)
     from hard_market_cand import fit_cand
-    return fit_cand(exclude)
+    return fit_cand(exclude, {"blend": blend})
 
 
 def fit_market_regression(m: pd.DataFrame, prof: dict) -> dict:
@@ -107,7 +133,8 @@ def fit_market_regression(m: pd.DataFrame, prof: dict) -> dict:
     typ = market_types(m.index)
     reg = {}
     for name in ("price", "co2"):
-        p = np.asarray(prof[name])[m.index.month - 1, typ, m.index.hour]
+        p = blend_lookup(prof[name], m.index.month.to_numpy() - 1, m.index.day.to_numpy(float), typ,
+                         m.index.hour.to_numpy(), prof.get("day_center"))
         z = pd.Series(np.log(np.clip(m[name].to_numpy(), 1e-6, None) / np.clip(p, 1e-6, None)), index=m.index)
         full_idx = pd.date_range(m.index.min(), m.index.max(), freq="h")
         z = z.reindex(full_idx)                                   # los huecos (otras semanas, horas excluidas) quedan en NaN
@@ -361,7 +388,8 @@ def evaluate(split: str = "val", market: str = "", solar: str = "", only: str = 
         "plan de 3 h (sin prever)": lambda: hard_agent(prior, solar_prior, horizon=3),
         "mercado sin memoria (v4)": lambda: hard_agent({k: v for k, v in prior.items() if k != "cand"}, solar_prior),
         "solar sencilla (v6)": lambda: hard_agent(prior, {k: v for k, v in solar_prior.items() if k != "cand"}),
-        "plan con margen fijo (v10)": lambda: hard_agent(prior, solar_prior, use_scenarios=False),
+        "plan con margen fijo (v10)": lambda: hard_agent(fit_market(exclude, fit_df, blend=False), solar_prior, use_scenarios=False),
+        "perfil del mes sin interpolar (v12)": lambda: hard_agent(fit_market(exclude, fit_df, blend=False), solar_prior),
         "agente actual": lambda: hard_agent(prior, solar_prior),
         "precio y CO2 reales a 24 h": lambda: perfect_market_agent(prior, df, solar_prior),
         "óptimo (todo el futuro)": lambda: OracleAgent(df, *w, p=HARD_PARAMS),

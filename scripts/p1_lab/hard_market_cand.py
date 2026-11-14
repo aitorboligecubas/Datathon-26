@@ -323,7 +323,7 @@ def day_means(z: np.ndarray, hour: np.ndarray) -> tuple:
     return today, yday
 
 
-def training_rows(d: pd.DataFrame, feats: tuple, crossfit: bool) -> dict:
+def training_rows(d: pd.DataFrame, feats: tuple, crossfit: bool, blend: bool = False) -> dict:
     """Filas de ajuste por variable y antelación: {name: [(X, Xcold, y, hora_objetivo) para k = 3..23]}.
 
     Con `crossfit`, cada bloque de días se mide contra el perfil del resto de su mes, y solo cuentan
@@ -334,6 +334,11 @@ def training_rows(d: pd.DataFrame, feats: tuple, crossfit: bool) -> dict:
     ym = idx.year.to_numpy() * 12 + mo
     block = np.minimum((idx.day.to_numpy() - 1) // BLOCK_DAYS, 3) if crossfit else np.zeros(len(idx), dtype=int)
     vals = {name: d[name].to_numpy(float) for name in NAMES}
+    centers = None
+    if blend:       # perfil interpolado entre meses según el día, como battery.hard_market.month_blend
+        from p1_hard import blend_lookup, market_centers
+        centers = market_centers(idx[np.isfinite(vals["price"]) & np.isfinite(vals["co2"])])
+    day = idx.day.to_numpy(float)
     everything = np.ones(len(idx), dtype=bool)
     tot = {name: profile_sums(vals[name], mo, typ, hr, everything) for name in NAMES}
     rows = {name: [[] for _ in range(LEADS)] for name in NAMES}
@@ -350,7 +355,10 @@ def training_rows(d: pd.DataFrame, feats: tuple, crossfit: bool) -> dict:
                 if crossfit:
                     sb, cb = profile_sums(vals[name], mo, typ, hr, in_block)
                     s, c = s - sb, c - cb
-                prof = profile_from(s, c)[mo[sl], typ[sl], hr[sl]]
+                if centers is None:
+                    prof = profile_from(s, c)[mo[sl], typ[sl], hr[sl]]
+                else:
+                    prof = blend_lookup(profile_from(s, c), mo[sl], day[sl], typ[sl], hr[sl], centers)
                 zz = np.log(np.clip(vals[name][sl], 1e-6, None) / np.clip(prof, 1e-6, None))
                 z[name] = np.r_[np.full(pad, np.nan), zz, np.full(pad, np.nan)]
             inb = np.r_[np.zeros(pad, bool), in_block[sl], np.zeros(pad, bool)]
@@ -447,7 +455,7 @@ def fit_cand(exclude=None, cfg: Optional[dict] = None) -> dict:
     cfg = {**DEFAULT_CFG, **(cfg or {})}
     feats = tuple(cfg["feats"])
     d = dense_market(exclude)
-    rows = training_rows(d, feats, bool(cfg["crossfit"]))
+    rows = training_rows(d, feats, bool(cfg["crossfit"]), bool(cfg.get("blend", False)))
     full = {}
     for name in NAMES:
         full[name] = []

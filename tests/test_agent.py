@@ -370,3 +370,33 @@ def test_hard_uses_the_uncertainty_plan_and_falls_back_without_its_table():
             assert not agent.policy.netload.scen_ok
         totals, _ = _hard_run(agent, df)
         assert totals["infractions"] == 0 and agent.policy.n_scen == 0 and agent.policy.n_fallbacks == 0
+
+
+def test_market_profile_is_interpolated_between_months():
+    """El perfil de precio y CO2 se interpola entre meses según el día: en el centro de los datos del mes es el del
+    mes; a final de mes (los días del test) está a medio camino del mes siguiente; sin centros, el del mes tal cual."""
+    import numpy as np
+    import pandas as pd
+
+    from battery.hard_market import MarketForecaster, month_blend
+
+    centers = [12.5] * 12
+    assert month_blend(3, 12.5, centers) == (3, 0.0)                       # centro del mes: sin mezcla
+    other, w = month_blend(3, 28.0, centers)                               # 28 de marzo: hacia abril
+    assert other == 3 and 0.45 < w < 0.56
+    other, w = month_blend(1, 2.0, centers)                                # 2 de enero: hacia diciembre
+    assert other == 11 and 0.3 < w < 0.4
+    assert month_blend(12, 31.0, centers)[0] == 0                          # diciembre mira a enero
+
+    prof = np.zeros((12, 3, 24))
+    for mo in range(12):
+        prof[mo] = 0.10 + 0.01 * mo                                        # marzo 0,12; abril 0,13
+    prior = {"price": prof.tolist(), "co2": prof.tolist(), "day_center": centers}
+    f = MarketForecaster(prior)
+    assert abs(f.profile("price", pd.Timestamp("2026-03-12 12:00")) - 0.12) < 2e-4
+    late = f.profile("price", pd.Timestamp("2026-03-28 12:00"))
+    assert 0.1245 < late < 0.1256
+    plain = MarketForecaster({"price": prof.tolist(), "co2": prof.tolist()})
+    assert abs(plain.profile("price", pd.Timestamp("2026-03-28 12:00")) - 0.12) < 1e-12
+    broken = MarketForecaster({"price": prof.tolist(), "co2": prof.tolist(), "day_center": [0.0] * 12})
+    assert broken.centers is None and abs(broken.profile("price", pd.Timestamp("2026-03-28 12:00")) - 0.12) < 1e-12
