@@ -41,8 +41,9 @@ def tabla() -> pd.DataFrame:
     return _CACHE["tabla"]
 
 
-def episodio_test(nov: str = "copia", semanas=None) -> tuple:
-    """(episodio, horas de origen). `semanas`: índices de TEST_STARTS que se quieren (por defecto, todas)."""
+def episodio_test(nov: str = "copia", semanas=None, desfases=(14, 21, 7)) -> tuple:
+    """(episodio, horas de origen). `semanas`: índices de TEST_STARTS que se quieren (por defecto, todas).
+    `desfases`: días hacia atrás donde buscar cada hora en el train, por orden de preferencia (múltiplos de 7)."""
     full = tabla().set_index("timestamp")
     market = p1_hard.market_frame()
     weeks, origen = {}, []
@@ -51,7 +52,7 @@ def episodio_test(nov: str = "copia", semanas=None) -> tuple:
         # Hora a hora: la de 14 días antes; si falta en el train, la de 21 o la de 7 (pasa en agosto).
         src = []
         for h in hours:
-            cands = [h - pd.Timedelta(days=s) for s in (14, 21, 7)]
+            cands = [h - pd.Timedelta(days=s) for s in desfases]
             src.append(next((c for c in cands if c in full.index), None))
         if all(s is not None for s in src):
             w = full.loc[src].reset_index(drop=True).copy()
@@ -59,7 +60,7 @@ def episodio_test(nov: str = "copia", semanas=None) -> tuple:
             weeks[i] = w
             origen.extend(src)
             continue
-        src = hours - pd.Timedelta(days=14)
+        src = hours - pd.Timedelta(days=desfases[0])
         if i == NOV and src.isin(market.index).all():      # noviembre: solo hay precio y CO2
             weeks[i] = pd.DataFrame({"timestamp": hours, "load_kw": 0.0, "pv_kw": 0.0,
                                      "price_eur_kwh": market.price.reindex(src).to_numpy(),

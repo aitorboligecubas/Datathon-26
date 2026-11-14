@@ -4,6 +4,8 @@ Owner: P1. El agente cree que el test son los últimos 7 días de cada mes y que
 2026 (battery.hard.LAST_MONTHS). Aquí se mide cuánto score se pierde cuando eso no es verdad.
 
     python scripts/p1_lab/hard_ataque_calendario.py
+    python scripts/p1_lab/hard_ataque_calendario.py --solo-g          # solo la tabla G (variantes de sondeo)
+    python scripts/p1_lab/hard_ataque_calendario.py --solo-g --alt    # la misma tabla con otras semanas del train
 
 Todos los episodios llevan el calendario del test (hard_ataque_comun.episodio_test). Variantes del agente:
     actual        el de src/, tal cual
@@ -107,7 +109,8 @@ def tabla_variantes(full, pm, ps) -> pd.DataFrame:
 
 
 def main() -> int:
-    full, origen = c.episodio_test("copia")
+    alt = "--alt" in sys.argv          # otro episodio: las semanas de 21 días antes en vez de las de 14
+    full, origen = c.episodio_test("copia", desfases=(21, 14, 7) if alt else (14, 21, 7))
     pm, ps = c.priors(origen)
     if "--solo-g" in sys.argv:
         g = tabla_variantes(full, pm, ps)
@@ -115,7 +118,7 @@ def main() -> int:
         print(g.round(3).to_string(index=False))
         out_dir = c.REPO / "results" / "p1_hard"
         out_dir.mkdir(parents=True, exist_ok=True)
-        g.to_csv(out_dir / "ataque_calendario_variantes.csv", index=False)
+        g.to_csv(out_dir / ("ataque_calendario_variantes_alt.csv" if alt else "ataque_calendario_variantes.csv"), index=False)
         return 0
     sin_nov, _ = c.episodio_test("omitir")
     casos = [
