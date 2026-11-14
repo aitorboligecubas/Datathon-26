@@ -85,8 +85,10 @@ class MPCPolicy:
 
     def episode_ends_soon(self, obs: Obs) -> bool:
         """environment.py recorta la previsión al final de los datos: si llega con menos de
-        24 valores, el episodio acaba dentro del horizonte. (El test tiene ~1.700 h, no 2.016.)"""
-        return len(obs.price) < self.horizon or self.n_steps - self.t <= self.horizon
+        24 valores, el episodio acaba dentro del horizonte. Es la única señal que usamos: no
+        contamos pasos, porque no sabemos cuánto dura el test (~1.700 h según las slides, 2.016
+        según el enunciado) y un contador dejaría al agente parado si el episodio fuese más largo."""
+        return len(obs.price) < self.horizon
 
     def terminal_value(self, obs: Obs, H: int) -> float:
         """Valor de cada kWh que quede en la batería al final del horizonte."""
@@ -95,10 +97,27 @@ class MPCPolicy:
         marginal = self.w_co2 * obs.co2[:H] + self.w_cost * obs.price[:H]
         return float(np.quantile(marginal, self.terminal_quantile)) * self.p.eta_discharge
 
+    def cap_discharge(self, action_kw: float, obs: Obs) -> float:
+        """No descargar más de lo que el campus compró a la red en la hora anterior.
+
+        Descargar por encima del consumo es energía tirada (el vertido no se paga ni ahorra CO2).
+        Normalmente el campus consume > 500 kW y este tope no actúa. Solo actúa cuando el contador
+        marca un consumo anómalo (en el train hay una avería de 14 h con lectura 0): ahí la mejor
+        previsión de la hora actual es la última lectura. Sin parámetros que ajustar.
+        """
+        net_prev = obs.load_prev_kw - obs.pv_prev_kw
+        if action_kw < 0 and math.isfinite(net_prev):
+            return -min(-action_kw, max(net_prev, 0.0))
+        return action_kw
+
     def act_obs(self, obs: Obs) -> float:
         """Acción interna en kW (+ carga), ya recortada a los límites."""
+        return self.cap_discharge(self.plan_action(obs), obs)
+
+    def plan_action(self, obs: Obs) -> float:
+        """Primera hora del plan óptimo de 24 h (o la regla de respaldo si el LP no está disponible)."""
         self.forecaster.update(obs)
-        H = max(1, min(self.horizon, len(obs.price), self.n_steps - self.t))
+        H = max(1, min(self.horizon, len(obs.price)))
         load, pv = self.forecaster.forecast(obs, H)
         if self.elapsed_s > self.time_budget_s:
             self.n_fallbacks += 1
