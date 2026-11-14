@@ -81,6 +81,9 @@ ventanas (validación 20,75 frente a 20,79) y se apoya en suponer qué meses son
 - **Selección para el jurado: las dos mejores por nota del episodio completo, que hoy son la v14 y la v12.** Hay que
   marcarlas a mano en "Selecció Oficial per al Jurat": por defecto el sistema coge las dos mejores del público.
   La v10 (mejor nota pública, 24,15) es la alternativa prudente si se prefiere no depender de este análisis.
+  Cuánto fiarse de cada una: la v12 mejora a la v10 en 29 de 33 semanas-mes del banco (media +0,13, muy firme);
+  la v14 mejora a la v12 de media (+0,12) pero con mucha dispersión entre semanas (gana en 18 de 33). Seleccionar
+  las dos cubre el caso de que el cambio de perfiles de la v14 salga mal en el test.
 
 Las variantes "e" y "c" (vaciar la batería cada semana o en la hora 1.008) **no se envían**. Suben el ranking público
 en cualquier caso, porque esa carga se paga en la mitad pública y se usa en la privada, y pueden hundir el privado
