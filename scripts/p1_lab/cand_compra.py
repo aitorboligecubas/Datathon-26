@@ -117,15 +117,44 @@ def level_estimate(logs, prior_mean, sigma: float, tau: float) -> float:
     return float((prior_mean * p0 + sum(logs) / sigma ** 2) / (p0 + n / sigma ** 2))
 
 
+class BlockForecaster:
+    """Previsión que no cuenta con el consumo de la semana siguiente del test (solo si policy.NO_BRIDGE).
+
+    Entre una semana del test y la siguiente pasan más de tres semanas: el consumo de la siguiente no se
+    conoce (puede venir sin datos). Durante una semana sin datos no se aplica: ahí la carga que se compra
+    barata para la semana siguiente no pierde valor si esa semana tampoco trae consumo.
+    """
+
+    def __init__(self, inner, policy):
+        self.inner, self.policy = inner, policy
+
+    def update(self, obs) -> None:
+        self.inner.update(obs)
+
+    def forecast(self, obs, h: int) -> tuple:
+        load, pv = self.inner.forecast(obs, h)
+        pol = self.policy
+        if pol.NO_BRIDGE and not pol.no_data_block and obs.timestamp is not None:
+            k = hours_to_month_end(obs.timestamp)
+            if k < h:
+                load, pv = np.array(load, dtype=float), np.array(pv, dtype=float)
+                load[k:] = 0.0
+                pv[k:] = 0.0
+        return load, pv
+
+
 class Candidate(MPCPolicy):
     SIGMA = SIGMA_VALLEY
     TAU = TAU_LEVEL
     USE_WEEKDAY = False        # el banco no conserva el día de la semana de los datos: ver las notas
     USE_PEEK = True            # usar las horas ya visibles de mañana
+    PEEK_AFTER_VALLEY = False  # ... solo cuando ya se ve la hora de mañana en la que hoy está el mínimo
     FIRST_HOUR = "v2"          # "v2" (como antes) | "no_discharge" | "wait" (no hacer nada)
     NEW_RESERVE = True
     USE_VALUE = True           # contar con que la carga puede valer poco en la semana siguiente
     P_ZERO = P_NO_DATA
+    AFTER_NO_DATA = False      # tras una semana sin datos, no descargar en la primera hora de la siguiente
+    NO_BRIDGE = False          # no contar con el consumo de la semana siguiente al planificar el final de una semana
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -135,6 +164,7 @@ class Candidate(MPCPolicy):
         self.block_use = []                          # log del valor de uso de esos mismos días
         self.prev_vals = deque(maxlen=PREV_DAYS)     # valles de la semana vista antes
         self.first_hour = False
+        self.forecaster = BlockForecaster(self.forecaster, self)
 
     # ------------------------------------------------------------------ memoria de pesos por día
     def note_hours(self, obs, new_block: bool) -> None:
@@ -187,7 +217,7 @@ class Candidate(MPCPolicy):
         if len(self.prev_vals) >= 4:
             prior, tau = float(np.mean(np.log(np.asarray(self.prev_vals, dtype=float)))), self.TAU
         v_next = None
-        if self.USE_PEEK and ts.hour >= MIN_PEEK_HOURS:
+        if self.USE_PEEK and ts.hour >= MIN_PEEK_HOURS and (not self.PEEK_AFTER_VALLEY or ts.hour > int(np.nanargmin(today))):
             tomorrow = self.day_w.get(ts.toordinal() + 1)
             if tomorrow is not None:
                 seen = np.isfinite(tomorrow[:ts.hour]) & np.isfinite(today[:ts.hour])
@@ -284,6 +314,7 @@ class Candidate(MPCPolicy):
 
     # ------------------------------------------------------------------------------ paso completo
     def act_obs(self, obs) -> float:
+        was_no_data = bool(self.no_data_block)       # ¿la semana anterior acabó sin datos?
         try:
             new_block = self.track_block(obs)
         except Exception:
@@ -305,7 +336,7 @@ class Candidate(MPCPolicy):
             # Primera hora de una semana nueva del test: no hay lectura válida del contador.
             if self.FIRST_HOUR == "wait":
                 return 0.0
-            if self.FIRST_HOUR == "no_discharge":
+            if self.FIRST_HOUR == "no_discharge" or (self.AFTER_NO_DATA and was_no_data):
                 return max(action, 0.0)
         elif new_block and self.FIRST_HOUR != "v2":
             # Primera hora del episodio: el entorno da el consumo de esa misma hora, así que el tope vale.
@@ -335,6 +366,10 @@ solo_reserva = _variant()                                                 # el p
 sin_uso = _variant(USE_VALUE=False)                                       # ... sin el valor de uso de la semana siguiente
 sin_peek = _variant(USE_PEEK=False)                                       # ... sin mirar las horas de mañana
 con_dia_semana = _variant(USE_WEEKDAY=True)                               # ... con el efecto de fin de semana
+dia_semana_sin_peek = _variant(USE_WEEKDAY=True, USE_PEEK=False)
+dia_semana_peek2 = _variant(USE_WEEKDAY=True, PEEK_AFTER_VALLEY=True)
+sin_puente = _variant(NEW_RESERVE=False, NO_BRIDGE=True)                  # v2 + no llevar energía a una semana que no se ha visto
+tras_cero = _variant(NEW_RESERVE=False, AFTER_NO_DATA=True)               # v2 + no descargar en la primera hora tras una semana sin datos
 solo_hora1 = _variant(NEW_RESERVE=False, FIRST_HOUR="no_discharge")       # v2 + no descargar en la primera hora
 solo_hora1_wait = _variant(NEW_RESERVE=False, FIRST_HOUR="wait")          # v2 + no hacer nada en la primera hora
 hora1 = _variant(FIRST_HOUR="no_discharge")                               # reserva nueva + no descargar en la primera hora

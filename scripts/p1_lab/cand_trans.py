@@ -1,22 +1,30 @@
 """Candidato "trans": transiciones y creencias sobre cuánto dura un contador a 0.
 
-Parte de MPCPolicy (el agente actual, "v2") y cambia cuatro piezas, cada una con su interruptor para
-poder medirla sola (ver results/p1_banco/trans_notas.md):
+Parte de MPCPolicy (el agente actual, "v2") y cambia cuatro piezas. Cada una tiene su interruptor para
+poder medirla sola (números en results/p1_banco/trans_notas.md):
 
-A. CARRY_ZERO. Al cambiar de semana, si la última lectura de la semana anterior era 0, la racha a 0
-   sigue hasta que se vea consumo: en esa primera hora no se descarga a ciegas y se actúa como en una
-   semana sin datos. v2 ignoraba siempre esa lectura (es de otro mes) y descargaba con la previsión normal:
-   si la semana nueva también venía a 0, tiraba hasta 500 kWh.
-B. FIRST_READING. En el primer paso del episodio el entorno da el consumo de la PROPIA hora
-   (environment.py: `if self.t > 0 else row["load_kw"]`), así que no es una lectura vieja: sirve de tope
-   de descarga y, si es 0, la semana empieza sin datos desde la hora 0.
-C. POOL_DAYS. El precio de reserva de una semana sin datos se calcula con los valles de los últimos 7 días
-   vistos (v2: 35). El nivel de los valles cambia mucho de un mes a otro (media mensual de 4,0 a 8,0 en
-   el train): con 35 días de otros meses la reserva podía quedar por debajo de todos los valles de la
-   semana y el agente no compraba nunca (y, si el consumo volvía, lo pillaba con la batería vacía).
-D. PATIENCE. Cuántos días "quedan" para comprar. v2 contaba todos los que faltan hasta fin de mes (cree
-   que el contador no vuelve). Aquí, la mitad: si no sabemos cuándo vuelve el consumo y puede ser en
-   cualquier momento de lo que queda de semana, lo esperado es la mitad.
+A. CARRY_ZERO: la racha a 0 no se corta al cambiar de semana.
+   v2 ignora siempre la lectura anterior en la primera hora de una semana (es de otro mes) y descarga con
+   la previsión normal. Si la semana anterior acabó a 0 y la nueva también viene a 0, tira hasta 500 kWh
+   (es lo que le hacía perder contra v1 en dos_ceros). Aquí, si esa última lectura era 0, el agente sigue
+   creyendo que el contador está caído hasta que vea consumo: esa hora no descarga y actúa como en una
+   semana sin datos. A la hora siguiente ya tiene una lectura de la semana nueva y decide como siempre.
+B. FIRST_READING: en el primer paso del episodio la lectura es de la PROPIA hora.
+   environment.py da `row["load_kw"]` en t = 0, no la hora anterior. Si es 0, la semana empieza sin datos
+   desde la hora 0 (v2 la ignoraba y tardaba una hora en enterarse).
+C. POOL_DAYS = 7: el precio de reserva se calcula con los valles de los 7 últimos días vistos (v2: 35).
+   El nivel de los valles cambia de un mes a otro casi tanto como de un día a otro (desviación del
+   logaritmo en el train: 0,21 entre meses, 0,20 entre días del mismo mes). Con 35 días de cinco meses
+   distintos, la reserva puede quedar por debajo de todos los valles de la semana: el agente no compra
+   nunca y, si el consumo vuelve a media semana, lo pilla con la batería vacía (dev-08: 0,084 perdidos).
+E. LINDY: en una avería corta a media semana, el consumo vuelve "probablemente", no "seguro".
+   v2 planifica como si el consumo volviese seguro en la hora siguiente, y compra de madrugada para un
+   pico de la mañana que, si la avería sigue, no se puede cubrir. Aquí, tras z horas a 0, la probabilidad
+   de poder descargar dentro de k horas es k / (z + k), y el LP recibe la descarga esperada.
+
+Probado y NO adoptado (queda el interruptor para reproducir los números):
+D. PATIENCE = "half": contar solo con la mitad de los días que quedan para comprar. Cuesta 0,0007 en nov0
+   y solo compensa si el consumo vuelve a media semana más de una vez de cada tres.
 
 Se puede llevar a src/battery/policy.py tal cual: solo numpy y math, determinista, sin ficheros.
 """
@@ -30,8 +38,8 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from battery.optimizer import plan  # noqa: E402
-from battery.policy import (BLOCK_GAP_H, FINAL_MONTH, LONG_OUTAGE_H, VALLEY_HOURS, MPCPolicy,  # noqa: E402
-                            greedy_action, hours_to_month_end)
+from battery.policy import (BLOCK_GAP_H, FINAL_MONTH, LONG_OUTAGE_H, MPCPolicy, greedy_action,  # noqa: E402
+                            hours_to_month_end)
 from battery.safety import clip_action  # noqa: E402
 
 NAN = float("nan")
@@ -41,15 +49,13 @@ class TransPolicy(MPCPolicy):
     CARRY_ZERO = True       # A
     FIRST_READING = True    # B
     POOL_DAYS = 7           # C (v2: 35)
-    PATIENCE = "half"       # D: "full" (v2) | "half" | "one"
+    PATIENCE = "full"       # D, no adoptada: "full" (v2) | "half" | "one"
     LINDY = True            # E: tras z horas de avería a media semana, P(poder descargar en k horas) = k/(z+k)
-    LEVEL = True            # F: la reserva se reescala al nivel de los valles de esta semana
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.valleys = deque(maxlen=self.POOL_DAYS)
         self.keep_reading = False    # la lectura de esta hora sirve aunque sea la primera de un bloque
-        self.block_valleys = []      # valles de los días ya completos de la semana en curso
 
     # ------------------------------------------------------------------ seguimiento de bloques
     def track_block(self, obs) -> bool:
@@ -145,37 +151,9 @@ class TransPolicy(MPCPolicy):
             return greedy_action(obs, load[0], pv[0], self.p)
 
     # ------------------------------------------------------------------ semana sin datos
-    def note_weight(self, obs) -> None:
-        """Como en v2, y además guarda aparte los valles de los días ya completos de esta semana."""
-        w = self.w_co2 * obs.co2[0] + self.w_cost * obs.price[0]
-        key = (obs.timestamp.year, obs.timestamp.month, obs.timestamp.day) if obs.timestamp is not None else None
-        if key != self.day_key:
-            if len(self.day_weights) >= 20:
-                valley = sum(sorted(self.day_weights)[:VALLEY_HOURS]) / VALLEY_HOURS
-                self.valleys.append(valley)
-                self.block_valleys.append(valley)
-            self.day_key, self.day_weights = key, []
-        if self.block_hours == 0:
-            self.block_valleys = []      # semana nueva: el día que se acaba de cerrar era de la anterior
-        if math.isfinite(w):
-            self.day_weights.append(float(w))
-
-    def level_factor(self) -> float:
-        """Cuánto hay que subir o bajar la reserva para ponerla al nivel de esta semana.
-
-        El nivel de los valles cambia de un mes a otro casi tanto como de un día a otro dentro del mes
-        (en el train, desviación del logaritmo: 0,21 entre meses y 0,20 entre días del mismo mes). Por
-        eso la media de la historia cuenta como UN día más de esta semana: nivel = (media de la historia
-        + valles de los días ya vistos esta semana) / (1 + días vistos).
-        """
-        x = np.asarray(self.valleys, dtype=float)
-        m = float(x.mean())
-        n = len(self.block_valleys)
-        if n == 0 or not m > 0:
-            return 1.0
-        return (m + float(sum(self.block_valleys))) / ((1 + n) * m)
-
     def patience(self, days_left: int) -> int:
+        """Días con los que se cuenta para comprar. "full": todos los que quedan (el contador no vuelve
+        hasta fin de mes). "half": la mitad (el consumo puede volver en cualquier momento de la semana)."""
         if self.PATIENCE == "half":
             return max(1, int(math.ceil(days_left / 2.0)))
         if self.PATIENCE == "one":
@@ -193,10 +171,7 @@ class TransPolicy(MPCPolicy):
             terminal = 0.0
         elif K >= H and not self.episode_ends_soon(obs) and len(self.valleys) >= min(7, self.POOL_DAYS):
             days_left = int(math.ceil((K - H) / 24.0)) + 1
-            reserve = self.reserve_weight(self.patience(days_left))
-            if self.LEVEL:
-                reserve *= self.level_factor()
-            terminal = reserve / self.p.eta_charge
+            terminal = self.reserve_weight(self.patience(days_left)) / self.p.eta_charge
         return load, pv, terminal
 
 
@@ -226,7 +201,7 @@ def make_agent():
 
 
 # Variantes para las ablaciones (scripts/p1_banco.py --agent scripts/p1_lab/cand_trans.py:solo_A, etc.)
-V2 = dict(CARRY_ZERO=False, FIRST_READING=False, POOL_DAYS=35, PATIENCE="full", LINDY=False, LEVEL=False)
+V2 = dict(CARRY_ZERO=False, FIRST_READING=False, POOL_DAYS=35, PATIENCE="full", LINDY=False)
 
 
 def como_v2():
@@ -253,33 +228,21 @@ def solo_E():
     return variant(**dict(V2, LINDY=True))()
 
 
+def sin_A():
+    return variant(CARRY_ZERO=False)()
+
+
+def sin_C():
+    return variant(POOL_DAYS=35)()
+
+
 def sin_E():
-    return variant(LINDY=False, LEVEL=False)()
+    return variant(LINDY=False)()
 
 
-def sin_F():
-    return variant(LEVEL=False)()
+def con_D():
+    return variant(PATIENCE="half")()
 
 
-def solo_F():
-    return variant(**dict(V2, LEVEL=True))()
-
-
-def f_full():
-    return variant(PATIENCE="full")()
-
-
-def abc_full():
-    return variant(PATIENCE="full")()
-
-
-def abc_one():
+def con_D_one():
     return variant(PATIENCE="one")()
-
-
-def abc_pool14():
-    return variant(POOL_DAYS=14)()
-
-
-def abc_pool14_full():
-    return variant(POOL_DAYS=14, PATIENCE="full")()
