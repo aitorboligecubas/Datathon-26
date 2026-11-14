@@ -42,10 +42,15 @@ validación rápida que no gasta cupo. El ZIP se genera con `python scripts/buil
 |---|---|---|---|---|---|---|---|---|---|
 | H1 | Sáb 14/11, 17:39 | `96bd4ef` | v2 del modo difícil: MPC con previsión propia de precio y CO₂ (regresión por antelación), solar por claridad y margen al descargar | 20,37 | **23,35** | 22,10 % (13.317,9 kg) | 26,25 % (24.936,50 €) | 0 | 2.º de 22 equipos, a 0,02 del 1.º (23,37). Equivalencia: 20,4 en casa ≈ 23,35 en la web |
 | H2 | Sáb 14/11, 18:43 | `e8dab4c` | v6: previsor de precio y CO₂ con memoria del train (13 pistas) y blindaje del ataque de robustez (final por calendario solo en agosto, reinicios semanales, lecturas vacías, contador a 0 con solar viva) | 20,66 | **23,70** | 22,58 % (13.607,2 kg) | 26,30 % (24.974,56 €) | 0 | **1.º de 32 equipos** (2.º: 23,50). En casa +0,29 sobre H1; en la web +0,35 |
-| H3 | pendiente | `9f7cfc9` | v7: previsor ampliado de consumo y solar (regresión del consumo, noche con el contador congelado, márgenes por cuantiles, cielo despejado en hora solar e interpolado entre meses) | 20,78 | | | | | Entregada al integrador; puede saltarse si se sube la v8 |
-| H4 | pendiente | `b0d65ee` | v8: la v7 con el margen de seguridad en 1,4 desviaciones típicas (antes 1,0) | 20,83 | | | | | Tira la mitad de energía al descargar (2.865 kWh frente a 4.443 en validación) |
+| H3 | pendiente | `9f7cfc9` | v7: previsor ampliado de consumo y solar (regresión del consumo, noche con el contador congelado, márgenes por cuantiles, cielo despejado en hora solar e interpolado entre meses) | 20,78 | | | | | En reserva; puede saltarse si se sube la v8 |
+| H4 | pendiente | `b0d65ee` | v8: la v7 con el margen de seguridad en 1,4 desviaciones típicas (antes 1,0) | 20,83 | | | | | En reserva. Tira la mitad de energía al descargar (2.865 kWh frente a 4.443 en validación) |
 
 Las horas son las que muestra la web, que van en UTC: una hora menos que la hora local.
+
+**Decisión del equipo (sábado por la tarde): las versiones 7 y 8 se guardan en reserva** y no se envían mientras
+sigamos primeros con la v6. Ojo: el jurado solo evalúa en el ranking privado entregas enviadas y seleccionadas, así
+que la mejor versión tiene que subirse antes del cierre (como tarde, el domingo a primera hora), después de pasarle
+la validación rápida, que no gasta cupo.
 
 Las variantes "e" y "c" (vaciar la batería cada semana o en la hora 1.008) **no se envían**. Suben el ranking público
 en cualquier caso, porque esa carga se paga en la mitad pública y se usa en la privada, y pueden hundir el privado
