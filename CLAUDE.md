@@ -238,6 +238,7 @@ frente al código y el simulador oficial. Lo que se exige: 0 infracciones y 0 ex
 ```bash
 python scripts/p1_hard.py --split dev       # comparativa del hard mode en los días 8-14 de cada mes (para diseñar)
 python scripts/p1_hard.py                   # en las últimas 168 h de cada mes (RESERVADA: solo para verificar)
+python scripts/p1_hard.py --split dev --save-hourly   # además, el detalle hora a hora en results/hourly/ (para gráficas)
 python scripts/p1_hard.py --fit             # regenera models/hard_market.json y models/hard_solar.json
 python scripts/build_submission.py --hard   # ZIP del hard mode en dist/hard/ (el estándar no cambia)
 ```

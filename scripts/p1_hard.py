@@ -297,7 +297,8 @@ def load_factory(spec: str):
     return getattr(mod, func)
 
 
-def evaluate(split: str = "val", market: str = "", solar: str = "", only: str = "", agent: str = "") -> pd.DataFrame:
+def evaluate(split: str = "val", market: str = "", solar: str = "", only: str = "", agent: str = "",
+             save_hourly: bool = False) -> pd.DataFrame:
     """Comparativa en `split`. Todo lo que se aprende (perfiles, modelos) se ajusta SIN las horas del split.
 
     market: 'ruta.py:func' con func(exclude: set de pd.Timestamp, prior: dict) -> objeto con
@@ -347,6 +348,12 @@ def evaluate(split: str = "val", market: str = "", solar: str = "", only: str = 
         init_s = time.perf_counter() - t0
         totals, log = simulate_hard(ag, df)
         sc = score(totals, base)
+        if save_hourly:     # detalle hora a hora, para las gráficas (results/hourly/ no se sube al repo)
+            out_dir = REPO / "results" / "hourly"
+            out_dir.mkdir(parents=True, exist_ok=True)
+            slug = "".join(ch if ch.isalnum() else "_" for ch in name.lower()).strip("_")
+            log.assign(price_eur_kwh=df.price_eur_kwh.to_numpy(), co2_kg_kwh=df.co2_kg_kwh.to_numpy()).to_csv(
+                out_dir / f"hard_{split}_{slug}.csv", index=False)
         ex = log[log.export_kw > 1e-6]
         rows.append({"agente": name, "score": sc["score_raw"], "co2_pct": sc["d_co2_pct"], "coste_pct": sc["d_cost_pct"],
                      "infr": sc["infractions"], "vertido_kwh": totals["export_kwh"],
@@ -370,6 +377,7 @@ def main() -> int:
     ap.add_argument("--only", default="", help="agentes a ejecutar, separados por comas")
     ap.add_argument("--out", default="", help="CSV donde guardar la tabla")
     ap.add_argument("--fit", action="store_true", help="guardar models/hard_market.json con todo el train")
+    ap.add_argument("--save-hourly", action="store_true", help="guardar el detalle hora a hora de cada agente en results/hourly/")
     args = ap.parse_args()
     if args.fit:
         full = hard_table()
@@ -378,7 +386,7 @@ def main() -> int:
         (MODELS / "hard_solar.json").write_text(json.dumps(fit_solar(full)), encoding="utf-8")
         print("guardados models/hard_market.json y models/hard_solar.json")
         return 0
-    out = evaluate(args.split, args.market, args.solar, args.only, args.agent)
+    out = evaluate(args.split, args.market, args.solar, args.only, args.agent, args.save_hourly)
     if args.out:
         Path(args.out).parent.mkdir(parents=True, exist_ok=True)
         out.to_csv(args.out, index=False)
