@@ -1,156 +1,348 @@
-# CLAUDE.md — Datathon FME 2026 · Reto UPC Sostenible (batería del campus)
+# CLAUDE.md — Reto UPC Sostenible · Datathon FME 2026
 
-Los Claude Code de todo el equipo leen este fichero al arrancar. Cada persona trabaja con su propio Claude,
-en su portátil y en su propia rama. Aquí está lo que todos tienen que saber: el reto, quién es dueño de cada fichero,
-los contratos entre módulos y las reglas. Si algo de aquí cambia, lo cambia el integrador por PR y avisa al equipo.
+> **Qué es este fichero.** Es la guía compartida del equipo. Claude Code la lee al arrancar en el portátil
+> de cada persona, así que los tres Claudes (y los tres humanos) parten de la misma historia: qué problema
+> resolvemos, qué hemos descubierto, cómo funciona nuestra solución y cómo trabajamos juntos sin pisarnos.
+> Está escrita para leerse de arriba abajo: primero el contexto, después los detalles técnicos.
+>
+> Responde siempre en español. **Entrega: domingo 15/11 a las 12:00.** Congelación del código: domingo a las 9:30.
 
-Responde siempre en español. Plazo de entrega: **domingo 15/11 a las 12:00**. Congelación del código: domingo a las 9:30.
+---
 
-## El reto en 30 segundos (verificado con el material oficial)
+## 1. La historia: una batería para el Campus Nord
 
-- `BatteryAgent.act(obs) -> float` devuelve la potencia de la batería en kW: > 0 carga, < 0 descarga.
-  Se llama una vez por hora durante el test: los últimos 7 días de cada mes, **~1.700 h** según las slides
-  (2.016 si no faltasen datos), sin reinicios. Cuando quedan menos de 24 h, la previsión llega recortada.
-- Batería: 2.000 kWh, ±500 kW, η = √0,9 en cada sentido (90 % ida y vuelta) y carga inicial de 1.000 kWh.
-- Red = demanda − solar + batería. Si es > 0, compramos al precio PVPC y emitimos CO₂ del mix.
-  Si es ≤ 0, el excedente se vierte sin cobrar nada.
-- `Score = max(0, 0,70·ΔCO₂% + 0,30·ΔCoste% − pen·infracciones)`, con los porcentajes respecto a no tener batería.
-  pen = 0,20 en `environment.py`, y 1,00 en el enunciado y en las slides. Nuestro objetivo es 0 infracciones.
-- `obs` incluye:
-  - `preus_properes_24h` y `co2_properes_24h`, con las 24 h **desde la hora actual** (son exactos);
-  - `noves_dades_5min = {ultim_consum_kw, ultima_solar_kw}`, la demanda y la solar de la hora anterior.
-- Entrega: un ZIP de ≤ 25 MB con `agent.py` y los artefactos (.pkl/.json) en la raíz. La simulación entera
-  tiene que durar menos de 60 s. Hay 10 envíos al día, que no se gastan si el envío falla. La web también tiene
-  un **dry-run gratis e ilimitado (48 pasos)**: usadlo antes de gastar un envío. El leaderboard público cuenta
-  el 50 % y el privado, el otro 50 %.
-- **El jurado decide de forma decisiva** con la presentación, el razonamiento y la justificación.
-  Cada decisión tiene que tener un número detrás (`docs/decisiones.md`).
+El Campus Nord de la UPC consume mucha electricidad: unos **1.100 kW de media** (aulas, laboratorios,
+servidores, climatización), que son unos **27 MWh al día**. Tiene placas solares, pero producen muy poco
+comparado con lo que se consume. Casi toda la energía se compra a la red eléctrica.
 
-Material oficial: el ZIP del reto descomprimido en `oficial/`, que no se sube porque el repo es público.
-Lo más importante: `oficial/docs/ENUNCIAT.md`, `oficial/docs/GUIA_VARIABLES.md`, `oficial/starter_kit/environment.py`
-y `oficial/starter_kit/tutorial.ipynb`. Resumen y dudas abiertas: `docs/reto.md`. Contexto del evento: `docs/contexto-chat.md`.
+Esa energía no cuesta lo mismo a todas horas, ni en euros ni en CO₂:
+- El **precio** (tarifa PVPC) cambia cada hora.
+- El **CO₂** también: cuando hay mucho sol y viento en España, la electricidad de la red es limpia. Cuando entran
+  las centrales de gas (ciclo combinado), normalmente por la tarde y por la noche, es más sucia.
 
-## Lo que ya sabemos de los datos reales (sáb 14/11)
+UPC Sostenible plantea instalar una **batería de 2.000 kWh**. La idea es sencilla: **llenarla cuando la
+electricidad es limpia y barata, y usarla cuando es sucia y cara.** Así el campus compra menos energía en las
+peores horas.
 
-- La **solar es minúscula**: 26 kW de media y 144 kW como máximo, frente a ~1.100 kW de consumo.
-  La red casi nunca baja de 500 kW (0,5 % de las horas) y nunca hay excedente.
-  → Prever la demanda y la solar apenas cambia las decisiones. El juego es **mover energía en el tiempo** según
-  `w_t = 0,7·co2_t/co2_ref + 0,3·precio_t/coste_ref`, y precio y CO₂ a 24 h nos los dan exactos.
-- La batería (2 MWh) es el 7 % del consumo diario (27 MWh), así que el score máximo es pequeño.
-  En validación, el `oracle` con información perfecta saca 6,12 y nuestro MPC, **6,08 (99,3 % del techo)**.
-  **El margen en el leaderboard es pequeño: la presentación y el análisis deciden.**
-- Faltan datos: noviembre de 2025 entero, el train acaba el 16/08/2026 y hay 15 horas con consumo 0.
+**Nuestro trabajo** es programar el "cerebro" de esa batería: un programa (`BatteryAgent`) al que, **cada hora**,
+el simulador oficial le cuenta la situación y le pregunta: *¿cargo, descargo o espero, y cuánto?*
 
-## Estrategia actual (v0, funciona de punta a punta)
+---
 
-Usamos un MPC. Cada hora prevemos la demanda y la solar de las próximas 24 h. Con eso resolvemos un LP
-(HiGHS, con `scipy.optimize.linprog`) que minimiza `Σ w_t·compra_t` con la física de la batería, aplicamos
-solo la primera hora y repetimos. Como η² = 0,9, el LP solo mueve energía si la hora de destino es al menos
-un 11 % "peor". Cuando la previsión llega recortada (fin de los datos), la carga final vale 0 y el LP la gasta
-(5,97 → 6,08). Hay un respaldo greedy si el LP falla o vamos justos de tiempo.
+## 2. Las reglas del juego (explicadas)
 
-Referencias en `eval.py --agent all`:
-- `nothing`: no usa la batería.
-- `greedy`: reglas simples.
-- `mpc`: nuestro agente.
-- `oracle`: el mismo LP con información perfecta. Es el techo teórico.
+### Qué sabe el agente cada hora
+Cada hora recibe un diccionario `obs` con:
+- **la hora, el día de la semana y la fecha**;
+- **cuánta energía queda en la batería** (en kWh y en %);
+- **el precio y el CO₂ de esta hora**;
+- **el precio y el CO₂ de las próximas 24 horas**, exactos (es como tener la previsión del tiempo perfecta para mañana);
+- **cuánto consumió el campus y cuánto produjo la solar en la hora anterior**.
 
-## Reparto: quién es dueño de qué (Opción B)
+Lo que no sabe es el consumo ni la solar de esta hora ni de las siguientes: esos tiene que preverlos.
 
-| Rol | Rama | Ficheros que SOLO edita esta persona |
-|---|---|---|
-| **P1 · Optimizador** | `p1-optimizador` | `src/battery/policy.py`, `optimizer.py`, `safety.py`, `baselines.py`, `tests/test_safety.py`, `tests/test_agent.py` |
-| **P2 · Previsión y datos** | `p2-prevision` | `src/battery/forecaster.py`, `data.py`, `synthetic.py`, `scripts/train_forecaster.py`, `models/`, `tests/test_forecaster.py` |
-| **P3 · Validación y relato** | `p3-validacion` | `src/battery/sim.py`, `scripts/calibrate_sim.py`, `analysis/`, `presentation/`, `docs/decisiones.md`, `tests/test_sim.py` |
-| **Integrador** (P3, o una 4.ª persona) | — | `CLAUDE.md`, `src/battery/params.py`, `obs.py`, `adapter.py`, `eval.py`, `scripts/build_submission.py`, `tests/test_adapter.py`, `tests/test_bundle.py`, `docs/reto.md`, `docs/envios.md`, `docs/equipo.md`, `.github/`, `requirements*.txt`, `README.md` |
+### Qué responde
+Un número en kW:
+- **positivo**: cargar, hasta +500;
+- **negativo**: descargar para alimentar el campus, hasta −500;
+- **0**: no hacer nada.
 
-Quién es quién: ver `docs/equipo.md`.
+### La física de la batería
+- **Capacidad:** 2.000 kWh. **Potencia máxima:** 500 kW en cada sentido. **Empieza al 50 %** (1.000 kWh).
+- **Pierde un 10 % en cada ida y vuelta.** Si metes 1 kWh, solo recuperas 0,9 kWh: se pierde un 5 % al cargar
+  y otro 5 % al descargar (η = √0,9 ≈ 0,9487 en cada sentido).
+- **Balance:** compra a la red = consumo − solar + batería. Si sale negativo (sobra energía), se vierte a la red
+  **sin cobrar nada**.
 
-**Regla de oro: no edites ficheros de otro rol.** Si necesitas un cambio en uno, no lo hagas. Escribe en tu PR
-(sección "Peticiones a otros roles") o en un issue qué cambio y por qué, y díselo a tu humano para que avise al dueño.
-Lo que sí puedes hacer es añadir líneas a `results/experiments.csv` (vía `eval.py --log`) o crear ficheros nuevos dentro de tu zona.
-
-## Contratos entre módulos (no se rompen sin acordarlo antes)
+### Cómo nos puntúan
+Nos comparan con el campus **sin batería**:
 
 ```text
-adapter.from_official(obs_dict) -> Obs                    # único sitio que conoce el formato oficial
+Score = 0,70 · (% de CO₂ ahorrado) + 0,30 · (% de euros ahorrados) − penalización por infracción
+```
+
+- El **CO₂ pesa más que el dinero** (70/30).
+- **Infracción:** pedir algo imposible, como cargar con la batería llena, descargar con la batería vacía o
+  pasar de 500 kW. Se penaliza cada vez: −0,20 según el simulador oficial y −1,00 según el enunciado y las
+  slides. Por eso nuestro objetivo es **cero infracciones, siempre**.
+- **El test** son los **últimos 7 días de cada mes** de un año (sep 2025 a ago 2026), unas **1.700 horas** (las slides;
+  el enunciado dice 2.016, pero faltan datos). Nos dan para entrenar las 3 primeras semanas de cada mes.
+- **El jurado decide de forma decisiva**: el leaderboard cuenta, pero también la presentación, el razonamiento
+  y la justificación de la estrategia.
+
+### Cómo se entrega
+- Un `submission.zip` de 25 MB como máximo, con `agent.py` y los ficheros de modelos en la raíz.
+- Toda la simulación tiene que tardar menos de **60 segundos**.
+- **10 envíos oficiales al día** (los fallidos no cuentan). Antes, la web ofrece una **prueba rápida (dry-run)
+  gratis e ilimitada** de 48 pasos.
+- El leaderboard es 50 % público y 50 % privado: **no hay que obsesionarse con el público**.
+
+Todo esto está verificado con el material oficial. Detalle, fuentes y dudas abiertas: `docs/reto.md`.
+
+---
+
+## 3. Lo que hemos descubierto (y por qué cambia el enfoque)
+
+Al analizar los datos reales salieron tres cosas que lo cambian todo:
+
+**① La solar casi no cuenta.** Produce de media 26 kW (como mucho, ~150 kW) frente a ~1.100 kW de consumo.
+El campus compra a la red el 100 % de las horas y nunca le sobra energía. Así que el problema **no** es
+"guardar el excedente solar", sino **mover energía en el tiempo**: comprar de más en las horas buenas para
+comprar de menos en las malas.
+
+**② Mover energía solo compensa si la diferencia es grande: la regla del 11 %.** Como se pierde un 10 % por el
+camino, por cada kWh que compramos de más en una hora "buena", ahorramos solo 0,9 kWh en una "mala".
+Por ejemplo, con el CO₂:
+
+```text
+03:00 de la madrugada → red limpia:  0,05 kg CO₂/kWh  → compramos 1 kWh de más (+0,050 kg)
+20:00 de la tarde     → red sucia:   0,15 kg CO₂/kWh  → compramos 0,9 kWh de menos (−0,135 kg)
+Resultado: −0,085 kg por cada kWh movido. Compensa.
+```
+
+Si la hora mala fuese solo un poco peor (menos de un 11 %), perderíamos. Para combinar CO₂ y precio damos a cada
+hora un **"peso"**, que es lo "mala" que es esa hora según la fórmula del score:
+
+```text
+peso_hora = 0,7 · CO₂_hora / CO₂_medio + 0,3 · precio_hora / precio_medio
+```
+
+**③ El margen es pequeño, así que el jurado pesa mucho.** La batería (2 MWh) es solo el 7 % del consumo diario.
+Aunque supiésemos el futuro perfecto, el score máximo en nuestra validación sería **6,12**. Nuestro agente ya saca
+**6,08**, el 99,3 % de ese máximo. En el leaderboard las diferencias entre buenos equipos serán de décimas.
+**Lo que nos diferenciará es explicar bien el razonamiento, con números y gráficas.**
+
+---
+
+## 4. Cómo funciona nuestro agente (en lenguaje llano)
+
+Pensad en un **GPS**: planifica la ruta completa, pero solo te dice el siguiente giro. Al minuto siguiente
+vuelve a calcular con la nueva información. Nuestro agente hace lo mismo con la batería. **Una hora en su vida:**
+
+1. **Llega la observación** de las 14:00. Un traductor (`adapter`) la pasa a nuestro formato interno.
+2. **Aprende de lo que acaba de pasar.** Con el consumo y la solar reales de las 13:00, ajusta su previsión de
+   las próximas 24 h (`forecaster`).
+3. **Hace un plan para las próximas 24 h.** Con el precio y el CO₂ (que conoce exactos) y su previsión de consumo,
+   un optimizador matemático (`optimizer`) calcula qué hacer cada hora para que la suma de los pesos de lo
+   comprado sea lo más baja posible, respetando la física de la batería. Esto es un **problema de programación
+   lineal (LP)**, que el solver HiGHS de `scipy` resuelve en milisegundos.
+4. **Ejecuta solo la primera hora del plan**, después de pasarla por un control de seguridad (`safety`) que la
+   recorta para que nunca sea una infracción.
+5. **A las 15:00 vuelve a empezar** con información nueva. Esta técnica se llama **MPC** (Model Predictive Control).
+
+Dos detalles importantes:
+- **Al final del test, gasta lo que queda.** La carga final no puntúa. El simulador nos manda menos de 24 horas
+  de previsión cuando se acaban los datos: es la señal para vaciar la batería en las peores horas.
+  Hay que contarlo con transparencia al jurado: en el campus real no lo haríamos así.
+- **Si algo falla o vamos justos de tiempo**, el agente usa una regla simple de respaldo. **Nunca** lanza un error.
+
+Para tener contexto, comparamos siempre con otras estrategias (`python eval.py --agent all`):
+
+| Estrategia | Qué hace | Score en validación |
+|---|---|---|
+| `nothing` | No usa la batería (es la referencia) | 0,00 |
+| plantilla oficial | Reglas fijas por horas del kit oficial | 0,03 (con 7 infracciones) |
+| `greedy` | Reglas sencillas | 0,08 |
+| **`mpc`** | **Nuestro agente** | **6,08** |
+| `oracle` | El mismo planificador, pero con **bola de cristal**: conoce todo el futuro. Es el techo teórico | 6,12 |
+
+---
+
+## 5. Cómo nos organizamos: 3 personas, 3 Claudes, 1 repo
+
+**El riesgo:** tres Claudes editando a la vez el mismo código acaban pisándose: conflictos de git, cambios
+que se rompen entre sí y nadie sabe qué versión es buena.
+
+**Las cuatro ideas que lo evitan:**
+
+1. **Cada fichero tiene un único dueño.** Si dos personas nunca tocan el mismo fichero, no hay conflictos.
+2. **Las piezas encajan por "contratos"**, como los enchufes: cada módulo promete qué recibe y qué devuelve (sección 6).
+   Mientras se respete el contrato, cada uno puede mejorar su pieza por dentro sin romper las de los demás.
+3. **Una sola vara de medir:** `python eval.py`. Nadie dice "me mejora" sin ese número.
+4. **Una persona integra**: revisa las pull requests y las fusiona en `main`.
+
+### Los roles
+
+- **P1 · Optimizador**, rama `p1-optimizador`. Es el "cerebro" que decide: el plan de 24 h, la seguridad y el
+  `BatteryAgent`. Su objetivo es acercar `mpc` a `oracle`.
+- **P2 · Previsión y datos**, rama `p2-prevision`. Se encarga de los datos (limpieza, huecos), de la previsión y
+  del análisis de patrones. Su objetivo es la calidad de los datos, ver más allá de 24 h y aportar números para el jurado.
+- **P3 · Validación y relato**, rama `p3-validacion`. Mantiene el simulador local idéntico al oficial y prepara
+  las gráficas, el registro de decisiones y la presentación. Su objetivo es que la historia convenza al jurado.
+- **Integrador** (P3, o una 4.ª persona). Se ocupa de las pull requests, de `main`, del empaquetado y de los
+  envíos oficiales. Su objetivo es que `main` siempre funcione.
+
+### Qué ficheros son de quién
+
+| Rol | Ficheros que **solo** edita esta persona |
+|---|---|
+| **P1** | `src/battery/policy.py`, `optimizer.py`, `safety.py`, `baselines.py`, `tests/test_safety.py`, `tests/test_agent.py` |
+| **P2** | `src/battery/forecaster.py`, `data.py`, `synthetic.py`, `scripts/train_forecaster.py`, `models/`, `tests/test_forecaster.py` |
+| **P3** | `src/battery/sim.py`, `scripts/calibrate_sim.py`, `analysis/`, `presentation/`, `docs/decisiones.md`, `tests/test_sim.py` |
+| **Integrador** | `CLAUDE.md`, `src/battery/params.py`, `obs.py`, `adapter.py`, `eval.py`, `scripts/build_submission.py`, `tests/test_adapter.py`, `tests/test_bundle.py`, `docs/reto.md`, `docs/envios.md`, `docs/equipo.md`, `.github/`, `requirements*.txt`, `README.md` |
+
+**Si necesitas cambiar un fichero que no es tuyo, no lo toques.** Escribe en tu pull request (sección "Peticiones a
+otros roles") qué necesitas y por qué, y avisa a su dueño. Sí puedes crear ficheros nuevos dentro de tu zona y
+añadir líneas a `results/experiments.csv` mediante `eval.py --log`.
+
+Nombres de cada persona y pasos de preparación: `docs/equipo.md`. El primer mensaje para cada Claude:
+`docs/prompts-arranque.md`.
+
+---
+
+## 6. Cómo encajan las piezas (los contratos)
+
+El recorrido de una hora, con quién es dueño de cada paso:
+
+```text
+ obs oficial (dict)
+     │
+     ▼  adapter.from_official ............ [Integrador] único sitio que conoce el formato oficial
+ Obs (nuestro formato)
+     │
+     ▼  forecaster.update / forecast ..... [P2] consumo y solar previstos, 24 h
+     │
+     ▼  optimizer.plan ................... [P1] plan óptimo de 24 h (LP)
+     │
+     ▼  safety.clip_action ............... [P1] garantiza 0 infracciones
+     │
+ BatteryAgent.act → kW ................... [P1] lo que llama el evaluador
+```
+
+Y alrededor, sin ir en la entrega: `data` (P2) carga los datos, `sim` (P3) simula como el oficial y `eval.py`
+(integrador) lo mide todo.
+
+Las firmas exactas, que **no se cambian sin acordarlo antes**:
+
+```text
+adapter.from_official(obs_dict) -> Obs
 Obs(hour, weekday, soc_kwh, price[<=24], co2[<=24], load_prev_kw, pv_prev_kw, timestamp)
-    price en €/kWh, co2 en kg CO2/kWh, [0] = hora actual
+    price en €/kWh, co2 en kg CO2/kWh, [0] = hora actual; menos de 24 valores = se acaban los datos
 
-Forecaster(prior: dict | None)                            # P2 -> P1
-    .update(obs)                                          # una vez por hora, antes de forecast
-    .forecast(obs, h) -> (load_kw[h], pv_kw[h])           # np.ndarray, kW, >= 0, [0] = hora actual, < 2 ms
+Forecaster(prior: dict | None)
+    .update(obs)                                    # una vez por hora, antes de forecast
+    .forecast(obs, h) -> (load_kw[h], pv_kw[h])     # np.ndarray, kW, >= 0, [0] = hora actual, < 2 ms
 
-optimizer.plan(soc, load, pv, price, co2, w_co2, w_cost, terminal_value, p) -> acciones_kw[H]   # P1
-safety.clip_action(a_kw, soc_kwh) -> float válido          # P1, garantiza 0 infracciones
-policy.BatteryAgent().act(obs_dict) -> float kW           # P1, lo que carga el evaluador
+optimizer.plan(soc, load, pv, price, co2, w_co2, w_cost, terminal_value, p) -> acciones_kw[H]
+safety.clip_action(a_kw, soc_kwh) -> float válido
+policy.BatteryAgent().act(obs_dict) -> float kW
 
-data.load() -> DataFrame[timestamp, load_kw, pv_kw, price_eur_kwh, co2_kg_kwh]   # P2, horario
-data.validation_split(df) / train_split(df)                # validación = últimas 168 h de cada mes
+data.load() -> DataFrame[timestamp, load_kw, pv_kw, price_eur_kwh, co2_kg_kwh]   # una fila por hora
+data.validation_split(df) / train_split(df)          # validación = últimas 168 h de cada mes
 
-sim.simulate(agent, df) -> SimResult(log, totals)          # P3, idéntico a environment.py
+sim.simulate(agent, df) -> SimResult(log, totals)    # idéntico a environment.py
 sim.score(totals, baseline_totals(df)) -> {score, d_co2_pct, d_cost_pct, infractions}
-    log hora a hora: sim.LOG_COLUMNS
+    log hora a hora: columnas en sim.LOG_COLUMNS
 
 models/forecaster.json, models/objective_refs.json (+ .pkl si hace falta) -> van en la raíz del ZIP
 ```
 
-## Reglas para el código que va en `dist/agent.py`
+**Cómo validamos sin hacer trampas:** el test son las últimas semanas de cada mes, así que nuestra validación
+son las **últimas 168 h de cada mes del train**, seguidas, como si fueran un test. Lo que se aprende
+(perfiles, referencias) sale solo del resto del train.
 
-Esto aplica a `params`, `obs`, `adapter`, `safety`, `forecaster`, `optimizer` y `policy`.
-`build_submission.py` lo comprueba todo y además pasa el `check_submission.py` oficial.
+---
 
-- Solo se pueden importar `numpy`, `pandas`, `scipy`, `sklearn`, `joblib`, `xgboost`, `lightgbm`, `math`, `random`,
-  `datetime`, `collections`, `itertools`, `json`, `pathlib`, `typing`, `dataclasses`, `functools`, `heapq`,
-  `bisect`, `re`, `copy` y `pickle`. Están prohibidos `os`, `sys`, `subprocess`, `importlib`, `inspect`, etc.
-- El escáner del servidor rechaza cualquier llamada a `.stack(...)` (también `np.stack`, mejor `np.vstack`),
-  así como `eval`, `exec`, `compile`, `globals`, `locals`, `vars` y `__import__`.
-- Entre módulos, imports relativos (`from .optimizer import plan`). El empaquetador los quita.
-- Dos módulos no pueden definir el mismo nombre a nivel de módulo, y cada librería se importa igual en todos.
-- Compatible con Python 3.9 o superior: `Optional[...]`, no `X | None`.
-- Nada de `print` ni de escribir ficheros. Los artefactos se leen con `Path(__file__).parent`.
-- El agente nunca lanza una excepción: ante cualquier error, devuelve una acción segura.
-- Tiempo: `eval.py` proyecta el tiempo a 2.016 h, que tiene que quedar por debajo de 40 s (el límite oficial es 60 s).
+## 7. La entrega: un solo `agent.py`
 
-`sim.py`, `data.py`, `baselines.py`, `synthetic.py`, `eval.py`, `scripts/` y `analysis/` no se empaquetan:
-ahí puedes usar lo que quieras.
+**El problema:** el servidor solo carga `agent.py` y su escáner de seguridad no permite trucos para importar
+otros ficheros. Pero si los tres editásemos un único `agent.py`, sería el caos.
 
-## Comandos
+**La solución:** cada uno trabaja en sus módulos de `src/battery/`, como capítulos de un libro, y
+`scripts/build_submission.py` los **encuaderna** en un único `dist/agent.py` justo antes de entregar.
+Además comprueba que no usamos nada prohibido, crea `dist/submission.zip`, lo ejecuta aislado del repo
+(tiene que decidir exactamente lo mismo que el código original) y le pasa el validador oficial.
+
+Por eso, el código de los módulos que se empaquetan (`params`, `obs`, `adapter`, `safety`, `forecaster`,
+`optimizer` y `policy`) tiene que cumplir estas reglas. `build_submission.py` las comprueba y falla si no se cumplen:
+
+- **Solo estas librerías:** `numpy`, `pandas`, `scipy`, `sklearn`, `joblib`, `xgboost`, `lightgbm`, `math`, `random`,
+  `datetime`, `collections`, `itertools`, `json`, `pathlib`, `typing`, `dataclasses`, `functools`, `heapq`, `bisect`,
+  `re`, `copy` y `pickle`. Nada de `os`, `sys`, `subprocess`, `importlib`, `inspect`, etc.
+- **Ninguna llamada a `.stack(...)`**, ni siquiera `np.stack` (usad `np.vstack`). Tampoco `eval`, `exec`,
+  `compile`, `globals`, `locals`, `vars` ni `__import__`.
+- **Imports entre módulos, relativos** (`from .optimizer import plan`). El empaquetador los quita.
+- **Nombres únicos:** dos módulos no pueden definir el mismo nombre. Cada librería se importa igual en todos.
+- **Compatible con Python 3.9:** `Optional[...]`, no `X | None`.
+- **Sin `print` ni escritura de ficheros.** Los modelos se leen con `Path(__file__).parent`.
+- **El agente nunca lanza una excepción.** Ante cualquier error, devuelve una acción segura.
+- **Tiempo:** `eval.py` proyecta el tiempo a 2.016 h y tiene que quedar por debajo de 40 s (el límite oficial es 60 s).
+
+Los ficheros que no se empaquetan (`sim.py`, `data.py`, `baselines.py`, `synthetic.py`, `eval.py`, `scripts/`
+y `analysis/`) pueden usar lo que quieran.
+
+---
+
+## 8. El día a día
+
+### Preparar el portátil (una vez)
+Descomprimid el ZIP oficial en la raíz del repo y renombrad la carpeta a `oficial/`. **Git la ignora a propósito:
+el repo es público y los datos oficiales no se suben.** Ahí están `oficial/docs/ENUNCIAT.md`,
+`oficial/docs/GUIA_VARIABLES.md`, `oficial/starter_kit/environment.py` (el simulador oficial) y el
+tutorial. Sin `oficial/`, por ejemplo en la CI, todo funciona con datos sintéticos, que sirven para probar
+el circuito pero **no para tomar decisiones**.
+
+### Comandos
 
 ```bash
-pip install -r requirements.txt -r requirements-dev.txt
-python -m pytest -q                         # tests (también los pasa la CI en cada PR)
-python eval.py                              # nuestro agente en validación (datos oficiales si hay oficial/)
-python eval.py --agent all                  # nothing / greedy / mpc / oracle
-python eval.py --fc-noise 0.1               # robustez si las previsiones de precio/CO2 fallaran
-python eval.py --log "qué he cambiado"      # deja constancia en results/experiments.csv
-python eval.py --save-hourly                # log hora a hora en results/hourly/ (para gráficas)
-python scripts/calibrate_sim.py             # nuestro sim frente al environment.py oficial (tienen que coincidir)
-python scripts/train_forecaster.py          # regenera models/ con el train (P2)
-python scripts/build_submission.py          # dist/agent.py + dist/submission.zip, prueba aislada y check oficial
-python eval.py --agent dist                 # evalúa el agent.py empaquetado
+pip install -r requirements.txt -r requirements-dev.txt   # instalar
+python -m pytest -q                         # ¿funciona todo? (también lo comprueba GitHub en cada PR)
+python eval.py                              # ¿cuánto saca nuestro agente en validación?
+python eval.py --agent all                  # comparativa nothing / greedy / mpc / oracle
+python eval.py --log "qué he cambiado"      # medir y dejarlo apuntado en results/experiments.csv
+python eval.py --fc-noise 0.1               # ¿y si las previsiones de precio/CO2 fallaran un 10 %?
+python eval.py --save-hourly                # guardar el detalle hora a hora (para gráficas)
+python scripts/calibrate_sim.py             # ¿nuestro simulador sigue dando lo mismo que el oficial?
+python scripts/train_forecaster.py          # regenerar los modelos de models/ (P2)
+python scripts/build_submission.py          # crear dist/submission.zip y comprobarlo
+python eval.py --agent dist                 # medir el agent.py empaquetado
 ```
 
-`data/processed/hourly.csv` se genera solo a partir de `oficial/` la primera vez. Sin `oficial/` (por ejemplo, en la CI)
-se usan datos sintéticos, que sirven para probar el circuito y **no para tomar decisiones**.
+### Trabajar con git
+1. Trabaja siempre en **tu rama**. **Nunca hagas push a `main`.**
+2. Sincronízate a menudo, al empezar y después de cada fusión: `git fetch origin && git merge origin/main`.
+3. **Pull requests pequeñas y frecuentes**, como mínimo una por cada punto de sincronización del equipo. Antes de abrir una:
+   - los tests en verde (`python -m pytest -q`);
+   - `python eval.py --log "..."`, con la tabla pegada en la PR y comparada con `main`;
+   - si has tocado módulos que se empaquetan, `python scripts/build_submission.py` en verde;
+   - la plantilla de la PR rellena.
 
-## Flujo de trabajo con git (detalle en docs/equipo.md)
+   El integrador revisa y fusiona con "Create a merge commit".
+4. **Si una idea no mejora, también se apunta** en `docs/decisiones.md`: al jurado le interesa lo que descartamos y por qué.
+5. **Los cambios grandes de estrategia los decide el equipo.** Claude propone; tu humano decide.
 
-1. Trabaja siempre en tu rama (`p1-optimizador`, `p2-prevision` o `p3-validacion`). **Nunca hagas push a `main`.**
-2. Antes de empezar y después de cada merge: `git fetch origin && git merge origin/main`.
-3. Haz PRs pequeñas y frecuentes, como mínimo una por cada punto de sincronización. Antes de abrir una:
-   - `python -m pytest -q` en verde.
-   - `python eval.py --log "..."`. Pega la tabla en la PR y compárala con `main`.
-   - Si has tocado módulos empaquetados: `python scripts/build_submission.py` en verde.
-   - Rellena la plantilla de la PR. El integrador revisa y hace el merge con "Create a merge commit".
-4. "Me mejora" solo vale con `eval.py` sobre la validación con datos oficiales. Si una idea no mejora,
-   apúntala igualmente en `docs/decisiones.md` mediante P3, porque al jurado también le interesa lo descartado.
-5. Los cambios grandes de estrategia los decide el equipo. Claude propone; tu humano decide.
+---
 
-## Cosas que Claude NO debe hacer
+## 9. Lo que Claude no debe hacer
 
-- Editar ficheros de otro rol, hacer push a `main` o un merge de PRs (eso es del integrador).
-- Subir `oficial/`, `data/` ni nada de los datos oficiales (el repo es público).
-- Añadir librerías no permitidas al código empaquetado.
-- Cambiar los contratos de arriba sin acordarlo.
+- Editar ficheros de otro rol, hacer push a `main` o fusionar pull requests (eso lo hace el integrador).
+- Subir `oficial/`, `data/` o cualquier dato oficial.
+- Usar librerías prohibidas en el código que se empaqueta.
+- Cambiar los contratos de la sección 6 sin acordarlo antes.
 - Afirmar que algo mejora sin un número de `eval.py`.
+
+---
+
+## 10. Glosario
+
+| Término | Qué significa aquí |
+|---|---|
+| **SOC** | *State of charge*: la energía que hay en la batería (0–2.000 kWh) |
+| **PVPC** | La tarifa eléctrica regulada española, con un precio distinto cada hora |
+| **Peso de una hora** | Lo "mala" que es una hora para comprar: `0,7·CO₂/medio + 0,3·precio/medio` |
+| **Regla del 11 %** | Mover energía de la hora A a la B solo compensa si B es al menos un 11 % peor (por el 10 % que se pierde) |
+| **LP** | Programación lineal: el método matemático que calcula el plan óptimo de 24 h |
+| **MPC** | Control predictivo: planificar 24 h, ejecutar 1 h y volver a planificar (como un GPS) |
+| **Oracle** | Nuestro planificador con información perfecta de todo el futuro. Es el techo teórico, imposible de superar |
+| **Contrato** | Lo que un módulo promete recibir y devolver, para que las piezas encajen |
+| **Infracción** | Pedir una acción físicamente imposible. Penaliza y siempre la evitamos |
+| **Dry-run** | La prueba rápida de la web (48 pasos), gratis e ilimitada, antes de un envío oficial |
+| **Integrador** | La persona que revisa las PRs, mantiene `main` y hace los envíos |
+
+Más documentación:
+- `docs/registro-montaje.md`: cómo y por qué se montó el repo.
+- `docs/reto.md`: la especificación verificada.
+- `docs/equipo.md`: preparación y calendario.
+- `docs/prompts-arranque.md`: el primer mensaje para cada Claude.
+- `docs/decisiones.md`: el registro de decisiones para el jurado.
+- `docs/contexto-chat.md`: el contexto del evento.
