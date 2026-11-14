@@ -53,6 +53,18 @@ def by_month(df: pd.DataFrame, log: pd.DataFrame, base: dict) -> pd.DataFrame:
     return g
 
 
+def halves(df: pd.DataFrame, log: pd.DataFrame) -> tuple:
+    """Score de la primera y de la segunda mitad del episodio, cada una con su propia referencia
+    (como el ranking público y el privado: 50 % y 50 % de las horas)."""
+    ref = np.maximum(df.load_kw.to_numpy() - df.pv_kw.to_numpy(), 0.0)
+    co2, price, imp = df.co2_kg_kwh.to_numpy(), df.price_eur_kwh.to_numpy(), log.import_kw.to_numpy()
+    out = []
+    for sl in (slice(0, len(df) // 2), slice(len(df) // 2, len(df))):
+        out.append(70.0 * (1.0 - (imp[sl] * co2[sl]).sum() / (ref[sl] * co2[sl]).sum())
+                   + 30.0 * (1.0 - (imp[sl] * price[sl]).sum() / (ref[sl] * price[sl]).sum()))
+    return tuple(out)
+
+
 def compare(full: pd.DataFrame, name: str, with_ceiling: bool = False) -> pd.DataFrame:
     df = window_frame(full, name)
     exclude = set(df.timestamp)
@@ -69,11 +81,12 @@ def compare(full: pd.DataFrame, name: str, with_ceiling: bool = False) -> pd.Dat
     agents = {"v4": lambda: B.hard_agent({k: v for k, v in prior.items() if k != "cand"}, solar_prior), "cand": cand}
     if with_ceiling:
         agents["techo"] = lambda: B.perfect_market_agent(prior, df, solar_prior)
-    res, tot = {}, {}
+    res, tot, half = {}, {}, {}
     for key, fac in agents.items():
         totals, log = B.simulate_hard(fac(), df)
         tot[key] = score(totals, base)
         res[key] = by_month(df, log, base)
+        half[key] = halves(df, log)
     out = pd.DataFrame({"horas": df.groupby(pd.DatetimeIndex(df.timestamp).strftime("%Y-%m")).size(),
                         "v4": res["v4"].aport, "cand": res["cand"].aport})
     out["dif"] = out.cand - out.v4
@@ -98,6 +111,9 @@ def compare(full: pd.DataFrame, name: str, with_ceiling: bool = False) -> pd.Dat
     print(f"meses que gana {int((d > 1e-9).sum())} / pierde {int((d < -1e-9).sum())} / igual {int((np.abs(d) <= 1e-9).sum())} de {n} | "
           f"media por mes {d.mean():+.4f}, error típico {se:.4f}, t = {d.mean() / se if se > 0 else float('nan'):.2f} | "
           f"sin el mejor mes {d.sum() - d.max():+.3f} | sin el peor {d.sum() - d.min():+.3f}")
+    print(f"por mitades (cada una con su referencia): primera v4 {half['v4'][0]:.3f} -> candidato {half['cand'][0]:.3f} "
+          f"({half['cand'][0] - half['v4'][0]:+.3f}) | segunda v4 {half['v4'][1]:.3f} -> candidato {half['cand'][1]:.3f} "
+          f"({half['cand'][1] - half['v4'][1]:+.3f})")
     out.insert(0, "ventana", name)
     return out
 

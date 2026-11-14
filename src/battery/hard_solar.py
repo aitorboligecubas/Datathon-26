@@ -80,6 +80,8 @@ class NetLoadForecaster:
         self.meter_down = False
         self.net_now = float("nan")       # previsión del consumo neto de la hora actual (para adjust_action)
         self.hour_now = 0
+        self.pv_alive = False             # la última lectura de solar fue válida y mayor que cero
+        self.pv_now = 0.0                 # solar prevista para la hora actual
 
     def new_block(self) -> None:
         """Empieza otra semana del test (hace un mes de la anterior): lo aprendido de las últimas horas no vale."""
@@ -99,6 +101,7 @@ class NetLoadForecaster:
         self.base.update(obs)
         load, pv, ts = obs.load_prev_kw, obs.pv_prev_kw, obs.timestamp
         self.meter_down = load == 0.0
+        self.pv_alive = math.isfinite(pv) and pv > 1.0
         if math.isfinite(load) and load > 0 and expected > 0:
             self.load_ratio = min(max(load / expected, 0.3), 3.0)
         if self.ok and ts is not None and math.isfinite(pv):
@@ -137,9 +140,10 @@ class NetLoadForecaster:
                 load[k] = base_load[k]
         if self.meter_down:          # contador caído (lectura 0 exacta): si sigue, descargar es tirar energía
             load[0] = 0.0
-            pv[0] = 0.0
+            if not self.pv_alive:    # ...y si la solar también marca 0, tampoco se cuenta con ella esta hora
+                pv[0] = 0.0
         load, pv = np.maximum(load, 0.0), np.maximum(pv, 0.0)
-        self.net_now, self.hour_now = float(load[0] - pv[0]), times[0].hour
+        self.net_now, self.hour_now, self.pv_now = float(load[0] - pv[0]), times[0].hour, float(pv[0])
         # Al llegar cada hora se descargará algo menos y se cargará algo más de lo previsto (adjust_action).
         # Para que el plan reparta la energía contando con eso, las horas siguientes se planifican con un
         # consumo neto una desviación típica más bajo (se suma a la solar; solo mueve decisiones, no el score).
@@ -149,8 +153,8 @@ class NetLoadForecaster:
 
     def adjust_action(self, action_kw: float, obs: Obs, p) -> float:
         """Margen de seguridad con el consumo neto de ESTA hora, que solo se conoce aproximadamente."""
-        if self.meter_down:
-            return max(action_kw, 0.0)      # contador caído: no se descarga, y no hay excedente que guardar
+        if self.meter_down and not (self.pv_alive and self.pv_now > 1.0):
+            return max(action_kw, 0.0)      # contador caído y sin solar: no se descarga ni hay excedente que guardar
         net = self.net_now
         if not math.isfinite(net):
             return action_kw

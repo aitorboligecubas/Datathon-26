@@ -43,6 +43,7 @@ Q_LOW, Q_HIGH = 0.16, 0.84   # cuantiles del margen: equivalen a 1 desviación t
 MONTH_DAYS = 30.4            # días medios de un mes, para interpolar el cielo despejado
 MIN_DAY_HOURS = 3            # horas de sol vistas hoy para que la media de hoy sirva de pista para mañana
 DEFAULT_SD = 150.0           # kW; margen si no hay tablas (como hard_solar)
+MIN_FIT_ROWS = 200           # filas mínimas para ajustar un coeficiente de la solar (si no, vale el día típico)
 HOUR_NS = 3600 * 10 ** 9
 ONE_HOUR_CAND = pd.Timedelta(hours=1)
 HOLIDAYS_CAND = frozenset((
@@ -97,10 +98,12 @@ def neighbour_month(month: int, day: float, centers) -> tuple:
 
 class SolarCand:
     def __init__(self, prior: Optional[dict], base, z: float = 1.0, reg: bool = True, freeze: bool = True,
-                 quant: bool = True, uncap: bool = True, pvreg: bool = True, shade_now: bool = True):
+                 quant: bool = True, uncap: bool = True, pvreg: bool = True, shade_now: bool = True,
+                 room: bool = False, pv_factor: float = 1.0):
         self.base = base
         self.z = z                    # márgenes en "desviaciones típicas" (1 = cuantiles 16 % y 84 %)
         self.reg, self.freeze, self.quant, self.uncap, self.pvreg, self.shade_now = reg, freeze, quant, uncap, pvreg, shade_now
+        self.room = room              # margen de la solar de las horas siguientes con el error a esa antelación
         prior = prior or {}
         try:
             self.clear = [[float(v) for v in row] for row in prior["pv_clear"]]      # [mes][hora solar], kW ya x12
@@ -111,6 +114,8 @@ class SolarCand:
             self.pv_b = [float(v) for v in prior["pv_b"]]                            # [antelación] media del día
             self.pv_c = float(prior["pv_c"])                                         # de la media de un día al siguiente
             self.pv_up = [float(v) for v in prior["pv_up"]]                          # [tramo de claridad] cuantil 84 % / despejado
+            self.pv_up_lead = prior.get("pv_up_lead")                                # [antelación][tramo] ídem a k horas vista
+            self.pv_up_next = prior.get("pv_up_next")                                # [tramo] ídem para el día siguiente
             self.load_how = [float(v) for v in prior["load_how"]]                    # [168] perfil de consumo
             self.reg3 = prior["load_reg3"]                                           # [hora][antelación] -> 4 coeficientes
             self.reg1 = prior["load_reg1"]                                           # [hora][antelación] -> 2 coeficientes
@@ -122,6 +127,11 @@ class SolarCand:
                        and len(self.pv_up) == len(KAPPA_BINS) + 1 and len(self.l_lo) == 24 and len(self.l_lo0) == 24)
         except Exception:
             self.ok = False
+        if pv_factor != 1.0:
+            try:    # al integrarlo (pv_factor = 12): la solar que ve el previsor de respaldo de P2 también es x12.
+                self.base.pv_prior = self.base.pv_prior * pv_factor     # En el banco ya lo hace el previsor actual.
+            except Exception:
+                pass
         self.weather = {}
         self.new_block()
         self.net_lo0 = float("nan")     # consumo neto de esta hora menos el margen (lo usa adjust_action)
@@ -288,7 +298,10 @@ class SolarCand:
                 b = 0
                 while b < len(KAPPA_BINS) and kappa >= KAPPA_BINS[b]:
                     b += 1
-                m_load, m_pv = lo_rel * prof, self.pv_up[b] * clear
+                up = self.pv_up[b]
+                if self.room and k >= 1 and seguido and self.pv_up_lead is not None:
+                    up = self.pv_up_lead[k][b] if (t.day == day0 and k < PV_LEADS) else self.pv_up_next[b]
+                m_load, m_pv = lo_rel * prof, up * clear
                 margin[k] = math.sqrt(m_load * m_load + m_pv * m_pv)
             else:
                 margin[k] = self.net_sd[h]
@@ -394,15 +407,32 @@ def fit_prior(table: pd.DataFrame, sky: bool = True) -> dict:
     prev_full = pd.Series(dkey, index=idx).map(full.shift(1, freq="D")).to_numpy(float)
     dnum = dkey.to_numpy().astype("int64")
     pv_a, pv_b = [0.0] * PV_LEADS, [0.0] * PV_LEADS
+    nb = len(KAPPA_BINS) + 1
+    pv_up_lead = [[0.0] * nb for _ in range(PV_LEADS)]
+
+    def upper_by_bin(rel_err, kap_hat, sel) -> list:
+        """Cuantil 84 % del error relativo por tramo de claridad prevista (el global si hay menos de 30 casos)."""
+        if sel.sum() < 30:
+            return [0.0] * nb
+        glob = max(float(np.quantile(rel_err[sel], Q_HIGH)), 0.0)
+        bins_ = np.digitize(kap_hat, KAPPA_BINS)
+        return [max(float(np.quantile(rel_err[sel & (bins_ == b)], Q_HIGH)), 0.0) if (sel & (bins_ == b)).sum() >= 30 else glob
+                for b in range(nb)]
+
     for k in range(PV_LEADS):
         y, c, m = lead(pv, k), lead(cl, k), lead(mn, k)
         ok = (lead(dnum.astype(float), k) == dnum) & np.isfinite(y) & (c >= CLEAR_MIN) & np.isfinite(last_b) & np.isfinite(day_b)
-        if ok.sum() >= 50:
+        if ok.sum() >= MIN_FIT_ROWS:
             coef = np.linalg.lstsq(np.c_[c * last_b, c * day_b][ok], (y - m)[ok], rcond=None)[0]
             pv_a[k], pv_b[k] = float(coef[0]), float(coef[1])
+        csafe = np.where(c > 0, c, 1.0)
+        kap_k = np.clip(m / csafe + pv_a[k] * np.nan_to_num(last_b) + pv_b[k] * np.nan_to_num(day_b), 0.0, KAPPA_MAX)
+        pv_up_lead[k] = upper_by_bin((y - c * kap_k) / csafe, kap_k, ok)
     ok = np.isfinite(pv) & (cl >= CLEAR_MIN) & np.isfinite(prev_full)
     x = (cl * prev_full)[ok]
     pv_c = float((x * (pv - mn)[ok]).sum() / max((x * x).sum(), 1e-9))
+    kap_n = np.clip(typ + pv_c * np.nan_to_num(prev_full), 0.0, KAPPA_MAX)
+    pv_up_next = upper_by_bin((pv - cl * kap_n) / np.where(cl > 0, cl, 1.0), kap_n, ok)
     # ---- error de la solar de la hora actual, por tramo de claridad prevista (cuantil 84 % / cielo despejado)
     dev0 = np.where(np.isfinite(last_b) & np.isfinite(day_b), pv_a[0] * np.nan_to_num(last_b) + pv_b[0] * np.nan_to_num(day_b),
                     np.where(np.isfinite(prev_full), pv_c * np.nan_to_num(prev_full), 0.0))
@@ -452,11 +482,12 @@ def fit_prior(table: pd.DataFrame, sky: bool = True) -> dict:
     load_lo, load_lo0 = [], []
     for h in range(24):
         sel = oke & (hour == h)
-        load_lo.append(max(-float(np.quantile(err[sel], Q_LOW)), 0.0) if sel.sum() >= 20 else 0.1)
+        load_lo.append(max(-float(np.quantile(err[sel], Q_LOW)), 0.0) + 0.0 if sel.sum() >= 20 else 0.1)
         sel = np.isfinite(r) & (hour == h)
         load_lo0.append(max(-float(np.quantile(r[sel], Q_LOW)), 0.0) if sel.sum() >= 20 else 0.2)
     return {"sky": bool(sky), "pv_clear": clear.tolist(), "pv_mean": mean.tolist(), "pv_day": [float(v) for v in centers],
-            "pv_a": pv_a, "pv_b": pv_b, "pv_c": pv_c, "pv_up": pv_up, "load_how": [float(v) for v in prof],
+            "pv_a": pv_a, "pv_b": pv_b, "pv_c": pv_c, "pv_up": pv_up, "pv_up_lead": pv_up_lead, "pv_up_next": pv_up_next,
+            "load_how": [float(v) for v in prof],
             "load_reg3": reg3, "load_reg1": reg1, "load_lo": load_lo, "load_lo0": load_lo0}
 
 

@@ -9,7 +9,13 @@ su semana. Se quita agosto (sus datos acaban el día 16 y no llegan a fin de mes
 ese día son los de un jueves normal (18/12).
 
     python results/p1_hard/mercado_verif_calendario.py
+    python results/p1_hard/mercado_verif_calendario.py --nov    # añade la semana de noviembre con el contador a 0
+
+Con --nov se añade la semana del 24 al 30 de noviembre con el contador a 0 (en el train, noviembre no tiene
+datos de contador): precio y CO2 del 17 al 23 de noviembre (que también se quitan del ajuste), consumo y solar
+a 0 y la meteo de la semana de octubre.
 """
+import argparse
 import sys
 from pathlib import Path
 
@@ -32,13 +38,27 @@ SHIFT_D = 7
 
 
 def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--nov", action="store_true", help="añade la semana de noviembre con el contador a 0")
+    args = ap.parse_args()
     full = B.hard_table()
     val = B.split_frame(full, "val")
     exclude = set(val.timestamp)
+    nov_src = pd.date_range("2025-11-17", periods=168, freq="h")
+    if args.nov:
+        exclude |= set(nov_src)
     fit_df = full[~full.timestamp.isin(exclude)]
     prior = B.fit_market(exclude, fit_df)               # trae "cand" = fit_cand(exclude)
     solar_prior = B.fit_solar(fit_df)
     ep = val[val.timestamp < "2026-08-01"].copy().reset_index(drop=True)
+    if args.nov:
+        market = B.market_frame().reindex(nov_src)
+        octw = ep[ep.timestamp.dt.month == 10].reset_index(drop=True)
+        novw = octw.copy()                              # la meteo, la de octubre
+        novw["timestamp"] = nov_src
+        novw["load_kw"], novw["pv_kw"] = 0.0, 0.0
+        novw["price_eur_kwh"], novw["co2_kg_kwh"] = market.price.to_numpy(), market.co2.to_numpy()
+        ep = pd.concat([ep, novw]).sort_values("timestamp").reset_index(drop=True)
     first = {hour_index(t) for t in ep.groupby([ep.timestamp.dt.year, ep.timestamp.dt.month]).timestamp.min()}
     ep["timestamp"] = ep.timestamp + pd.Timedelta(days=SHIFT_D)
     seeds = []

@@ -35,6 +35,34 @@ def window(full: pd.DataFrame, days: str) -> pd.DataFrame:
     return full[(d >= a) & (d <= b)].reset_index(drop=True)
 
 
+class TrueNet:
+    """Previsor tramposo (solo para medir techos): conoce el consumo y la solar reales.
+    mode "now": solo los de la hora actual; "all": los de todo el horizonte."""
+
+    def __init__(self, inner, df: pd.DataFrame, mode: str):
+        self.inner, self.mode = inner, mode
+        self.load = dict(zip(df.timestamp, df.load_kw)); self.pv = dict(zip(df.timestamp, df.pv_kw))
+
+    def new_block(self):
+        self.inner.new_block()
+
+    def update(self, obs, weather=None):
+        self.inner.update(obs, weather)
+
+    def forecast(self, obs, times):
+        load, pv = self.inner.forecast(obs, times)
+        load, pv = np.array(load, dtype=float), np.array(pv, dtype=float)
+        last = len(times) if self.mode == "all" else 1
+        for k in range(last):
+            if times[k] in self.load:
+                load[k], pv[k] = self.load[times[k]], self.pv[times[k]]
+        self.inner.net_lo0 = float(load[0] - pv[0])
+        return load, pv
+
+    def adjust_action(self, action_kw, obs, p):
+        return self.inner.adjust_action(action_kw, obs, p)
+
+
 def run(days: str, variants: list, perfect: bool, diag: bool, opts: dict) -> pd.DataFrame:
     import hard_solar_cand as cand
     full = bench.hard_table()
@@ -54,7 +82,12 @@ def run(days: str, variants: list, perfect: bool, diag: bool, opts: dict) -> pd.
             ag = bench.perfect_market_agent(prior, df, solar_prior) if perfect else bench.hard_agent(prior, solar_prior)
             if name != "base":
                 kw = dict(opts.get(name, {}))
+                cheat = kw.pop("cheat", "")
+                if kw.pop("sin_tope", False):        # medir cuánto cuesta el tope de descarga de la política
+                    ag.policy.cap_discharge = lambda action_kw, obs: action_kw
                 ag.policy.netload = cand.make(exclude, ag.policy.forecaster, **kw)
+                if cheat:
+                    ag.policy.netload = TrueNet(ag.policy.netload, df, cheat)
         totals, log = bench.simulate_hard(ag, df)
         sc = score(totals, base)
         ex = log[log.export_kw > 1e-6]

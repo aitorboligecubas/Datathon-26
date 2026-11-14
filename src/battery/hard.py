@@ -24,17 +24,21 @@ from .obs import Obs
 from .optimizer import plan, score_weights
 from .params import BatteryParams
 from .policy import MPCPolicy, find_models_dir, greedy_action, load_json
-from .safety import clip_action
+from .safety import clip_action, feasible_range, soc_after
 
 HARD_PARAMS = BatteryParams(capacity_kwh=6000.0, soc_init_kwh=3000.0, max_charge_kw=1500.0, max_discharge_kw=1500.0)
-LAST_MONTHS = ((2026, 7), (2026, 8))   # el test acaba al final de uno de estos meses: se llega con la batería vacía
+LAST_MONTHS = ((2026, 8),)   # el test acaba el 31/08/2026 (ENUNCIAT: 12 semanas): se llega con la batería vacía
 # Qué hacer al final de cada semana del test (cada una acaba con su mes):
 #   False: la batería sigue de una semana a la siguiente; solo se vacía al final del test (LAST_MONTHS).
-#   True:  cada semana se cierra con la batería vacía (por si cada semana, o cada mitad, se simula por separado).
+#   True:  cada semana se cierra con la batería vacía.
+# No hace falta elegir: el agente lo detecta solo (`HardPolicy.empty_weeks`). Si al empezar la segunda semana
+# ve la batería al 50 % y no como él la dejó, el entorno la reinicia cada semana y pasa a cerrar cada una vacía.
 EMPTY_EVERY_WEEK = False
-# Si la simulación se corta cada RUN_STEPS pasos (la web dice que el conjunto público son 1.008 horas), el
-# agente llega a ese corte con la batería vacía. 0 = no se cuenta con ningún corte por número de pasos.
+# Si la simulación se corta cada RUN_STEPS pasos, el agente llega a ese corte con la batería vacía. 0 = no se
+# cuenta con ningún corte. Se deja en 0: vaciar en la hora 1.008 sube el ranking público en cualquier caso
+# (esa carga se paga en la mitad pública y se usa en la privada) y puede hundir el privado.
 RUN_STEPS = 0
+ACTION_MARGIN_KW = 0.0       # margen extra del último recorte (0: en el servidor la carga llega exacta, 0 infracciones)
 WEATHER_KEYS = ("irradiancia_wm2", "temp_ambient_c", "temp_panel_c", "vent_ms")
 ONE_HOUR = pd.Timedelta(hours=1)
 
@@ -67,6 +71,10 @@ class HardPolicy(MPCPolicy):
         self.market = MarketCand(prior)     # con memoria del train; si faltan sus tablas, decide como el previsor base
         self.netload = NetLoadForecaster(load_json(models_dir, SOLAR_FILE), self.forecaster)
         self.weather = {}
+        self.seen_reading = False    # ha llegado alguna lectura de consumo válida (si no, es cosa del formato)
+        self.n_blocks = 0            # semanas del test empezadas
+        self.expected_soc = None     # carga que debería verse en la próxima observación
+        self.empty_weeks = False     # el entorno reinicia la batería cada semana: se cierra cada una vacía
         try:    # pesos del objetivo con la referencia del modo difícil (con 12 veces más solar cambia)
             self.w_co2, self.w_cost = score_weights(float(prior["co2_ref_kg_per_h"]), float(prior["cost_ref_eur_per_h"]))
         except Exception:
@@ -79,7 +87,7 @@ class HardPolicy(MPCPolicy):
         ts = obs.timestamp
         if ts is None:
             return []
-        last = EMPTY_EVERY_WEEK or (ts.year, ts.month) in LAST_MONTHS
+        last = EMPTY_EVERY_WEEK or self.empty_weeks or (ts.year, ts.month) in LAST_MONTHS
         times, t = [], ts
         for _ in range(self.horizon):
             times.append(t)
@@ -102,8 +110,7 @@ class HardPolicy(MPCPolicy):
         month = times[0].month
         same = np.array([t.month == month for t in times])
         load, pv = np.array(load, dtype=float), np.array(pv, dtype=float)
-        load[same] = 0.0
-        pv[same] = 0.0
+        load[same] = 0.0      # la solar prevista se deja: si la hay, con consumo 0 se carga gratis del excedente
         if not ends and bool(same.all()) and len(self.valleys) >= 7:
             ts = times[0]
             left_h = (ts.days_in_month - ts.day) * 24 + (24 - ts.hour) - len(times)
@@ -147,9 +154,25 @@ class HardPolicy(MPCPolicy):
             self.n_fallbacks += 1
             return greedy_action(obs, load[0], pv[0], self.p)
 
+    def watch_restart(self, obs: Obs, new_block: bool) -> None:
+        """¿El entorno reinicia la batería al empezar cada semana? Se mira una sola vez, al empezar la segunda:
+        si la carga es el 50 % justo y no la que dejó el agente, cada semana es una simulación aparte."""
+        if not new_block:
+            return
+        self.n_blocks += 1
+        if self.n_blocks == 2 and self.expected_soc is not None and math.isfinite(obs.soc_kwh):
+            self.empty_weeks = (abs(obs.soc_kwh - self.expected_soc) > 1.0
+                                and abs(obs.soc_kwh - 0.5 * self.p.capacity_kwh) < 1.0)
+
     def act_obs(self, obs: Obs) -> float:
         try:
             new_block = self.track_block(obs)      # semanas del test y semanas sin datos de contador (policy.py)
+            self.watch_restart(obs, new_block)
+            if math.isfinite(obs.load_prev_kw):
+                self.seen_reading = True
+            if self.no_reading and not self.seen_reading:
+                # Nunca ha llegado una lectura de consumo: es el formato, no una avería. Se planifica con el perfil.
+                self.no_data_block, self.no_reading = False, False
         except Exception:
             new_block, self.no_data_block, self.no_reading = False, False, False
         if new_block:
@@ -168,7 +191,15 @@ class HardPolicy(MPCPolicy):
             action = float(self.netload.adjust_action(action, obs, self.p))
         except Exception:
             pass
-        return clip_action(action, obs.soc_kwh, self.p)
+        action = clip_action(action, obs.soc_kwh, self.p)
+        try:
+            lo, hi = feasible_range(obs.soc_kwh, self.p)
+            if math.isfinite(lo) and math.isfinite(hi):
+                action = min(max(action, min(0.0, lo + ACTION_MARGIN_KW)), max(0.0, hi - ACTION_MARGIN_KW))
+                self.expected_soc = soc_after(obs.soc_kwh, action, self.p)
+        except Exception:
+            pass
+        return action
 
     def read_battery(self, raw_obs) -> None:
         """El entorno del modo difícil da la capacidad y la potencia en cada observación: mandan ellas."""
@@ -180,7 +211,35 @@ class HardPolicy(MPCPolicy):
             if cap != self.p.capacity_kwh or power != self.p.max_charge_kw:
                 self.p = self.p._replace(capacity_kwh=cap, max_charge_kw=power, max_discharge_kw=power)
 
+    def complete(self, raw_obs):
+        """Rellena lo que falte para que el adaptador no falle: el precio y el CO2 actuales con el primer valor
+        de su lista, y la hora y el día de la semana con los de la fecha. Sin esto, una clave ausente dejaría
+        al agente parado todo el test sin avisar."""
+        try:
+            o = dict(raw_obs)
+            for now_key, list_key in (("preu_actual", "preus_properes_24h"), ("co2_actual", "co2_properes_24h")):
+                try:
+                    v = float(o.get(now_key))
+                except (TypeError, ValueError):
+                    v = float("nan")
+                if not math.isfinite(v):
+                    try:
+                        o[now_key] = float(o.get(list_key)[0])
+                    except Exception:
+                        o[now_key] = float("nan")
+            for key in ("hour", "day_of_week"):
+                try:
+                    ok = math.isfinite(float(o.get(key)))
+                except (TypeError, ValueError):
+                    ok = False
+                if not ok:
+                    o.pop(key, None)       # el adaptador los saca de la fecha
+            return o
+        except Exception:
+            return raw_obs
+
     def act(self, raw_obs) -> float:
+        raw_obs = self.complete(raw_obs)
         self.weather = read_weather(raw_obs)
         self.read_battery(raw_obs)
         return super().act(raw_obs)
