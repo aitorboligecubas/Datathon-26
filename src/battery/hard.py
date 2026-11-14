@@ -32,6 +32,9 @@ LAST_MONTHS = ((2026, 7), (2026, 8))   # el test acaba al final de uno de estos 
 #   False: la batería sigue de una semana a la siguiente; solo se vacía al final del test (LAST_MONTHS).
 #   True:  cada semana se cierra con la batería vacía (por si cada semana, o cada mitad, se simula por separado).
 EMPTY_EVERY_WEEK = False
+# Si la simulación se corta cada RUN_STEPS pasos (la web dice que el conjunto público son 1.008 horas), el
+# agente llega a ese corte con la batería vacía. 0 = no se cuenta con ningún corte por número de pasos.
+RUN_STEPS = 0
 WEATHER_KEYS = ("irradiancia_wm2", "temp_ambient_c", "temp_panel_c", "vent_ms")
 ONE_HOUR = pd.Timedelta(hours=1)
 
@@ -86,6 +89,10 @@ class HardPolicy(MPCPolicy):
                     break
                 nxt = nxt + ONE_HOUR * (24 * (nxt.days_in_month - 7))
             t = nxt
+        if RUN_STEPS > 0:
+            left = RUN_STEPS - (self.t % RUN_STEPS)       # pasos que quedan hasta el corte, contando el actual
+            if left < len(times):
+                times = times[:left]
         return times
 
     def no_data_week(self, times: list, load, pv, terminal: float, ends: bool) -> tuple:
