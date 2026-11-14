@@ -3,20 +3,24 @@
 Uso con el banco:
     python scripts/p1_hard.py --split dev --market scripts/p1_lab/hard_market_cand.py:make --only "agente actual,CANDIDATO"
 
-Qué cambia frente a battery.hard_market.MarketForecaster (el agente actual):
+Qué cambia frente a battery.hard_market.MarketForecaster (el agente actual). Sigue siendo lo mismo: perfil
+por mes, tipo de día y hora, y una regresión lineal por antelación (3 a 23 h) de la desviación
+z = log(real / perfil). Lo nuevo:
 1. MEMORIA DEL TRAIN ("semilla"). El test de cada mes empieza justo donde acaba el train de ese mes
-   (train: días 1 a 23/24; test: los 7 últimos). Así que "ayer" y "las últimas 24 h" de la primera hora
-   de cada semana SÍ se conocen: están en el train. Se guardan los últimos 7 días de cada tramo del
-   train y la semana ya no arranca a ciegas.
-2. REGRESIÓN AJUSTADA COMO EN EL TEST ("perfil cruzado"). La desviación z = log(real / perfil) del test
-   se mide contra un perfil que no ha visto esa semana. Para ajustar la regresión se hace lo mismo:
-   cada bloque de días del mes se mide contra el perfil del resto del mes.
-3. MÁS PISTAS: ayer a la hora de la última conocida (para comparar hoy con ayer a la misma hora), y la
-   otra variable (el precio ayuda a prever el CO2 y al revés).
-4. UNA REGRESIÓN POR ANTELACIÓN Y HORA DEL DÍA, encogida hacia la común de esa antelación.
+   (train: días 1 a 23/24; test: los 7 últimos). "Ayer" y "las últimas 24 h" de la primera hora de cada
+   semana SÍ se conocen: están en el train. Se guardan los últimos 7 días de cada tramo del train y la
+   semana ya no arranca a ciegas.
+2. EL NIVEL DEL DÍA. El precio de un día entero se fija de una vez (mercado diario): las horas de un mismo
+   día se parecen entre sí más que a las de la víspera. Pistas nuevas: la media de z del día en curso
+   (hasta la última hora conocida) y la del día anterior entero.
+3. MÁS MEMORIA: ayer a la hora de la última conocida (para medir el salto de ayer a hoy a la misma hora) y
+   anteayer a la hora objetivo.
+4. LA OTRA VARIABLE: el precio ayuda a prever el CO2 y al revés (última hora conocida, media de 24 h y
+   ayer a la hora objetivo).
+Si falta alguna pista (una semana sin memoria del train), decide exactamente como el agente actual.
 
 La clase MarketCand solo usa numpy, pandas y math (se puede empaquetar). El ajuste (fit_cand) es del
-laboratorio: iría a scripts/p1_hard.py. Ver results/p1_hard/mercado_notas.md.
+laboratorio: iría a scripts/p1_hard.py. Lo probado y lo descartado: results/p1_hard/mercado_notas.md.
 """
 import math
 import sys
@@ -35,15 +39,22 @@ from battery.hard_market import KNOWN_HOURS, MarketForecaster, hour_index  # noq
 
 NAMES = ("price", "co2")
 LEADS = 21                  # antelaciones con regresión: de 3 a 23 horas
-SEED_HOURS = 168            # horas del final de cada tramo del train que se guardan como memoria (7 días)
+SEED_HOURS = 168            # horas del final de cada tramo del train que se guardan como memoria (7 días;
+                            # las pistas miran 48 h atrás como mucho: el resto es margen)
 STORE_PAST_H = 24 * 40      # horas hacia atrás que caben en la memoria densa
 STORE_LEN_H = 24 * 460      # un año de test y margen
 Z_CLIP = 2.0                # la desviación prevista se limita a e^-2..e^2 (igual que el agente actual)
-BLOCK_DAYS = 7              # bloques de días del mes para el perfil cruzado (1-7, 8-14, 15-21, 22-fin)
-# Pistas de la regresión completa. z = desviación propia, o = desviación de la otra variable.
-FEATS = ("z0", "z1", "z2", "zm24", "zm6", "zy", "zyL", "o2", "om24", "oy")
+Z_STORE_CLIP = 4.0          # y la observada, a e^-4..e^4: en el train no pasa de 3,5; protege de un precio 0
+BLOCK_DAYS = 7              # (laboratorio) bloques de días del mes para la variante de perfil cruzado
+# Pistas de la regresión. z = desviación de la propia variable, o = desviación de la otra.
+#   z0, z1, z2  las tres horas conocidas            zm24, zm6  media de las últimas 24 y 6 horas
+#   zy, zy2     ayer y anteayer a la hora objetivo  zyL        ayer a la hora de la última conocida
+#   zd, zyd     media del día en curso (hasta la última hora conocida) y del día anterior entero
+#   o2, om24, oy   de la otra variable: última hora conocida, media de 24 h y ayer a la hora objetivo
+FEATS = ("z0", "z1", "z2", "zm24", "zm6", "zy", "zyL", "zy2", "zd", "zyd", "o2", "om24", "oy")
 COLD_FEATS = ("z0", "z1", "z2")
-DEFAULT_CFG = {"feats": FEATS, "crossfit": False, "ridge_hour": 30.0, "seed_hours": SEED_HOURS, "smear": False}
+# ridge_hour < 0: una regresión común por antelación. >= 0: otra por hora del día, encogida hacia la común.
+DEFAULT_CFG = {"feats": FEATS, "crossfit": False, "ridge_hour": -1.0, "seed_hours": SEED_HOURS, "smear": False}
 
 
 # ------------------------------------------------------------------------------- inferencia
@@ -51,7 +62,7 @@ def deviation(value: float, base: float) -> float:
     """z = log(real / perfil). NaN si falta alguno de los dos."""
     if not (math.isfinite(value) and math.isfinite(base) and base > 0):
         return float("nan")
-    return math.log(max(value, 1e-6) / max(base, 1e-6))
+    return min(max(math.log(max(value, 1e-6) / max(base, 1e-6)), -Z_STORE_CLIP), Z_STORE_CLIP)
 
 
 def window_mean(z: np.ndarray, lo: int, hi: int, min_count: int) -> float:
@@ -63,11 +74,13 @@ def window_mean(z: np.ndarray, lo: int, hi: int, min_count: int) -> float:
 
 
 class MarketCand(MarketForecaster):
-    """Previsión de precio y CO2 con memoria del train y regresión por antelación y hora del día.
+    """Previsión de precio y CO2 con memoria del train y una regresión por antelación con más pistas.
 
-    prior["cand"] = {"feats": [...], "full": {name: [21][24][F+1]}, "cold": {name: [21][24][4]},
+    prior["cand"] = {"feats": [nombres de las F pistas],
+                     "full": {"price": [21][F+1], "co2": [21][F+1]},      # o [21][24][F+1], por hora objetivo
                      "seed": [{"start": número de hora, "price": [...], "co2": [...]}, ...]}
-    Si falta algo o algo falla, decide como el agente actual (la clase madre).
+    El resto de `prior` es el de siempre (perfiles y "reg"). Si falta algo o algo falla, decide como el
+    agente actual (la clase madre).
     """
 
     def __init__(self, prior: Optional[dict] = None, **kwargs):
@@ -79,6 +92,8 @@ class MarketCand(MarketForecaster):
             self.feats = tuple(c["feats"])
             for name in NAMES:
                 full = np.asarray(c["full"][name], dtype=float)
+                if full.ndim == 2:                      # una regresión común por antelación: vale para las 24 horas
+                    full = np.repeat(full[:, None, :], 24, axis=1)
                 if full.shape != (LEADS, 24, len(self.feats) + 1) or not np.isfinite(full).all():
                     raise ValueError("tablas con otra forma o con huecos")
                 self.full[name] = full
@@ -388,7 +403,8 @@ def fit_cand(exclude=None, cfg: Optional[dict] = None) -> dict:
         full[name] = []
         for X, Xc, y, hour in rows[name]:
             ok = np.isfinite(X).all(axis=1)
-            full[name].append(ridge_by_hour(X[ok], y[ok], hour[ok], cfg["ridge_hour"], cfg["smear"]).tolist())
+            coef = ridge_by_hour(X[ok], y[ok], hour[ok], cfg["ridge_hour"], cfg["smear"])
+            full[name].append((coef if cfg["ridge_hour"] >= 0 else coef[0]).tolist())
     seed = seed_segments(d, int(cfg["seed_hours"])) if cfg["seed_hours"] else []
     return {"feats": list(feats), "full": full, "seed": seed}
 

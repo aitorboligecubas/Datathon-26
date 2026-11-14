@@ -100,35 +100,26 @@ def variants(exclude, prior):
         return lambda: C.MarketCand({**prior, "cand": C.fit_cand(exclude, cfg)})
     base6 = ("z0", "z1", "z2", "zm24", "zm6", "zy")
     cross = ("o2", "om24", "oy")
+    day = ("zd", "zyd")
+    final = C.FEATS
     v = {"agente actual": lambda: MarketForecaster(prior),
-         "A mismas pistas, sin semilla": cand(feats=base6, ridge_hour=-1, seed_hours=0),
-         "B + semilla": cand(feats=base6, ridge_hour=-1),
-         "M1 B + por hora": cand(feats=base6),
-         "M2 B + zyL": cand(feats=base6 + ("zyL",), ridge_hour=-1),
-         "M3 B + otra variable": cand(feats=base6 + cross, ridge_hour=-1),
-         "M4 B + zy2": cand(feats=base6 + ("zy2",), ridge_hour=-1),
-         "N todas, comun": cand(feats=C.FEATS, ridge_hour=-1),
-         "G todas, por hora 30": cand(feats=C.FEATS),
-         "G10": cand(feats=C.FEATS, ridge_hour=10.0),
-         "G100": cand(feats=C.FEATS, ridge_hour=100.0),
-         "G300": cand(feats=C.FEATS, ridge_hour=300.0),
-         "J = G + sesgo log": cand(feats=C.FEATS, smear=True),
-         "L = G + zy2": cand(feats=C.FEATS + ("zy2",)),
-         "F = G con perfil cruzado": cand(feats=C.FEATS, crossfit=True),
-         "G sin semilla": cand(feats=C.FEATS, seed_hours=0),
-         "P = G + dia": cand(feats=C.FEATS + ("zd", "zyd")),
-         "P10": cand(feats=C.FEATS + ("zd", "zyd"), ridge_hour=10.0),
-         "P3": cand(feats=C.FEATS + ("zd", "zyd"), ridge_hour=3.0),
-         "Q = base6 + dia, por hora": cand(feats=base6 + ("zd", "zyd")),
-         "Q10": cand(feats=base6 + ("zd", "zyd"), ridge_hour=10.0),
-         "R = P + zy2": cand(feats=C.FEATS + ("zd", "zyd", "zy2")),
-         "S = P comun": cand(feats=C.FEATS + ("zd", "zyd"), ridge_hour=-1),
-         "T = base6 + dia, comun": cand(feats=base6 + ("zd", "zyd"), ridge_hour=-1),
-         "U = S + zy2": cand(feats=C.FEATS + ("zd", "zyd", "zy2"), ridge_hour=-1),
-         "W = S + sesgo log": cand(feats=C.FEATS + ("zd", "zyd"), ridge_hour=-1, smear=True),
-         "X = S sin otra variable": cand(feats=base6 + ("zyL", "zd", "zyd"), ridge_hour=-1),
-         "Y = S sin zyL": cand(feats=base6 + cross + ("zd", "zyd"), ridge_hour=-1),
-         "Z = S sin semilla": cand(feats=C.FEATS + ("zd", "zyd"), ridge_hour=-1, seed_hours=0)}
+         "A mismas pistas, sin semilla": cand(feats=base6, seed_hours=0),
+         "B semilla": cand(feats=base6),
+         "B + zyL": cand(feats=base6 + ("zyL",)),
+         "B + zy2": cand(feats=base6 + ("zy2",)),
+         "B + dia": cand(feats=base6 + day),
+         "B + otra variable": cand(feats=base6 + cross),
+         "B + por hora": cand(feats=base6, ridge_hour=30.0),
+         "FINAL": cand(),
+         "FINAL sin semilla": cand(seed_hours=0),
+         "FINAL sin zyL": cand(feats=tuple(f for f in final if f != "zyL")),
+         "FINAL sin zy2": cand(feats=tuple(f for f in final if f != "zy2")),
+         "FINAL sin dia": cand(feats=tuple(f for f in final if f not in day)),
+         "FINAL sin otra variable": cand(feats=tuple(f for f in final if f not in cross)),
+         "FINAL + por hora 30": cand(ridge_hour=30.0),
+         "FINAL + por hora 300": cand(ridge_hour=300.0),
+         "FINAL + sesgo log": cand(smear=True),
+         "FINAL + perfil cruzado": cand(crossfit=True)}
     return v
 
 
