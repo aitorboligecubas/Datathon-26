@@ -14,6 +14,8 @@ Estrategia **cerrada** el sábado 14/11. Números de la validación con datos of
 4. **Dos protecciones sencillas.** Vacía la batería cuando se acaban los datos, porque la carga final no puntúa
    (+0,11; en el campus real no lo haríamos y lo decimos). Y no descarga más de lo que el campus consumió la hora
    anterior, para no tirar energía si el contador se avería (pasó 14 horas seguidas en los datos).
+   Esta protección tiene dos capas: la previsión de P2 no espera consumo si el contador marcó 0, y la política
+   de P1 pone el tope aunque la previsión falle.
 5. **Está al 99,6 % del máximo teórico y aguanta.** Saca 6,09 frente a 6,12 del óptimo con todo el futuro conocido.
    En el train, 5,54 de 5,54. Si el servidor evaluase por semanas, 6,47 de 6,49. Con un 20 % de ruido en las
    previsiones, 6,01. Tarda 4 segundos de los 60 permitidos.
@@ -26,6 +28,16 @@ Lo que falta hasta el techo son 0,03 puntos, y no se pueden capturar con rigor:
 
 Cualquier "mejora" de ese tamaño sería ajustarse a la validación. Preferimos una solución sin parámetros que
 podamos explicar entera.
+
+## Lo que aporta el análisis de P2 (para enlazar en el guion)
+
+- **Toda la distancia al techo sale de 14 horas de avería del contador.** En los otros 10 meses de validación,
+  el agente y el óptimo coinciden a la milésima (`analysis/calidad_datos.md`).
+- **El consumo nocturno del dataset no es una medida.** De 22:10 a 06:00 el contador no se lee y repite el último
+  valor; el consumo real es un 19 % menor. No cambia las decisiones del agente, pero sí el ahorro real: un 6,5 %
+  en lugar de un 6,1 %.
+- Patrones de la red, por qué el techo es ~6 % y escenarios de tamaño de batería: `analysis/patrones.md`,
+  `analysis/techo.md` y `analysis/escenarios.md`.
 
 ## Frases para el jurado
 
