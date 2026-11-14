@@ -18,7 +18,7 @@ from typing import Mapping
 import numpy as np
 import pandas as pd
 
-from .hard_market import KNOWN_HOURS, MARKET_FILE, MarketForecaster
+from .hard_market import KNOWN_HOURS, MARKET_FILE, MarketCand
 from .hard_solar import SOLAR_FILE, NetLoadForecaster
 from .obs import Obs
 from .optimizer import plan, score_weights
@@ -64,7 +64,7 @@ class HardPolicy(MPCPolicy):
             models_dir = find_models_dir()
         super().__init__(p=p, models_dir=models_dir, horizon=horizon, **kwargs)
         prior = load_json(models_dir, MARKET_FILE)
-        self.market = MarketForecaster(prior)
+        self.market = MarketCand(prior)     # con memoria del train; si faltan sus tablas, decide como el previsor base
         self.netload = NetLoadForecaster(load_json(models_dir, SOLAR_FILE), self.forecaster)
         self.weather = {}
         try:    # pesos del objetivo con la referencia del modo difícil (con 12 veces más solar cambia)

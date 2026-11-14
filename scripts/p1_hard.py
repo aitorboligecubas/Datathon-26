@@ -25,7 +25,7 @@ from battery.adapter import from_official  # noqa: E402
 from battery.baselines import OracleAgent  # noqa: E402
 from battery.data import TRAIN_DIR, ensure_official, load, train_split, validation_split  # noqa: E402
 from battery.hard import HARD_PARAMS, HardPolicy  # noqa: E402
-from battery.hard_market import KNOWN_HOURS, NATIONAL_HOLIDAYS, MarketForecaster  # noqa: E402
+from battery.hard_market import KNOWN_HOURS, NATIONAL_HOLIDAYS, MarketCand, MarketForecaster  # noqa: E402
 from battery.hard_solar import PV_FACTOR  # noqa: E402
 from battery.optimizer import score_weights  # noqa: E402
 from battery.safety import clip_action  # noqa: E402
@@ -81,11 +81,22 @@ def fit_market(exclude=None, refs_df: pd.DataFrame = None) -> dict:
                     arr[mo - 1, t, h] = v if np.isfinite(v) else by_h.get((mo, h), np.nan)
         out[name] = arr.tolist()
     out["reg"] = fit_market_regression(m, out)
+    out["cand"] = fit_market_memory(exclude)
     if refs_df is not None:
         b = baseline_totals(refs_df)
         out["co2_ref_kg_per_h"] = b["co2_kg"] / len(refs_df)
         out["cost_ref_eur_per_h"] = b["cost_eur"] / len(refs_df)
     return out
+
+
+def fit_market_memory(exclude=None) -> dict:
+    """Tablas del previsor con memoria del train (13 pistas y los últimos 7 días de cada mes como "semilla").
+    El ajuste está en scripts/p1_lab/hard_market_cand.py (fit_cand), que es donde se diseñó."""
+    lab = str(REPO / "scripts" / "p1_lab")
+    if lab not in sys.path:
+        sys.path.insert(0, lab)
+    from hard_market_cand import fit_cand
+    return fit_cand(exclude)
 
 
 def fit_market_regression(m: pd.DataFrame, prof: dict) -> dict:
@@ -202,7 +213,7 @@ def hard_agent(prior: dict, solar: dict = None, **cfg):
     from battery.hard_solar import NetLoadForecaster
     from battery.policy import find_models_dir, load_json
     pol = HardPolicy()
-    pol.market = MarketForecaster(prior, **{k: v for k, v in cfg.items() if k in ("yesterday_weight",)})
+    pol.market = MarketCand(prior, **{k: v for k, v in cfg.items() if k in ("yesterday_weight",)})
     pol.w_co2, pol.w_cost = score_weights(prior["co2_ref_kg_per_h"], prior["cost_ref_eur_per_h"])
     pol.forecaster = Forecaster(load_json(find_models_dir(), FORECASTER_FILE))
     pol.netload = NetLoadForecaster(solar, pol.forecaster, **{k: v for k, v in cfg.items() if k in ("z_discharge", "z_charge")})
@@ -300,7 +311,7 @@ def evaluate(split: str = "val", market: str = "", solar: str = "", only: str = 
     agents = {
         "nada": lambda: Nothing(),
         "plan de 3 h (sin prever)": lambda: hard_agent(prior, solar_prior, horizon=3),
-        "mercado sin regresión (v1)": lambda: hard_agent({k: v for k, v in prior.items() if k != "reg"}, solar_prior),
+        "mercado sin memoria (v4)": lambda: hard_agent({k: v for k, v in prior.items() if k != "cand"}, solar_prior),
         "agente actual": lambda: hard_agent(prior, solar_prior),
         "precio y CO2 reales a 24 h": lambda: perfect_market_agent(prior, df, solar_prior),
         "óptimo (todo el futuro)": lambda: OracleAgent(df, *w, p=HARD_PARAMS),
