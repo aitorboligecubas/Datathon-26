@@ -80,6 +80,38 @@ def fit_market(exclude=None, refs_df: pd.DataFrame = None) -> dict:
     return out
 
 
+def fit_solar(table: pd.DataFrame) -> dict:
+    """Tablas para la previsión de solar y consumo: cielo despejado (percentil 90) y media de la solar
+    por mes y hora, y error típico del consumo neto de la hora actual por hora del día."""
+    t = table.sort_values("timestamp").reset_index(drop=True)
+    m, h = t.timestamp.dt.month, t.timestamp.dt.hour
+    clear = np.zeros((12, 24)); mean = np.zeros((12, 24))
+    gq = t.groupby([m, h]).pv_kw.quantile(0.9); gm = t.groupby([m, h]).pv_kw.mean()
+    for mo in range(1, 13):
+        for hh in range(24):
+            clear[mo - 1, hh] = gq.get((mo, hh), np.nan); mean[mo - 1, hh] = gm.get((mo, hh), np.nan)
+    for arr in (clear, mean):       # meses sin datos (noviembre): media de los vecinos
+        for mo in range(12):
+            if not np.isfinite(arr[mo]).all():
+                a, b = arr[(mo - 1) % 12], arr[(mo + 1) % 12]
+                arr[mo] = np.where(np.isfinite(a) & np.isfinite(b), (a + b) / 2, np.where(np.isfinite(a), a, b))
+        arr[~np.isfinite(arr)] = 0.0
+    # error de la previsión de la hora actual (misma receta que battery.hard_solar), por hora del día
+    how = t.timestamp.dt.dayofweek * 24 + h
+    prof = t.groupby(how).load_kw.mean()
+    ok = t.timestamp.diff() == pd.Timedelta(hours=1)
+    cl = pd.Series(clear[m.to_numpy() - 1, h.to_numpy()], index=t.index); mn = pd.Series(mean[m.to_numpy() - 1, h.to_numpy()], index=t.index)
+    typical = (mn / cl).where(cl > 0, 0.0)
+    c = (t.pv_kw.shift(1) / cl.shift(1)).clip(0, 1.5).where(cl.shift(1) >= 30)
+    c = c.ffill().fillna(typical)
+    pv_hat = cl * (typical + (c - typical) * 0.85)
+    p_now = how.map(prof); p_prev = how.shift(1).map(prof)
+    load_hat = p_now * (1 + ((t.load_kw.shift(1) / p_prev).clip(0.3, 3.0) - 1) * 0.9)
+    err = ((t.load_kw - t.pv_kw) - (load_hat - pv_hat))[ok]
+    sd = err.groupby(h[ok]).std().reindex(range(24)).fillna(err.std()).clip(lower=15.0)
+    return {"pv_clear": clear.tolist(), "pv_mean": mean.tolist(), "net_sd": [float(v) for v in sd]}
+
+
 def simulate_hard(agent, df: pd.DataFrame, known: int = KNOWN_HOURS, p=HARD_PARAMS):
     load_ = df["load_kw"].to_numpy(float); pv = df["pv_kw"].to_numpy(float)
     price = df["price_eur_kwh"].to_numpy(float); co2 = df["co2_kg_kwh"].to_numpy(float)
@@ -127,13 +159,19 @@ class _Wrap:
         return self.policy.act(obs)
 
 
-def hard_agent(prior: dict, **cfg):
-    """El agente del modo difícil con el perfil de mercado `prior` (sin leer models/hard_market.json)."""
+def hard_agent(prior: dict, solar: dict = None, **cfg):
+    """El agente del modo difícil con las tablas dadas (sin leer models/hard_*.json).
+    cfg: yesterday_weight (mercado), z_discharge / z_charge (solar), y atributos de la política."""
+    from battery.forecaster import FORECASTER_FILE, Forecaster
+    from battery.hard_solar import NetLoadForecaster
+    from battery.policy import find_models_dir, load_json
     pol = HardPolicy()
     pol.market = MarketForecaster(prior, **{k: v for k, v in cfg.items() if k in ("yesterday_weight",)})
     pol.w_co2, pol.w_cost = score_weights(prior["co2_ref_kg_per_h"], prior["cost_ref_eur_per_h"])
+    pol.forecaster = Forecaster(load_json(find_models_dir(), FORECASTER_FILE))
+    pol.netload = NetLoadForecaster(solar, pol.forecaster, **{k: v for k, v in cfg.items() if k in ("z_discharge", "z_charge")})
     for k, v in cfg.items():
-        if k not in ("yesterday_weight",):
+        if k not in ("yesterday_weight", "z_discharge", "z_charge"):
             setattr(pol, k, v)
     return _Wrap(pol)
 
@@ -170,8 +208,8 @@ class _RowMarket:
         return p.copy(), c.copy()
 
 
-def perfect_market_agent(prior: dict, df: pd.DataFrame):
-    a = hard_agent(prior)
+def perfect_market_agent(prior: dict, df: pd.DataFrame, solar: dict = None):
+    a = hard_agent(prior, solar)
     a.policy.market = _RowMarket(df)
     return a
 
@@ -211,11 +249,12 @@ def evaluate(split: str = "val", market: str = "", solar: str = "", only: str = 
     exclude = set(df.timestamp) if split in ("val", "dev") else None
     fit_df = full[~full.timestamp.isin(exclude)] if exclude else full
     prior = fit_market(exclude, fit_df)
+    solar_prior = fit_solar(fit_df)
     base = baseline_totals(df)
     w = score_weights(base["co2_kg"] / len(df), base["cost_eur"] / len(df))
 
     def candidate():
-        a = hard_agent(prior)
+        a = hard_agent(prior, solar_prior)
         if market:
             a.policy.market = load_factory(market)(exclude or set(), prior)
         if solar:
@@ -224,9 +263,10 @@ def evaluate(split: str = "val", market: str = "", solar: str = "", only: str = 
 
     agents = {
         "nada": lambda: Nothing(),
-        "plan de 3 h (sin prever)": lambda: hard_agent(prior, horizon=3),
-        "agente actual": lambda: hard_agent(prior),
-        "precio y CO2 reales a 24 h": lambda: perfect_market_agent(prior, df),
+        "plan de 3 h (sin prever)": lambda: hard_agent(prior, solar_prior, horizon=3),
+        "v0 (sin tabla solar)": lambda: hard_agent(prior, None),
+        "agente actual": lambda: hard_agent(prior, solar_prior),
+        "precio y CO2 reales a 24 h": lambda: perfect_market_agent(prior, df, solar_prior),
         "óptimo (todo el futuro)": lambda: OracleAgent(df, *w, p=HARD_PARAMS),
     }
     if market or solar:
@@ -267,7 +307,8 @@ def main() -> int:
         full = hard_table()
         prior = fit_market(None, full)
         (MODELS / "hard_market.json").write_text(json.dumps(prior), encoding="utf-8")
-        print("guardado models/hard_market.json")
+        (MODELS / "hard_solar.json").write_text(json.dumps(fit_solar(full)), encoding="utf-8")
+        print("guardados models/hard_market.json y models/hard_solar.json")
         return 0
     out = evaluate(args.split, args.market, args.solar, args.only)
     if args.out:
