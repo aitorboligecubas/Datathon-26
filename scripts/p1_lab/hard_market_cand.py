@@ -43,7 +43,7 @@ BLOCK_DAYS = 7              # bloques de días del mes para el perfil cruzado (1
 # Pistas de la regresión completa. z = desviación propia, o = desviación de la otra variable.
 FEATS = ("z0", "z1", "z2", "zm24", "zm6", "zy", "zyL", "o2", "om24", "oy")
 COLD_FEATS = ("z0", "z1", "z2")
-DEFAULT_CFG = {"feats": FEATS, "crossfit": True, "ridge_hour": 30.0, "seed_hours": SEED_HOURS}
+DEFAULT_CFG = {"feats": FEATS, "crossfit": False, "ridge_hour": 30.0, "seed_hours": SEED_HOURS, "smear": False}
 
 
 # ------------------------------------------------------------------------------- inferencia
@@ -73,20 +73,17 @@ class MarketCand(MarketForecaster):
     def __init__(self, prior: Optional[dict] = None, **kwargs):
         super().__init__(prior, **kwargs)
         self.cand_ok = False
-        self.feats, self.full, self.cold, self.seed = (), {}, {}, []
+        self.feats, self.full, self.seed = (), {}, []
         try:
             c = prior["cand"]
             self.feats = tuple(c["feats"])
             for name in NAMES:
                 full = np.asarray(c["full"][name], dtype=float)
-                cold = np.asarray(c["cold"][name], dtype=float)
-                if full.shape != (LEADS, 24, len(self.feats) + 1) or cold.shape != (LEADS, 24, len(COLD_FEATS) + 1):
-                    raise ValueError("tablas con otra forma")
-                if not (np.isfinite(full).all() and np.isfinite(cold).all()):
-                    raise ValueError("tablas con huecos")
-                self.full[name], self.cold[name] = full, cold
+                if full.shape != (LEADS, 24, len(self.feats) + 1) or not np.isfinite(full).all():
+                    raise ValueError("tablas con otra forma o con huecos")
+                self.full[name] = full
             self.seed = list(c.get("seed") or [])
-            self.cand_ok = bool(self.prof)
+            self.cand_ok = bool(self.prof) and all(name in self.reg for name in NAMES)
         except Exception:
             self.cand_ok = False
         self.h0 = None                    # número de hora de la posición 0 de la memoria densa
@@ -96,9 +93,7 @@ class MarketCand(MarketForecaster):
     def profile_at(self, name: str, key: int) -> float:
         """Perfil de la hora con número `key` (día ordinal * 24 + hora)."""
         day, hour = divmod(key, 24)
-        d = pd.Timestamp.fromordinal(int(day))
-        wd = d.dayofweek
-        return float(self.prof[name][d.month - 1][0 if wd < 5 else (1 if wd == 5 else 2)][hour])
+        return self.profile(name, pd.Timestamp.fromordinal(int(day)).replace(hour=int(hour)))
 
     def rebase(self, now: int) -> None:
         """Crea la memoria alrededor de `now` y vuelca en ella la semilla y lo visto hasta ahora."""
@@ -121,30 +116,38 @@ class MarketCand(MarketForecaster):
                 if 0 <= pos < STORE_LEN_H:
                     self.z[name][pos] = deviation(v, b)
 
-    def scalars(self, name: str, i: int) -> dict:
+    def scalars(self, name: str, i: int, hour_now: int) -> dict:
         """Pistas que no dependen de la antelación. `i` = posición de la hora actual en la memoria."""
         z = self.z[name]
+        start = i + 2 - (hour_now + 2) % 24         # primera hora del día de la última hora conocida
         return {"0": float(z[i]), "1": float(z[i + 1]), "2": float(z[i + 2]),
                 "m24": window_mean(z, i - 23, i + 1, 12), "m6": window_mean(z, i - 5, i + 1, 3),
-                "yL": float(z[i - 22])}
+                "yL": float(z[i - 22]), "d": window_mean(z, start, i + 3, 1),
+                "yd": window_mean(z, start - 24, start, 12)}
 
     def predict(self, name: str, other: str, sc: dict, i: int, ks: np.ndarray, hours: np.ndarray) -> np.ndarray:
         """Desviación prevista de `name` para las antelaciones `ks` (horas del día `hours`)."""
         own, oth = sc[name], sc[other]
         z, zo = self.z[name], self.z[other]
         vals = {"z0": own["0"], "z1": own["1"], "z2": own["2"], "zm24": own["m24"], "zm6": own["m6"],
-                "zyL": own["yL"], "zy": z[i + ks - 24], "zy2": z[i + ks - 48],
+                "zyL": own["yL"], "zd": own["d"], "zyd": own["yd"], "zy": z[i + ks - 24], "zy2": z[i + ks - 48],
                 "o2": oth["2"], "om24": oth["m24"], "oy": zo[i + ks - 24]}
         X = np.empty((len(ks), len(self.feats)))
         for j, f in enumerate(self.feats):
             X[:, j] = vals[f]
         C = self.full[name][ks - KNOWN_HOURS, hours]                    # [n][F+1]
         zhat = (X * C[:, :-1]).sum(axis=1) + C[:, -1]
-        bad = ~np.isfinite(zhat)                                        # falta alguna pista: solo las 3 horas conocidas
+        bad = ~np.isfinite(zhat)
         if bad.any():
-            Cc = self.cold[name][ks - KNOWN_HOURS, hours]
+            # Falta alguna pista (semana sin memoria del train): se decide como el agente actual, con su
+            # regresión de 6 pistas si hay medio día de historia y, si no, con la de las 3 horas conocidas.
+            base, cold = self.reg[name]
+            Cb = base[ks - KNOWN_HOURS]
+            zb = (Cb[:, 0] * own["0"] + Cb[:, 1] * own["1"] + Cb[:, 2] * own["2"] + Cb[:, 3] * own["m24"]
+                  + Cb[:, 4] * own["m6"] + Cb[:, 5] * vals["zy"] + Cb[:, 6])
+            Cc = cold[ks - KNOWN_HOURS]
             zc = Cc[:, 0] * own["0"] + Cc[:, 1] * own["1"] + Cc[:, 2] * own["2"] + Cc[:, 3]
-            zhat = np.where(bad, zc, zhat)
+            zhat = np.where(bad, np.where(np.isfinite(zb), zb, zc), zhat)
         return np.clip(zhat, -Z_CLIP, Z_CLIP)
 
     def cand_forecast(self, obs, times: list):
@@ -163,7 +166,7 @@ class MarketCand(MarketForecaster):
                 pos = keys[k] - self.h0
                 if 0 <= pos < STORE_LEN_H:
                     self.z[name][pos] = deviation(float(arr[k]), float(base[name][k]))
-        sc = {name: self.scalars(name, i) for name in NAMES}
+        sc = {name: self.scalars(name, i, times[0].hour) for name in NAMES}
         for name in NAMES:
             if not all(math.isfinite(sc[name][j]) for j in ("0", "1", "2")):
                 return None
@@ -209,6 +212,19 @@ def dense_market(exclude=None) -> pd.DataFrame:
     return d
 
 
+def day_types(index) -> np.ndarray:
+    """Tipo de día de cada hora, con la misma regla que usa el agente (battery.hard_market.market_day_type)."""
+    from battery.hard_market import market_day_type
+    by_day = {}
+    out = np.empty(len(index), dtype=int)
+    for j, (y, mo, dd) in enumerate(zip(index.year, index.month, index.day)):
+        key = (y, mo, dd)
+        if key not in by_day:
+            by_day[key] = market_day_type(index[j])
+        out[j] = by_day[key]
+    return out
+
+
 def profile_sums(v: np.ndarray, mo: np.ndarray, typ: np.ndarray, hr: np.ndarray, mask: np.ndarray) -> tuple:
     """Sumas y cuentas por (mes, tipo de día, hora) de las horas de `mask` con dato."""
     ok = mask & np.isfinite(v)
@@ -246,6 +262,22 @@ def roll_mean(z: np.ndarray, w: int, min_count: int) -> np.ndarray:
     return np.where(n >= min_count, (cs[idx + 1] - cs[lo]) / np.maximum(n, 1), np.nan)
 
 
+def day_means(z: np.ndarray, hour: np.ndarray) -> tuple:
+    """Para cada hora j: media de z desde las 00 h de su día hasta j, y media de z del día anterior entero
+    (NaN con menos de 12 horas)."""
+    ok = np.isfinite(z)
+    cs = np.r_[0.0, np.cumsum(np.where(ok, z, 0.0))]
+    cn = np.r_[0, np.cumsum(ok)]
+    j = np.arange(len(z))
+    start = np.maximum(j - hour, 0)
+    n = cn[j + 1] - cn[start]
+    today = np.where(n >= 1, (cs[j + 1] - cs[start]) / np.maximum(n, 1), np.nan)
+    ys = np.maximum(start - 24, 0)
+    n2 = cn[start] - cn[ys]
+    yday = np.where(n2 >= 12, (cs[start] - cs[ys]) / np.maximum(n2, 1), np.nan)
+    return today, yday
+
+
 def training_rows(d: pd.DataFrame, feats: tuple, crossfit: bool) -> dict:
     """Filas de ajuste por variable y antelación: {name: [(X, Xcold, y, hora_objetivo) para k = 3..23]}.
 
@@ -253,7 +285,7 @@ def training_rows(d: pd.DataFrame, feats: tuple, crossfit: bool) -> dict:
     las filas con la hora actual y la hora objetivo dentro del bloque: igual que una semana del test."""
     idx = d.index
     mo, hr = idx.month.to_numpy() - 1, idx.hour.to_numpy()
-    typ = np.where(idx.dayofweek < 5, 0, np.where(idx.dayofweek == 5, 1, 2))
+    typ = day_types(idx)
     ym = idx.year.to_numpy() * 12 + mo
     block = np.minimum((idx.day.to_numpy() - 1) // BLOCK_DAYS, 3) if crossfit else np.zeros(len(idx), dtype=int)
     vals = {name: d[name].to_numpy(float) for name in NAMES}
@@ -281,9 +313,11 @@ def training_rows(d: pd.DataFrame, feats: tuple, crossfit: bool) -> dict:
             fixed = {}
             for name, other in (("price", "co2"), ("co2", "price")):
                 zo = z[other]
+                today, yday = day_means(z[name], hour)
                 fixed[name] = {"z0": z[name], "z1": at(z[name], 1), "z2": at(z[name], 2),
                                "zm24": roll_mean(z[name], 24, 12), "zm6": roll_mean(z[name], 6, 3),
-                               "zyL": at(z[name], -22), "o2": at(zo, 2), "om24": roll_mean(zo, 24, 12)}
+                               "zyL": at(z[name], -22), "o2": at(zo, 2), "om24": roll_mean(zo, 24, 12),
+                               "zd": at(today, 2), "zyd": at(yday, 2)}
             for k in range(KNOWN_HOURS, KNOWN_HOURS + LEADS):
                 tgt_in = at(inb.astype(float), k) == 1.0
                 keep_rows = inb & tgt_in
@@ -304,9 +338,11 @@ def training_rows(d: pd.DataFrame, feats: tuple, crossfit: bool) -> dict:
     return out
 
 
-def ridge_by_hour(X: np.ndarray, y: np.ndarray, hour: np.ndarray, ridge_hour: float) -> np.ndarray:
+def ridge_by_hour(X: np.ndarray, y: np.ndarray, hour: np.ndarray, ridge_hour: float, smear: bool = False) -> np.ndarray:
     """Regresión común (mínimos cuadrados) y, para cada hora objetivo, otra encogida hacia la común:
     minimiza ||y - Xb||^2 + ridge_hour * ||b - b_común||^2. Con ridge_hour < 0, solo la común.
+    Con `smear`, corrige el sesgo de volver del logaritmo: exp(media de z) queda por debajo de la media
+    real, así que se suma al término independiente log(media de exp(residuo)) (estimador de Duan).
     Devuelve [24][F+1] (el último coeficiente es el término independiente)."""
     A = np.c_[X, np.ones(len(X))]
     nf = A.shape[1]
@@ -320,6 +356,9 @@ def ridge_by_hour(X: np.ndarray, y: np.ndarray, hour: np.ndarray, ridge_hour: fl
             if sel.sum() >= nf:
                 Ah, yh = A[sel], y[sel]
                 out[h] = np.linalg.solve(Ah.T @ Ah + ridge_hour * np.eye(nf), Ah.T @ yh + ridge_hour * common)
+    if smear:
+        resid = y - (A * out[hour]).sum(axis=1)
+        out[:, -1] += float(np.log(np.clip(np.exp(np.clip(resid, -Z_CLIP, Z_CLIP)).mean(), 1.0, 1.25)))
     return out
 
 
@@ -344,15 +383,14 @@ def fit_cand(exclude=None, cfg: Optional[dict] = None) -> dict:
     feats = tuple(cfg["feats"])
     d = dense_market(exclude)
     rows = training_rows(d, feats, bool(cfg["crossfit"]))
-    full, cold = {}, {}
+    full = {}
     for name in NAMES:
-        full[name], cold[name] = [], []
+        full[name] = []
         for X, Xc, y, hour in rows[name]:
             ok = np.isfinite(X).all(axis=1)
-            full[name].append(ridge_by_hour(X[ok], y[ok], hour[ok], cfg["ridge_hour"]).tolist())
-            cold[name].append(ridge_by_hour(Xc, y, hour, cfg["ridge_hour"]).tolist())
+            full[name].append(ridge_by_hour(X[ok], y[ok], hour[ok], cfg["ridge_hour"], cfg["smear"]).tolist())
     seed = seed_segments(d, int(cfg["seed_hours"])) if cfg["seed_hours"] else []
-    return {"feats": list(feats), "full": full, "cold": cold, "seed": seed}
+    return {"feats": list(feats), "full": full, "seed": seed}
 
 
 def to_prior(exclude=None, cfg: Optional[dict] = None) -> dict:

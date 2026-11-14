@@ -41,9 +41,20 @@ def horizon_times(ts, horizon=24):
     return times
 
 
+def split_frame(full, split):
+    """dev: días 8 a 14 (como el banco). dev0: días 1 a 7, otro tramo de diseño que no toca la validación
+    (ahí no hay semilla: los días anteriores son del test, así que mide las demás piezas en frío)."""
+    if split == "dev0":
+        return full[full.timestamp.dt.day <= 7].reset_index(drop=True)
+    if split.startswith("d") and split[1:].isdigit():      # dN: días N a N+6 (ventanas desplazadas, sin tocar la validación si N <= 8)
+        n = int(split[1:])
+        return full[(full.timestamp.dt.day >= n) & (full.timestamp.dt.day <= n + 6)].reset_index(drop=True)
+    return B.split_frame(full, split)
+
+
 def setup(split="dev"):
     full = B.hard_table()
-    df = B.split_frame(full, split)
+    df = split_frame(full, split)
     exclude = set(df.timestamp)
     prior = B.fit_market(exclude, full[~full.timestamp.isin(exclude)])
     return df, exclude, prior
@@ -88,17 +99,37 @@ def variants(exclude, prior):
     def cand(**cfg):
         return lambda: C.MarketCand({**prior, "cand": C.fit_cand(exclude, cfg)})
     base6 = ("z0", "z1", "z2", "zm24", "zm6", "zy")
-    return {
-        "agente actual": lambda: MarketForecaster(prior),
-        "A mismas pistas, sin semilla": cand(feats=base6, crossfit=False, ridge_hour=-1, seed_hours=0),
-        "B + semilla": cand(feats=base6, crossfit=False, ridge_hour=-1),
-        "C + perfil cruzado": cand(feats=base6, crossfit=True, ridge_hour=-1),
-        "D + zyL": cand(feats=base6 + ("zyL",), crossfit=True, ridge_hour=-1),
-        "E + otra variable": cand(feats=C.FEATS, crossfit=True, ridge_hour=-1),
-        "F + por hora (30)": cand(feats=C.FEATS, crossfit=True, ridge_hour=30.0),
-        "G = F sin perfil cruzado": cand(feats=C.FEATS, crossfit=False, ridge_hour=30.0),
-        "H = F + zy2": cand(feats=C.FEATS + ("zy2",), crossfit=True, ridge_hour=30.0),
-    }
+    cross = ("o2", "om24", "oy")
+    v = {"agente actual": lambda: MarketForecaster(prior),
+         "A mismas pistas, sin semilla": cand(feats=base6, ridge_hour=-1, seed_hours=0),
+         "B + semilla": cand(feats=base6, ridge_hour=-1),
+         "M1 B + por hora": cand(feats=base6),
+         "M2 B + zyL": cand(feats=base6 + ("zyL",), ridge_hour=-1),
+         "M3 B + otra variable": cand(feats=base6 + cross, ridge_hour=-1),
+         "M4 B + zy2": cand(feats=base6 + ("zy2",), ridge_hour=-1),
+         "N todas, comun": cand(feats=C.FEATS, ridge_hour=-1),
+         "G todas, por hora 30": cand(feats=C.FEATS),
+         "G10": cand(feats=C.FEATS, ridge_hour=10.0),
+         "G100": cand(feats=C.FEATS, ridge_hour=100.0),
+         "G300": cand(feats=C.FEATS, ridge_hour=300.0),
+         "J = G + sesgo log": cand(feats=C.FEATS, smear=True),
+         "L = G + zy2": cand(feats=C.FEATS + ("zy2",)),
+         "F = G con perfil cruzado": cand(feats=C.FEATS, crossfit=True),
+         "G sin semilla": cand(feats=C.FEATS, seed_hours=0),
+         "P = G + dia": cand(feats=C.FEATS + ("zd", "zyd")),
+         "P10": cand(feats=C.FEATS + ("zd", "zyd"), ridge_hour=10.0),
+         "P3": cand(feats=C.FEATS + ("zd", "zyd"), ridge_hour=3.0),
+         "Q = base6 + dia, por hora": cand(feats=base6 + ("zd", "zyd")),
+         "Q10": cand(feats=base6 + ("zd", "zyd"), ridge_hour=10.0),
+         "R = P + zy2": cand(feats=C.FEATS + ("zd", "zyd", "zy2")),
+         "S = P comun": cand(feats=C.FEATS + ("zd", "zyd"), ridge_hour=-1),
+         "T = base6 + dia, comun": cand(feats=base6 + ("zd", "zyd"), ridge_hour=-1),
+         "U = S + zy2": cand(feats=C.FEATS + ("zd", "zyd", "zy2"), ridge_hour=-1),
+         "W = S + sesgo log": cand(feats=C.FEATS + ("zd", "zyd"), ridge_hour=-1, smear=True),
+         "X = S sin otra variable": cand(feats=base6 + ("zyL", "zd", "zyd"), ridge_hour=-1),
+         "Y = S sin zyL": cand(feats=base6 + cross + ("zd", "zyd"), ridge_hour=-1),
+         "Z = S sin semilla": cand(feats=C.FEATS + ("zd", "zyd"), ridge_hour=-1, seed_hours=0)}
+    return v
 
 
 def bench_one(args):
@@ -106,7 +137,7 @@ def bench_one(args):
     name, split = args
     from battery.sim import baseline_totals, score
     full = B.hard_table()
-    df = B.split_frame(full, split)
+    df = split_frame(full, split)
     exclude = set(df.timestamp)
     fit_df = full[~full.timestamp.isin(exclude)]
     prior = B.fit_market(exclude, fit_df)
@@ -132,12 +163,11 @@ def bench(names, split="dev"):
     from multiprocessing import Pool
     with Pool(4) as pool:
         res = pool.map(bench_one, [(n, split) for n in names])
-    ref = [r for r in res if r[0] == "real 24 h"]
+    ref = [r for r in res if r[0] == "agente actual"]
     for name, sc, ex, ms, by_day, by_week in res:
         extra = ""
         if ref:
-            extra = (" | pierde por día: " + " ".join(f"{a - b:+.2f}" for a, b in zip(by_day, ref[0][4]))
-                     + " | por semana: " + " ".join(f"{a - b:+.2f}" for a, b in zip(by_week, ref[0][5])))
+            extra = (f" | gana {sc - ref[0][1]:+.3f} | por semana: " + " ".join(f"{b - a:+.2f}" for a, b in zip(by_week, ref[0][5])))
         print(f"{name:28s} {sc:7.3f} vert {ex:5.0f} {ms:4.1f} ms{extra}")
 
 
@@ -166,12 +196,13 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--cv", action="store_true")
     ap.add_argument("--only", default="")
-    ap.add_argument("--bench", default="", help="variantes (separadas por ;) que se pasan por el banco en dev")
+    ap.add_argument("--bench", default="", help="variantes (separadas por ;) que se pasan por el banco")
+    ap.add_argument("--split", default="dev")
     args = ap.parse_args()
     if args.bench:
-        bench(args.bench.split(";"))
+        bench(args.bench.split(";"), args.split)
         return
-    df, exclude, prior = setup("dev")
+    df, exclude, prior = setup(args.split)
     if args.cv:
         cv_ridge(exclude)
         return

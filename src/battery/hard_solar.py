@@ -20,7 +20,8 @@ Cómo prevé:
   anterior, que también se apaga con el horizonte.
 Y un retoque final de la acción (`adjust_action`), porque la previsión de la hora actual se equivoca
 (unos 140 kW de día): descargar de más es tirar energía y cargar de menos es perder excedente gratis, así
-que se descarga un poco por debajo de lo previsto y se carga un poco por encima.
+que se descarga un poco por debajo de lo previsto y se carga un poco por encima. El plan de las horas
+siguientes ya cuenta con ese margen (Z_PLAN), para repartir la energía sabiendo lo que de verdad se hará.
 """
 import math
 from typing import Optional
@@ -38,6 +39,7 @@ PV_DAMP = 0.85              # cuánto se mantiene la claridad de una hora a la s
 LOAD_DAMP = 0.90            # ídem para el cociente consumo / perfil
 Z_DISCHARGE = 1.0           # margen al descargar, en desviaciones típicas del error de la hora actual
 Z_CHARGE = 1.0              # margen al cargar cuando puede haber excedente
+Z_PLAN = 1.0                # el plan de las horas siguientes cuenta ya con ese mismo margen
 DEFAULT_SD_KW = 150.0       # error típico del consumo neto de la hora actual si no hay tabla
 # Días en que el campus funciona como un domingo: festivos nacionales, de Cataluña y de Barcelona, y el
 # cierre de Navidad (del 24 de diciembre al 6 de enero). En el train, del 1 al 6 de enero el consumo medio
@@ -138,6 +140,11 @@ class NetLoadForecaster:
             pv[0] = 0.0
         load, pv = np.maximum(load, 0.0), np.maximum(pv, 0.0)
         self.net_now, self.hour_now = float(load[0] - pv[0]), times[0].hour
+        # Al llegar cada hora se descargará algo menos y se cargará algo más de lo previsto (adjust_action).
+        # Para que el plan reparta la energía contando con eso, las horas siguientes se planifican con un
+        # consumo neto una desviación típica más bajo (se suma a la solar; solo mueve decisiones, no el score).
+        for k in range(1, H):
+            pv[k] += Z_PLAN * float(self.sd[times[k].hour])
         return load, pv
 
     def adjust_action(self, action_kw: float, obs: Obs, p) -> float:

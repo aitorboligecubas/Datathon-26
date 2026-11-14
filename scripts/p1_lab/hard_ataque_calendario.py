@@ -10,10 +10,16 @@ Todos los episodios llevan el calendario del test (hard_ataque_comun.episodio_te
     solo_agosto   LAST_MONTHS = ((2026, 8),)            (julio deja de ser "último mes")
     sin_final     LAST_MONTHS = ()                       (nunca sabe que el test acaba)
     informado     conoce las fechas reales de las próximas 24 filas del episodio (techo del calendario)
+
+Al final, la tabla G: las dos variantes del interruptor battery.hard.EMPTY_EVERY_WEEK (False y True) con el
+calendario del test, en los dos mundos posibles (la batería sigue de una semana a otra, o cada semana se simula
+por separado desde el 50 %), con el score total y el de cada mitad (primeras y últimas 1.008 h). Ojo: el banco
+(scripts/p1_hard.py) no sirve para esto, porque en sus fechas las semanas no acaban con el mes.
 """
 import sys
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -49,6 +55,36 @@ def correr(df, pm, ps, variante: str) -> dict:
     return r
 
 
+def score_mask(df, log, mask) -> float:
+    """Score solo con las horas de `mask` (como evaluate_results(mask=...) del entorno oficial)."""
+    base = np.maximum(df.load_kw.to_numpy() - df.pv_kw.to_numpy(), 0.0)[mask]
+    imp = log.import_kw.to_numpy()[mask]
+    co2, price = df.co2_kg_kwh.to_numpy()[mask], df.price_eur_kwh.to_numpy()[mask]
+    d_co2 = 1.0 - (imp * co2).sum() / (base * co2).sum()
+    d_cost = 1.0 - (imp * price).sum() / (base * price).sum()
+    return 100.0 * (0.7 * d_co2 + 0.3 * d_cost)
+
+
+def tabla_variantes(full, pm, ps) -> pd.DataFrame:
+    n = len(full)
+    pub = np.arange(n) < n // 2
+    rows = []
+    keep = hard.EMPTY_EVERY_WEEK
+    try:
+        for vaciar in (False, True):
+            hard.EMPTY_EVERY_WEEK = vaciar
+            r = c.simular(c.agente(pm, ps), full)
+            a = c.agente(pm, ps)
+            logs = [c.simular(a, full.iloc[i:i + c.WEEK].reset_index(drop=True))["log"] for i in range(0, n, c.WEEK)]
+            sep = pd.concat(logs, ignore_index=True)
+            for mundo, log in (("la batería sigue", r["log"]), ("cada semana por separado", sep)):
+                rows.append({"EMPTY_EVERY_WEEK": vaciar, "mundo": mundo, "total": score_mask(full, log, np.ones(n, bool)),
+                             "mitad_publica": score_mask(full, log, pub), "mitad_privada": score_mask(full, log, ~pub)})
+    finally:
+        hard.EMPTY_EVERY_WEEK = keep
+    return pd.DataFrame(rows).sort_values(["mundo", "EMPTY_EVERY_WEEK"])
+
+
 def main() -> int:
     full, origen = c.episodio_test("copia")
     pm, ps = c.priors(origen)
@@ -80,6 +116,10 @@ def main() -> int:
     out_dir = c.REPO / "results" / "p1_hard"
     out_dir.mkdir(parents=True, exist_ok=True)
     out.to_csv(out_dir / "ataque_calendario.csv", index=False)
+    g = tabla_variantes(full, pm, ps)
+    print("\nG. Variantes de EMPTY_EVERY_WEEK con el calendario del test")
+    print(g.round(3).to_string(index=False))
+    g.to_csv(out_dir / "ataque_calendario_variantes.csv", index=False)
     return 0
 
 
