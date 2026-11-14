@@ -211,3 +211,117 @@ def test_week_with_empty_readings_fills_the_battery_and_waits():
     assert pol.act_obs(_obs_at("2026-01-25 02:00", nan, price, soc=1999.0)) < 2.0       # llena: espera
     assert pol.act_obs(_obs_at("2026-01-25 03:00", 900.0, price, soc=2000.0)) < 0       # vuelve la lectura
     assert not pol.no_data_block and not pol.no_reading
+
+
+# ------------------------------------------------------------------------------------------- modo difícil
+def _hard_obs(ts, soc, load_prev=900.0, pv_prev=0.0, price=(0.10, 0.10, 0.10), co2=(0.10, 0.10, 0.10)):
+    """Observación del modo difícil tal como la da el entorno: 3 horas de precio y CO2 y la batería grande."""
+    import pandas as pd
+
+    ts = pd.Timestamp(ts)
+    return {"timestamp": ts, "hour": int(ts.hour), "day_of_week": int(ts.dayofweek), "soc_kwh": float(soc),
+            "soc_pct": float(soc) / 6000.0, "preu_actual": float(price[0]), "co2_actual": float(co2[0]),
+            "preus_properes_24h": [float(v) for v in price], "co2_properes_24h": [float(v) for v in co2],
+            "noves_dades_5min": {"ultim_consum_kw": load_prev, "ultima_solar_kw": pv_prev},
+            "cap_max_kwh": 6000.0, "power_max_kw": 1500.0}
+
+
+def _hard_run(agent, df):
+    """Simula el modo difícil con la física del entorno. Devuelve (totales, kWh vertidos al descargar)."""
+    from battery.hard import HARD_PARAMS as p
+    from battery.sim import apply_action
+
+    soc, infr, co2, cost, spilled = p.soc_init_kwh, 0, 0.0, 0.0, 0.0
+    for t in range(len(df)):
+        row, prev = df.iloc[t], df.iloc[max(t - 1, 0)]
+        obs = _hard_obs(row.timestamp, soc, float(prev.load_kw), float(prev.pv_kw),
+                        df.price_eur_kwh.iloc[t:t + 3].tolist(), df.co2_kg_kwh.iloc[t:t + 3].tolist())
+        action, soc, bad = apply_action(soc, float(agent.act(obs)), p)
+        infr += bad
+        grid = row.load_kw - row.pv_kw + action
+        co2 += max(grid, 0.0) * row.co2_kg_kwh
+        cost += max(grid, 0.0) * row.price_eur_kwh
+        if action < 0:
+            spilled += max(-grid, 0.0)
+    return {"co2_kg": co2, "cost_eur": cost, "infractions": infr}, spilled
+
+
+def _hard_frame(start, days):
+    """Unos días del train con la solar del modo difícil (x12)."""
+    df = load()
+    df = df[df.timestamp >= start].iloc[:24 * days].reset_index(drop=True).copy()
+    df["pv_kw"] = df["pv_kw"] * 12.0
+    return df
+
+
+def test_hard_agent_saves_without_infractions():
+    """Cuatro días de mayo (con excedente solar a mediodía): ahorra, no infringe, no cae en el respaldo y no
+    tira la batería descargando por encima del consumo."""
+    from battery.hard import HardBatteryAgent
+
+    df = _hard_frame("2026-05-11", 4)
+    agent = HardBatteryAgent()
+    totals, spilled = _hard_run(agent, df)
+    sc = score(totals, baseline_totals(df))
+    assert sc["infractions"] == 0
+    assert sc["score"] > 5.0
+    assert agent.policy.n_fallbacks == 0
+    assert spilled < 0.05 * 6000.0 * len(df) / 24, f"vertido al descargar: {spilled:.0f} kWh"
+
+
+def test_hard_uses_the_extended_tables_and_falls_back_without_them():
+    """Con las tablas ampliadas en models/hard_solar.json se usa el previsor ampliado; si faltan o están rotas,
+    el sencillo. En ningún caso se lanza un error."""
+    from battery.forecaster import Forecaster
+    from battery.hard import HardPolicy
+    from battery.hard_solar import NetLoadForecaster, SolarCand, make_netload
+
+    assert isinstance(HardPolicy().netload, SolarCand)
+    for prior in (None, {}, {"cand": {}}, {"cand": {"pv_clear": [[1.0]]}}, {"cand": "roto"}):
+        assert isinstance(make_netload(prior, Forecaster(None)), NetLoadForecaster)
+
+
+def test_hard_does_not_discharge_into_a_dead_meter():
+    """Contador a 0 y sin solar: descargar sería tirar la energía, por cara que sea la hora."""
+    from battery.hard import HardPolicy
+
+    pol = HardPolicy()
+    dear = (0.40, 0.05, 0.05)
+    assert pol.act(_hard_obs("2026-01-27 18:00", 3000.0, 900.0, 0.0, dear, dear)) <= 0
+    assert pol.act(_hard_obs("2026-01-27 19:00", 3000.0, 900.0, 0.0, dear, dear)) < 0      # con consumo, descarga
+    assert pol.act(_hard_obs("2026-01-27 20:00", 3000.0, 0.0, 0.0, dear, dear)) >= 0       # contador caído: no
+
+
+def test_hard_plans_across_months_and_ends_in_august():
+    """El test son los últimos 7 días de cada mes, uno detrás de otro, y acaba el 31/08/2026."""
+    import pandas as pd
+
+    from battery.hard import HardPolicy
+
+    pol = HardPolicy()
+    times = pol.horizon_times(_obs_at("2026-07-31 22:00", 900.0))
+    assert len(times) == 24 and times[2] == pd.Timestamp("2026-08-25 00:00")
+    assert len(pol.horizon_times(_obs_at("2026-08-31 22:00", 900.0))) == 2
+    assert pol.act(_hard_obs("2026-08-31 23:00", 3000.0, 900.0, 0.0)) < 0        # última hora: gasta lo que queda
+
+
+def test_hard_detects_weekly_resets_and_restarts():
+    """Si la segunda semana empieza con la batería al 50 % y no como él la dejó, cada semana es una simulación
+    aparte y se cierra vacía. Si el reloj vuelve atrás, empieza otra simulación: se olvida lo deducido."""
+    from battery.hard import HardPolicy
+
+    pol = HardPolicy()
+    pol.act(_hard_obs("2025-09-30 22:00", 5000.0))
+    pol.act(_hard_obs("2025-09-30 23:00", 5000.0))
+    assert abs(pol.expected_soc - 3000.0) > 1.0
+    pol.act(_hard_obs("2025-10-25 00:00", 3000.0))                 # 50 % justo, y no es lo que dejó
+    assert pol.n_blocks == 2 and pol.empty_weeks
+    assert len(pol.horizon_times(_obs_at("2025-10-31 22:00", 900.0))) == 2
+    pol.act(_hard_obs("2025-09-24 00:00", 3000.0))                 # el reloj vuelve atrás
+    assert pol.n_blocks == 1 and not pol.empty_weeks
+
+    pol = HardPolicy()                                             # sin reinicio: la batería sigue
+    pol.act(_hard_obs("2025-09-30 22:00", 5000.0))
+    pol.act(_hard_obs("2025-09-30 23:00", 5000.0))
+    pol.act(_hard_obs("2025-10-25 00:00", pol.expected_soc))
+    assert pol.n_blocks == 2 and not pol.empty_weeks

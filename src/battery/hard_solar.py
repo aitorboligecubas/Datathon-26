@@ -226,6 +226,13 @@ def neighbour_month(month: int, day: float, centers) -> tuple:
     return other, min(max(w, 0.0), 1.0)
 
 
+# Margen del previsor ampliado, en "desviaciones típicas" (1 = cuantiles 16 % y 84 % del error medido). Con 1,4
+# gana a 1,0 en tres ventanas disjuntas del train (días 1-7: +0,002; días 8-14: +0,031; validación: +0,051) y
+# el vertido al descargar baja a la mitad. Descargar de más es tirar la energía entera; descargar de menos solo
+# la mueve a una hora algo peor, y el test (días 25-31) se parece menos al train que el train a sí mismo.
+Z_SOLAR = 1.4
+
+
 class SolarCand:
     """Previsor de consumo y solar con tablas ampliadas (mismo contrato que NetLoadForecaster). Qué añade:
     1. Consumo: una regresión por hora del día y antelación con el cociente consumo/perfil de la hora
@@ -242,7 +249,7 @@ class SolarCand:
        son los días 25-31 y el train los días 1-24, y la curva del test está a medio camino del mes siguiente.
     El ajuste de las tablas está en scripts/p1_lab/hard_solar_cand.py (fit_prior), que es donde se diseñó."""
 
-    def __init__(self, prior: Optional[dict], base, z: float = 1.0, reg: bool = True, freeze: bool = True,
+    def __init__(self, prior: Optional[dict], base, z: float = Z_SOLAR, reg: bool = True, freeze: bool = True,
                  quant: bool = True, uncap: bool = True, pvreg: bool = True, shade_now: bool = True,
                  room: bool = False, value_z: bool = False):
         self.base = base
