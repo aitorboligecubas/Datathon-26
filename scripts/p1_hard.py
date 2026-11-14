@@ -157,7 +157,25 @@ def fit_solar(table: pd.DataFrame) -> dict:
     err = ((t.load_kw - t.pv_kw) - (load_hat - pv_hat))[ok]
     sd = err.groupby(h[ok]).std().reindex(range(24)).fillna(err.std()).clip(lower=15.0)
     return {"pv_clear": clear.tolist(), "pv_mean": mean.tolist(), "net_sd": [float(v) for v in sd],
-            "cand": fit_solar_tables(table)}
+            "cand": fit_solar_tables(table), "seed": netload_seed_segments(table)}
+
+
+def netload_seed_segments(table: pd.DataFrame, hours: int = 48) -> list:
+    """Semilla de consumo y solar (battery.hard.netload_seed_dict): las últimas `hours` horas de cada tramo seguido
+    del train. En el test, cada semana empieza justo después del final del tramo de su mes."""
+    t = table.sort_values("timestamp").reset_index(drop=True)
+    ts = pd.DatetimeIndex(t.timestamp)
+    ok = np.isfinite(t.load_kw.to_numpy(float)) & np.isfinite(t.pv_kw.to_numpy(float))
+    nxt_gap = np.r_[(ts[1:] - ts[:-1]) != pd.Timedelta(hours=1), True]
+    segs = []
+    for e in np.flatnonzero(nxt_gap & ok):
+        s = e
+        while s > 0 and ok[s - 1] and not nxt_gap[s - 1] and e - s + 1 < hours:
+            s -= 1
+        segs.append({"start": ts[s].strftime("%Y-%m-%d %H:%M"),
+                     "load": [round(float(v), 3) for v in t.load_kw.to_numpy(float)[s:e + 1]],
+                     "pv": [round(float(v), 3) for v in t.pv_kw.to_numpy(float)[s:e + 1]]})
+    return segs
 
 
 def fit_solar_tables(table: pd.DataFrame) -> dict:
@@ -228,6 +246,7 @@ def hard_agent(prior: dict, solar: dict = None, **cfg):
     pol.w_co2, pol.w_cost = score_weights(prior["co2_ref_kg_per_h"], prior["cost_ref_eur_per_h"])
     pol.forecaster = Forecaster(load_json(find_models_dir(), FORECASTER_FILE))
     pol.netload = make_netload(solar, pol.forecaster, **{k: v for k, v in cfg.items() if k in ("z_discharge", "z_charge")})
+    pol.set_netload_seed(solar)
     for k, v in cfg.items():
         if k not in ("yesterday_weight", "z_discharge", "z_charge"):
             setattr(pol, k, v)
