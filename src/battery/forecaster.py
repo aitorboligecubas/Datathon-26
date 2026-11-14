@@ -44,6 +44,7 @@ class Forecaster:
         self.last_load = float("nan")
         self.err_load = 0.0
         self.err_pv = 0.0
+        self.meter_down = False     # True si la hora anterior el contador marcó 0 (fallo de comunicación)
 
     def _load_profile(self, how: int) -> float:
         v = self.load_how[how % 168]
@@ -61,6 +62,9 @@ class Forecaster:
         prev_how = (obs.hour_of_week - 1) % 168
         prev_hod = (obs.hour - 1) % 24
         load, pv = obs.load_prev_kw, obs.pv_prev_kw
+        self.meter_down = load == 0.0
+        if self.meter_down:
+            return  # un 0 exacto no es consumo real: no contamina el perfil ni la corrección
         if math.isfinite(load):
             expected = self._load_profile(prev_how)
             self.err_load = load - expected if math.isfinite(expected) else 0.0
@@ -81,4 +85,9 @@ class Forecaster:
             load[k] = (lp if math.isfinite(lp) else 0.0) + self.err_load * self.rho_load ** (k + 1)
             pp = self._pv_profile(hod0 + k)
             pv[k] = pp + (self.err_pv * self.rho_pv ** (k + 1) if pp > 0 else 0.0)
+        if self.meter_down:
+            # Fallo de comunicación del contador (la hora anterior marcó exactamente 0 kW de consumo):
+            # si sigue, el entorno contará 0 de consumo y lo que descarguemos se vierte gratis.
+            load[0] = 0.0
+            pv[0] = 0.0
         return np.maximum(load, 0.0), np.maximum(pv, 0.0)
