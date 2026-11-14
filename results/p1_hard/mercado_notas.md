@@ -139,7 +139,7 @@ No probado (por tiempo o porque el banco no lo mide):
 
 - 8 rondas del banco en dev (unas 90 simulaciones de variantes en total) y 5 tablas de error de previsión en dev.
 - 6 rondas en los días 1-7 y 3 rondas en los días 3-9 y 5-11.
-- 5 ejecuciones del banco oficial con el candidato final (todas 19,922).
+- 6 ejecuciones del banco oficial con el candidato final (todas 19,922; la última a las 18:12).
 - La elección final no sale de un máximo en dev: es la única variante que no pierde en ninguna de las 4 ventanas.
 
 ## 7. Pasos para integrarlo
