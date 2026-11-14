@@ -28,6 +28,10 @@ from .safety import clip_action
 
 HARD_PARAMS = BatteryParams(capacity_kwh=6000.0, soc_init_kwh=3000.0, max_charge_kw=1500.0, max_discharge_kw=1500.0)
 LAST_MONTHS = ((2026, 7), (2026, 8))   # el test acaba al final de uno de estos meses: se llega con la batería vacía
+# Qué hacer al final de cada semana del test (cada una acaba con su mes):
+#   False: la batería sigue de una semana a la siguiente; solo se vacía al final del test (LAST_MONTHS).
+#   True:  cada semana se cierra con la batería vacía (por si cada semana, o cada mitad, se simula por separado).
+EMPTY_EVERY_WEEK = False
 WEATHER_KEYS = ("irradiancia_wm2", "temp_ambient_c", "temp_panel_c", "vent_ms")
 ONE_HOUR = pd.Timedelta(hours=1)
 
@@ -72,7 +76,7 @@ class HardPolicy(MPCPolicy):
         ts = obs.timestamp
         if ts is None:
             return []
-        last = (ts.year, ts.month) in LAST_MONTHS
+        last = EMPTY_EVERY_WEEK or (ts.year, ts.month) in LAST_MONTHS
         times, t = [], ts
         for _ in range(self.horizon):
             times.append(t)
