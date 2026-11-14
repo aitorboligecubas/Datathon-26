@@ -1,0 +1,306 @@
+VERIFICACIÓN INDEPENDIENTE DEL CANDIDATO 'SOLAR' (HARD MODE) - salidas de los scripts, sin retocar
+Sábado 14/11, 18:50 a 19:20 UTC. Candidato: scripts/p1_lab/hard_solar_cand.py (md5 7e51351f...), fábrica make.
+Ojo con los nombres: desde las 18:46 'agente actual' del banco ya lleva el candidato (v7) y desde las 18:57, además, z = 1,4 (v8).
+El agente de partida, sin el candidato, es 'solar sencilla (v6)' = 'partida (v6)'.
+
+### 1. Banco oficial, dev (18:51, src con la copia v7, z = 1,0)
+python scripts/p1_hard.py --split dev --solar scripts/p1_lab/hard_solar_cand.py:make --only "solar sencilla (v6),agente actual,CANDIDATO"
+             agente  score  co2_pct  coste_pct  infr  vertido_kwh  vert_descarga  vert_solar  ms_paso  s_2016h
+solar sencilla (v6) 19.922    19.08     21.887     0     5561.454       2674.274    2887.179    2.480    5.004
+      agente actual 20.073    19.15     22.227     0     6238.180       3820.868    2417.312    2.397    4.834
+          CANDIDATO 20.073    19.15     22.227     0     6238.180       3820.868    2417.312    2.872    6.060
+
+### 2. Banco oficial, val (18:52): ver results/p1_hard/solar_val.txt
+
+### 3. Por meses y por días: python results/p1_hard/solar_verif_meses.py
+
+================ dev: 1848 h ================
+      agente   score  suma_partes  infr  vert_descarga  vert_solar  carga_final_kwh  respaldos  ms_paso
+partida (v6) 19.9224      19.9224     0      2674.2744   2887.1792        2426.6705          0   2.9237
+   CANDIDATO 20.0735      20.0735     0      3820.8678   2417.3123        2302.3078          0   3.1052
+
+Por meses (parte del score; la suma es el score):
+           partida  candidato     dif  carga_fin_partida  carga_fin_cand  dif_ajustada
+timestamp                                                                             
+2025-09     1.4937     1.5051  0.0115          5999.9999       5999.9999        0.0115
+2025-10     2.4927     2.5097  0.0170            66.2036          0.0001        0.0133
+2025-12     0.8926     0.8759 -0.0167          2239.2643       2476.3561        0.0003
+2026-01     1.5812     1.5890  0.0078             0.0001          0.0001       -0.0055
+2026-02     0.2734     0.3028  0.0294          5572.8824       4993.1041       -0.0030
+2026-03     2.1056     2.0970 -0.0086          5999.9999       5999.9999        0.0239
+2026-04     1.3567     1.3842  0.0276          3911.1764       3795.2554        0.0211
+2026-05     1.6775     1.6935  0.0160          5169.5318       5182.6811        0.0232
+2026-06     1.3020     1.3005 -0.0015          5999.9999       5999.9999       -0.0022
+2026-07     3.1278     3.1477  0.0199          2095.4509       2165.3710        0.0239
+2026-08     3.6193     3.6679  0.0486          2426.6705       2302.3078        0.0377
+meses que gana con la diferencia ajustada por la carga de fin de mes: 8 de 11 (suma +0.1441)
+meses que gana el candidato: 8 de 11 | suma +0.1511 | media por mes +0.0137 ± 0.0056 (t = 2.47) | mayor mes: +0.0486 (32 % del total)
+por días: gana 47 de 77 | suma +0.1511 | remuestreo de días (5.000): IC 90 % [-0.0273, +0.3251], P(dif <= 0) = 0.0806
+remuestreo de meses (5.000): IC 90 % [+0.0581, +0.2480], P(dif <= 0) = 0.0042
+carga final: partida 2427 kWh, candidato 2302 kWh; la diferencia (-124 kWh) vale unos -0.0070 puntos al peso medio
+tope de la política: actúa 119 h | el retoque sube la descarga 116 h (9627 kWh) | descarga MÁS que el plan 8 h (187 kWh, máx 105 kW)
+el retoque sube la carga por encima del plan 11 h (1962 kWh)
+
+================ val: 1848 h ================
+      agente   score  suma_partes  infr  vert_descarga  vert_solar  carga_final_kwh  respaldos  ms_paso
+partida (v6) 20.6609      20.6609     0      3329.7554   2091.4921        4471.0965          0   2.4654
+   CANDIDATO 20.7802      20.7802     0      4443.1055   1384.1080        4451.6575          0   2.9115
+
+Por meses (parte del score; la suma es el score):
+           partida  candidato     dif  carga_fin_partida  carga_fin_cand  dif_ajustada
+timestamp                                                                             
+2025-09     1.6969     1.6996  0.0027          5247.9357       5230.6294        0.0017
+2025-10     2.0529     2.0587  0.0058             0.0001          0.0001        0.0068
+2025-12     0.6820     0.6941  0.0121          3867.2408       3775.4611        0.0069
+2026-01     1.3582     1.3301 -0.0281          5999.9999       5999.9999       -0.0229
+2026-02     1.2183     1.2353  0.0170          1347.1257       1113.7392        0.0038
+2026-03     1.2940     1.3174  0.0234          4201.5642       4045.7847        0.0278
+2026-04     1.8550     1.8847  0.0297          5750.2664       5531.5226        0.0261
+2026-05     1.9531     1.9620  0.0089          5999.9999       5999.9999        0.0213
+2026-06     2.3748     2.3601 -0.0147           882.3740       1194.6492        0.0030
+2026-07     2.6345     2.6620  0.0275          2423.0809       2445.4947        0.0110
+2026-08     3.5412     3.5762  0.0350          4471.0965       4451.6575        0.0327
+meses que gana con la diferencia ajustada por la carga de fin de mes: 10 de 11 (suma +0.1182)
+meses que gana el candidato: 9 de 11 | suma +0.1194 | media por mes +0.0109 ± 0.0058 (t = 1.88) | mayor mes: +0.0350 (29 % del total)
+por días: gana 46 de 79 | suma +0.1194 | remuestreo de días (5.000): IC 90 % [-0.0574, +0.2956], P(dif <= 0) = 0.1306
+remuestreo de meses (5.000): IC 90 % [+0.0132, +0.2150], P(dif <= 0) = 0.0342
+carga final: partida 4471 kWh, candidato 4452 kWh; la diferencia (-19 kWh) vale unos -0.0011 puntos al peso medio
+tope de la política: actúa 101 h | el retoque sube la descarga 100 h (8247 kWh) | descarga MÁS que el plan 5 h (41 kWh, máx 22 kW)
+el retoque sube la carga por encima del plan 12 h (1221 kWh)
+
+Horas que comparten dev y val: 121 (2026-08-09 23:00:00 a 2026-08-14 23:00:00)
+val: ganancia en las horas compartidas con dev +0.0370 | en el resto (1727 h, nunca vistas) +0.0823
+val sin las horas compartidas: gana 8 de 11 meses
+
+### 4. Cada pieza apagada: python results/p1_hard/solar_verif_meses.py --piezas (solo las tablas de agentes)
+dev: 1848 h:
+       agente   score  suma_partes  infr  vert_descarga  vert_solar  carga_final_kwh  respaldos  ms_paso
+ partida (v6) 19.9224      19.9224     0      2674.2744   2887.1792        2426.6705          0   2.5949
+    CANDIDATO 20.0735      20.0735     0      3820.8678   2417.3123        2302.3078          0   2.4852
+      sin reg 19.9607      19.9607     0      4704.5304   2681.8308        2326.0393          0   2.6190
+    sin quant 20.0128      20.0128     0      2132.5398   2626.0229        2396.1765          0   2.7827
+    sin uncap 20.0643      20.0643     0      3136.1246   2417.3123        2332.1997          0   2.3953
+    sin pvreg 20.0613      20.0613     0      3501.2338   2898.5096        2301.5569          0   2.3801
+   sin freeze 20.0653      20.0653     0      3946.6610   2417.3123        2302.9179          0   2.3764
+sin shade_now 20.0762      20.0762     0      3820.8678   2417.3123        2302.3078          0   2.4332
+      sin sky 20.0701      20.0701     0      3212.5965   2892.0469        2305.8226          0   2.3676
+
+val: 1848 h:
+       agente   score  suma_partes  infr  vert_descarga  vert_solar  carga_final_kwh  respaldos  ms_paso
+ partida (v6) 20.6609      20.6609     0      3329.7554   2091.4921        4471.0965          0   2.3545
+    CANDIDATO 20.7802      20.7802     0      4443.1055   1384.1080        4451.6575          0   2.4123
+      sin reg 20.6126      20.6126     0      6059.0320   1893.9924        4440.6608          0   2.5158
+    sin quant 20.7377      20.7377     0      3312.7091   1191.6570        4484.5187          0   2.8131
+    sin uncap 20.7569      20.7569     0      4090.7983   1384.1080        4451.6575          0   2.7981
+    sin pvreg 20.7598      20.7598     0      4486.0506   1833.7170        4451.7182          0   2.4382
+   sin freeze 20.7742      20.7742     0      4514.3742   1384.1080        4451.6575          0   2.4709
+sin shade_now 20.7806      20.7806     0      4443.1055   1384.1080        4451.6575          0   2.8183
+      sin sky 20.7713      20.7713     0      4184.8463   1231.6630        4451.6940          0   2.5978
+
+### 5. Placebo de ruido: python results/p1_hard/solar_verif_meses.py --placebo 6
+placebo dev: candidato 20.0735 | 6 reajustes sin 2 días al azar por mes: diferencias [-0.0238, 0.0169, -0.0201, 0.027, 0.0038, 0.0203] | desviación típica 0.0215, máx |dif| 0.0270
+placebo val: candidato 20.7802 | 6 reajustes sin 2 días al azar por mes: diferencias [-0.0048, 0.0047, 0.0017, -0.0016, -0.0108, 0.0046] | desviación típica 0.0060, máx |dif| 0.0108
+
+### 6. Fugas y error de previsión fuera de muestra: python results/p1_hard/solar_verif_fugas.py
+1. FUGA AL AJUSTAR
+   dev: 1848 horas excluidas | tablas idénticas con esas horas estropeadas (3 semillas): [True, True, True] | control (estropear 50 horas de fuera cambia las tablas): True | distintas de las de todo el train: True
+   val: 1848 horas excluidas | tablas idénticas con esas horas estropeadas (3 semillas): [True, True, True] | control (estropear 50 horas de fuera cambia las tablas): True | distintas de las de todo el train: True
+2. CACHÉ DE to_prior
+   exclude distinto (200 horas cambiadas), mismo tamaño y mismo mínimo: devuelve el MISMO objeto = True | las tablas buenas serían distintas = True
+3. models/hard_solar.json
+   claves de 'cand': 17 | distintas de to_prior(None): ninguna
+4. CAUSALIDAD AL PREVER
+   previsiones idénticas hasta la hora del corte (3 cortes): True | cambian justo después (control): 3 de 3
+5. ERROR DE PREVISIÓN FUERA DE MUESTRA (tablas sin las horas del split)
+   dev (raíz del error cuadrático medio, kW; 'solar_día' = horas con más de 30 kW de solar):
+    antelación_h    n  consumo_partida  consumo_cand  solar_día_partida  solar_día_cand
+               0 1837             50.9          37.1              142.3           144.2
+               1 1826             80.0          53.5              190.9           188.3
+               3 1804            125.0          80.1              244.7           237.3
+               6 1771            171.0         107.9              284.6           271.8
+              12 1705            207.6         124.5              290.0           285.2
+   dev: el consumo neto real queda por debajo del tope de descarga (previsto - margen) en 223 de 1625 horas con tope positivo (13.7 %; con cuantiles 16 % y 84 % bien calibrados, cerca del 16 %)
+   val (raíz del error cuadrático medio, kW; 'solar_día' = horas con más de 30 kW de solar):
+    antelación_h    n  consumo_partida  consumo_cand  solar_día_partida  solar_día_cand
+               0 1823             60.3          49.1              136.8           133.3
+               1 1812             81.2          58.6              179.3           162.8
+               3 1790            121.7          78.1              228.2           202.8
+               6 1757            166.6          99.4              246.6           230.9
+              12 1691            196.9         111.7              239.6           228.5
+   val: el consumo neto real queda por debajo del tope de descarga (previsto - margen) en 205 de 1601 horas con tope positivo (12.8 %; con cuantiles 16 % y 84 % bien calibrados, cerca del 16 %)
+
+### 7. Reglas y robustez: python results/p1_hard/solar_verif_robustez.py
+A. REGLAS DEL EMPAQUETADO
+   candidato, bloque de inferencia: imports ['math', 'numpy', 'pandas', 'typing'] | fuera de la lista: ninguno | llamadas prohibidas: ninguna | anotaciones 'X | None' o match: 0 | nombres que chocan: ninguno
+   candidato, bloque de ajuste (no se empaqueta): imports ['p1_hard', 'pathlib', 'sys'] | fuera de la lista: ['p1_hard', 'pathlib', 'sys'] | llamadas prohibidas: ninguna | anotaciones 'X | None' o match: 0 | nombres que chocan: ninguno
+   src/battery/hard_solar.py (copia v7): imports ['math', 'numpy', 'pandas', 'typing'] | fuera de la lista: ninguno | llamadas prohibidas: ninguna | anotaciones 'X | None' o match: 0 | nombres que chocan: ninguno
+   líneas distintas entre SolarCand del candidato y la copia de src: 47
+      -    def __init__(self, prior: Optional[dict], base, z: float = 1.0, reg: bool = True, freeze: bool = True,
+      +    """Previsor de consumo y solar con tablas ampliadas (mismo contrato que NetLoadForecaster). Qué añade:
+      +    1. Consumo: una regresión por hora del día y antelación con el cociente consumo/perfil de la hora
+      +       anterior, el de ayer a la hora que se prevé y el de ayer a la hora anterior.
+      +    2. Noche: el contador se queda congelado de 23 a 5 h, así que desde las 23 h el consumo hasta las 6 h se
+      +       conoce exacto (es la última lectura).
+      +    3. Márgenes: cuantil 16 % del error del consumo (por hora) y cuantil 84 % del de la solar (por tramo de
+      +       claridad prevista, proporcional al cielo despejado de la fecha), sumados en cuadratura.
+      +    4. Tope de descarga: si ha actuado el tope "lo comprado la hora anterior", se llega hasta el consumo neto
+      +       previsto menos el margen.
+      +    5. Solar: la claridad prevista usa la última hora y la media del día, con un coeficiente por antelación;
+      +       para mañana, la media de hoy.
+      +    6. Cielo despejado en hora solar (sin el cambio de hora) e interpolado entre meses según el día: el test
+      +       son los días 25-31 y el train los días 1-24, y la curva del test está a medio camino del mes siguiente.
+      +    El ajuste de las tablas está en scripts/p1_lab/hard_solar_cand.py (fit_prior), que es donde se diseñó."""
+      +
+      +    def __init__(self, prior: Optional[dict], base, z: float = Z_SOLAR, reg: bool = True, freeze: bool = True,
+      -                 room: bool = False, pv_factor: float = 1.0, value_z: bool = False):
+      +                 room: bool = False, value_z: bool = False):
+      -            self.net_sd = [float(v) for v in prior.get("net_sd", [DEFAULT_SD] * 24)]
+      +            self.net_sd = [float(v) for v in prior.get("net_sd", [DEFAULT_SD_KW] * 24)]
+      -        if pv_factor != 1.0:
+      -            try:    # al integrarlo (pv_factor = 12): la solar que ve el previsor de respaldo de P2 también es x12.
+      -                self.base.pv_prior = self.base.pv_prior * pv_factor     # En el banco ya lo hace el previsor actual.
+      -            except Exception:
+      -                pass
+      +        self.pv_alive = False           # la última lectura de solar fue válida y mayor que cero
+      +        self.pv_alive = math.isfinite(pv) and pv > 1.0
+      -        prev = ts - ONE_HOUR_CAND
+      +        prev = ts - ONE_HOUR_BACK
+      -            if clear >= CLEAR_MIN:
+      +            if clear >= CLEAR_MIN_KW:
+      -        self.net_lo0, self.fresh = float(load[0] - pv[0]) - self.z * DEFAULT_SD, True
+      +        self.net_lo0, self.fresh = float(load[0] - pv[0]) - self.z * DEFAULT_SD_KW, True
+      +        pv_margin0 = 0.0                 # la parte del margen de esta hora que viene de la solar
+      +                if k == 0:
+      +                    pv_margin0 = m_pv
+      -            load[0], pv[0], margin[0] = 0.0, 0.0, 0.0
+      +            load[0] = 0.0
+      +            if self.pv_alive:            # ...pero si la solar sigue viva, lo que produzca es excedente que guardar
+B. LLAMADAS DIRECTAS CON ENTRADAS RARAS
+   llamadas: {'update': 2627, 'forecast': 2629, 'adjust': 15774} | problemas: 286
+   - ABSURDO forecast (> 20 MW): 68 casos. Ejemplos:
+        B1 lectura load=1000000000.0 pv=nan tras 0 h desde 2025-09-24 00:00 -> max load 1e+09, max pv 1.38e+03
+        B1 lectura load=1000000000.0 pv=0.0 tras 0 h desde 2025-09-24 00:00 -> max load 1e+09, max pv 1.38e+03
+        B1 lectura load=1000000000.0 pv=-3.0 tras 0 h desde 2025-09-24 00:00 -> max load 1e+09, max pv 1.38e+03
+        B1 lectura load=1000000000.0 pv=500.0 tras 0 h desde 2025-09-24 00:00 -> max load 1e+09, max pv 1.38e+03
+        B1 lectura load=1000000000.0 pv=1000000000.0 tras 0 h desde 2025-09-24 00:00 -> max load 1e+09, max pv 1.38e+03
+        B1 lectura load=1000000000.0 pv=inf tras 0 h desde 2025-09-24 00:00 -> max load 1e+09, max pv 1.38e+03
+        B5 lecturas absurdas, hora 17 -> max load 1e+09, max pv 1.57e+03
+   - EXCEPCIÓN update: 2 casos. Ejemplos:
+        B2 meteo=ndarray:[1. 2.] -> ValueError('The truth value of an array with more than one element is ambiguous. Use a.any() or a.all()')
+        B2 meteo=ndarray:[] -> ValueError('The truth value of an empty array is ambiguous. Use `array.size > 0` to check that an array is not empty.')
+   - NaN forecast: 216 casos. Ejemplos:
+        B6 tablas 'pv_clear con NaN' hora 0 -> load [1305.86499228 1466.57093407 1625.60111724], pv [nan nan nan]
+        B6 tablas 'pv_clear con NaN' y previsor de P2 sin perfil hora 0 -> load [1305.86499228 1466.57093407 1625.60111724], pv [nan nan nan]
+        B6 tablas 'reg3 con NaN' hora 0 -> load [nan nan nan], pv [ 64.50314703 161.66711163 493.21380146]
+        B6 tablas 'reg3 con NaN' y previsor de P2 sin perfil hora 0 -> load [nan nan nan], pv [ 64.50314703 161.66711163 493.21380146]
+        B6 tablas 'pv_a con NaN' hora 2 -> load [1188.90515287 1282.29451082 1407.77824543], pv [nan nan nan]
+        B6 tablas 'pv_a con NaN' y previsor de P2 sin perfil hora 2 -> load [1188.90515287 1282.29451082 1407.77824543], pv [nan nan nan]
+        B6 tablas 'load_lo con NaN' hora 0 -> load [1305.86499228 1466.57093407 1625.60111724], pv [nan nan nan]
+        B6 tablas 'load_lo con NaN' y previsor de P2 sin perfil hora 0 -> load [1305.86499228 1466.57093407 1625.60111724], pv [nan nan nan]
+C. EL AGENTE ENTERO CON OBSERVACIONES ESTROPEADAS
+   1848 horas, 931 con algo roto: excepciones 0 | acciones no finitas 0 | infracciones 0 | respaldos de la política 24
+D. COSTE DE LA PREVISIÓN
+   update + forecast(24 h) + adjust_action: 0.093 ms por hora (0.19 s en 2.016 h)
+
+### 8. Contador a 0 con la solar viva (escenarios sintéticos sobre val): python results/p1_hard/solar_verif_contador.py
+
+semana de mayo con el contador a 0 y la solar viva
+   partida (v6)                                  score 20.0613 | infr 0 | vertido total 84770 kWh | en las horas a 0: carga 3588 kWh, compra a la red 3383 kWh
+   CANDIDATO (z=1,0)                             score 20.1476 | infr 0 | vertido total 85774 kWh | en las horas a 0: carga 3325 kWh, compra a la red 3325 kWh
+   candidato con z=1,4                           score 20.2017 | infr 0 | vertido total 83721 kWh | en las horas a 0: carga 3325 kWh, compra a la red 3325 kWh
+   copia de src (v8, z=1,4 + regla solar viva)   score 20.2329 | infr 0 | vertido total 83379 kWh | en las horas a 0: carga 3784 kWh, compra a la red 3441 kWh
+
+día 20 de cada mes, de 10 a 15 h, contador a 0 y solar viva
+   partida (v6)                                  score 21.9797 | infr 0 | vertido total 23202 kWh | en las horas a 0: carga 57281 kWh, compra a la red 17347 kWh
+   CANDIDATO (z=1,0)                             score 21.6096 | infr 0 | vertido total 38538 kWh | en las horas a 0: carga 43770 kWh, compra a la red 18955 kWh
+   candidato con z=1,4                           score 21.6674 | infr 0 | vertido total 36276 kWh | en las horas a 0: carga 43968 kWh, compra a la red 19175 kWh
+   copia de src (v8, z=1,4 + regla solar viva)   score 22.1670 | infr 0 | vertido total 20815 kWh | en las horas a 0: carga 58202 kWh, compra a la red 17746 kWh
+
+día 20 de cada mes, de 10 a 15 h, contador y solar a 0 (como la avería del train)
+   partida (v6)                                  score 20.7312 | infr 0 | vertido total 6492 kWh | en las horas a 0: carga 44215 kWh, compra a la red 44215 kWh
+   CANDIDATO (z=1,0)                             score 20.8479 | infr 0 | vertido total 6733 kWh | en las horas a 0: carga 44255 kWh, compra a la red 44255 kWh
+   candidato con z=1,4                           score 20.9034 | infr 0 | vertido total 4449 kWh | en las horas a 0: carga 44411 kWh, compra a la red 44411 kWh
+   copia de src (v8, z=1,4 + regla solar viva)   score 20.9034 | infr 0 | vertido total 4449 kWh | en las horas a 0: carga 44411 kWh, compra a la red 44411 kWh
+
+### 9. Variantes y fidelidad de la copia de src: python results/p1_hard/solar_verif_variantes.py
+Z_SOLAR en src: 1.4
+dev | partida (v6)                 19.922437774251165     infr 0 | vert_descarga    2674 | vert_solar    2887
+dev | candidato, todo apagado      19.9259974337458       infr 0 | vert_descarga    2409 | vert_solar    2993
+dev | CANDIDATO (z=1,0)            20.07348843748828      infr 0 | vert_descarga    3821 | vert_solar    2417
+dev | candidato con z=1,4          20.103675076064924     infr 0 | vert_descarga    2107 | vert_solar    1852
+dev | agente actual de src (v8)    20.103675076064924     infr 0 | vert_descarga    2107 | vert_solar    1852
+val | partida (v6)                 20.660892973732132     infr 0 | vert_descarga    3330 | vert_solar    2091
+val | candidato, todo apagado      20.633832896845167     infr 0 | vert_descarga    3302 | vert_solar    2035
+val | CANDIDATO (z=1,0)            20.78024453343468      infr 0 | vert_descarga    4443 | vert_solar    1384
+val | candidato con z=1,4          20.831250853309406     infr 0 | vert_descarga    2865 | vert_solar     638
+val | agente actual de src (v8)    20.831250853309406     infr 0 | vert_descarga    2865 | vert_solar     638
+
+### 10. Datos: python results/p1_hard/solar_verif_datos.py
+horas: 5993 | meses: ['2025-09', '2025-10', '2025-12', '2026-01', '2026-02', '2026-03', '2026-04', '2026-05', '2026-06', '2026-07', '2026-08']
+días por mes (min-max): {'2025-09': (1, 23), '2025-10': (1, 24), '2025-12': (1, 24), '2026-01': (1, 24), '2026-02': (1, 21), '2026-03': (1, 24), '2026-04': (1, 23), '2026-05': (1, 24), '2026-06': (1, 23), '2026-07': (1, 24), '2026-08': (1, 16)}
+
+1. CONTADOR CONGELADO (consumo de la hora = consumo de la hora anterior)
+   hora 22 todo    : n=249 | idéntico (<0,01 kW)   0.0 % | <5 kW   6.8 % | dif. media   33.6 | máx   117.2
+   hora 22 sin val : n=172 | idéntico (<0,01 kW)   0.0 % | <5 kW   7.6 % | dif. media   33.9 | máx   117.2
+   hora 22 solo val: n= 77 | idéntico (<0,01 kW)   0.0 % | <5 kW   5.2 % | dif. media   33.0 | máx   102.7
+   hora 23 todo    : n=248 | idéntico (<0,01 kW)  10.1 % | <5 kW  99.6 % | dif. media    0.4 | máx     5.1
+   hora 23 sin val : n=171 | idéntico (<0,01 kW)   8.2 % | <5 kW 100.0 % | dif. media    0.5 | máx     2.8
+   hora 23 solo val: n= 77 | idéntico (<0,01 kW)  14.3 % | <5 kW  98.7 % | dif. media    0.4 | máx     5.1
+   hora  0 todo    : n=238 | idéntico (<0,01 kW) 100.0 % | <5 kW 100.0 % | dif. media    0.0 | máx     0.0
+   hora  0 sin val : n=162 | idéntico (<0,01 kW) 100.0 % | <5 kW 100.0 % | dif. media    0.0 | máx     0.0
+   hora  0 solo val: n= 76 | idéntico (<0,01 kW) 100.0 % | <5 kW 100.0 % | dif. media    0.0 | máx     0.0
+   hora  1 todo    : n=249 | idéntico (<0,01 kW) 100.0 % | <5 kW 100.0 % | dif. media    0.0 | máx     0.0
+   hora  1 sin val : n=173 | idéntico (<0,01 kW) 100.0 % | <5 kW 100.0 % | dif. media    0.0 | máx     0.0
+   hora  1 solo val: n= 76 | idéntico (<0,01 kW) 100.0 % | <5 kW 100.0 % | dif. media    0.0 | máx     0.0
+   hora  2 todo    : n=249 | idéntico (<0,01 kW) 100.0 % | <5 kW 100.0 % | dif. media    0.0 | máx     0.0
+   hora  2 sin val : n=173 | idéntico (<0,01 kW) 100.0 % | <5 kW 100.0 % | dif. media    0.0 | máx     0.0
+   hora  2 solo val: n= 76 | idéntico (<0,01 kW) 100.0 % | <5 kW 100.0 % | dif. media    0.0 | máx     0.0
+   hora  3 todo    : n=249 | idéntico (<0,01 kW) 100.0 % | <5 kW 100.0 % | dif. media    0.0 | máx     0.0
+   hora  3 sin val : n=173 | idéntico (<0,01 kW) 100.0 % | <5 kW 100.0 % | dif. media    0.0 | máx     0.0
+   hora  3 solo val: n= 76 | idéntico (<0,01 kW) 100.0 % | <5 kW 100.0 % | dif. media    0.0 | máx     0.0
+   hora  4 todo    : n=249 | idéntico (<0,01 kW) 100.0 % | <5 kW 100.0 % | dif. media    0.0 | máx     0.0
+   hora  4 sin val : n=173 | idéntico (<0,01 kW) 100.0 % | <5 kW 100.0 % | dif. media    0.0 | máx     0.0
+   hora  4 solo val: n= 76 | idéntico (<0,01 kW) 100.0 % | <5 kW 100.0 % | dif. media    0.0 | máx     0.0
+   hora  5 todo    : n=249 | idéntico (<0,01 kW) 100.0 % | <5 kW 100.0 % | dif. media    0.0 | máx     0.0
+   hora  5 sin val : n=173 | idéntico (<0,01 kW) 100.0 % | <5 kW 100.0 % | dif. media    0.0 | máx     0.0
+   hora  5 solo val: n= 76 | idéntico (<0,01 kW) 100.0 % | <5 kW 100.0 % | dif. media    0.0 | máx     0.0
+   hora  6 todo    : n=249 | idéntico (<0,01 kW)   0.0 % | <5 kW   4.4 % | dif. media  150.8 | máx   791.2
+   hora  6 sin val : n=173 | idéntico (<0,01 kW)   0.0 % | <5 kW   5.2 % | dif. media  150.7 | máx   748.2
+   hora  6 solo val: n= 76 | idéntico (<0,01 kW)   0.0 % | <5 kW   2.6 % | dif. media  151.0 | máx   791.2
+
+   Peores casos en horas 23 y 0-5 (|dif| > 5 kW):
+                 ts   load  dif  val
+2025-10-24 23:00:00 1074.0 -5.1 True
+
+2. CENTRO DE LA CURVA SOLAR POR MES (hora media ponderada por la solar, etiqueta de inicio de hora)
+   2025-09: 13.00 | 2025-10: 12.88 | 2025-12: 12.18 | 2026-01: 12.37 | 2026-02: 12.40 | 2026-03: 12.28 | 2026-04: 12.98 | 2026-05: 12.87 | 2026-06: 12.88 | 2026-07: 13.00 | 2026-08: 12.97
+
+3. Horas con consumo 0 exacto: 15 | en val 14 | en dev (días 8-14) 0
+   fechas: 2026-06-17 17:00:00 a 2026-08-06 08:00:00 | solar x12 en esas horas: máx 0.0
+   consumo: min>0 466.4, p1 627.3, mediana 1069.0, p99 2175.4, máx 2503.1
+
+4. TABLAS
+   todo el train: todo finito = True | pv_day (centro de los datos) [12.5, 11.0, 12.5, 12.0, 12.5, 12.0, 12.5, 8.5, 12.0, 12.5, 11.9, 12.5] | pv_c 0.23 | pv_a[0..3] [0.71, 0.54, 0.43, 0.36] | pv_b[0..3] [0.16, 0.22, 0.25, 0.25]
+      load_lo por hora (% del perfil): [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 5.2, 3.2, 3.5, 3.1, 3.2, 2.8, 2.5, 2.1, 2.3, 2.5, 2.4, 2.2, 2.3, 1.9, 2.0, 2.2, 3.1, 0.0]
+      load_lo0 (sin lectura): [7.5, 7.5, 7.5, 7.5, 7.5, 7.5, 9.7, 11.1, 12.0, 11.6, 13.2, 13.3, 13.2, 14.2, 13.2, 11.9, 11.3, 11.1, 11.4, 11.0, 7.7, 5.9, 6.8, 6.9] | pv_up por tramo: [0.057, 0.244, 0.226, 0.077, 0.012]
+      tamaño JSON: 88 KB
+   sin dev: todo finito = True | pv_day (centro de los datos) [13.1, 11.0, 13.1, 12.4, 13.1, 12.4, 13.1, 6.6, 12.4, 13.1, 12.1, 13.1] | pv_c 0.34 | pv_a[0..3] [0.71, 0.58, 0.5, 0.44] | pv_b[0..3] [0.15, 0.16, 0.14, 0.13]
+      load_lo por hora (% del perfil): [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 5.1, 3.6, 3.9, 3.1, 3.6, 2.7, 2.8, 2.1, 2.3, 2.6, 2.7, 2.0, 2.2, 1.9, 1.9, 2.3, 3.1, 0.0]
+      load_lo0 (sin lectura): [7.1, 7.1, 7.1, 7.1, 7.1, 7.1, 9.7, 11.2, 11.4, 11.0, 13.4, 13.6, 13.8, 14.2, 13.8, 12.3, 11.2, 11.3, 11.1, 10.7, 7.7, 6.0, 7.0, 6.9] | pv_up por tramo: [0.037, 0.234, 0.234, 0.081, 0.006]
+      tamaño JSON: 87 KB
+   sin val: todo finito = True | pv_day (centro de los datos) [9.0, 7.5, 9.0, 8.5, 9.0, 8.5, 9.0, 5.0, 8.5, 9.0, 8.4, 9.0] | pv_c 0.14 | pv_a[0..3] [0.71, 0.52, 0.36, 0.28] | pv_b[0..3] [0.14, 0.22, 0.29, 0.31]
+      load_lo por hora (% del perfil): [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 5.2, 3.1, 3.8, 3.2, 3.0, 2.5, 2.7, 2.2, 2.3, 2.5, 2.3, 2.4, 2.4, 2.0, 2.0, 2.2, 3.3, 0.1]
+      load_lo0 (sin lectura): [9.2, 9.2, 9.2, 9.2, 9.2, 9.2, 10.1, 10.5, 10.4, 11.4, 13.2, 14.0, 13.9, 14.3, 13.7, 12.5, 11.7, 11.7, 12.0, 11.1, 7.4, 6.0, 7.0, 7.1] | pv_up por tramo: [0.07, 0.228, 0.231, 0.081, 0.006]
+      tamaño JSON: 87 KB
+
+### 11. Determinismo: score con todos los decimales en ejecuciones distintas
+dev: 20.07348843748828 (mía, 18:51) = 20.07348843748828 (diseñador, 18:47, results/p1_hard/solar_dev.csv)
+val: 20.78024453343468 (mía, 18:52) = 20.78024453343468 (otro agente, 18:42, results/p1_hard/solar_val_mio.csv)
+
+### 12. Empaquetado: python scripts/build_submission.py --hard, en una copia del árbol de trabajo (fuera del repo, para no pisar dist/hard)
+dist/hard/submission.zip: 1767 líneas de agent.py, 0.18 MB, artefactos: ['forecaster.json', 'hard_market.json', 'hard_solar.json', 'objective_refs.json']
+  prueba aislada OK con los ficheros del ZIP: 96 pasos, mismas acciones que src/ (dif. máx. 0.0e+00)
+  prueba aislada OK sin ficheros auxiliares: 96 pasos, mismas acciones que src/ (dif. máx. 0.0e+00)
+  check_submission.py oficial: VÁLIDA
+Listo para subir: dist/hard/submission.zip (apuntad el envío en docs/envios.md)
+exit=0
