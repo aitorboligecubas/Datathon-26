@@ -29,7 +29,7 @@ a la presentación.
 
 Los datos cambiaron el reparto inicial:
 - La solar casi no cuenta, así que prever el consumo apenas cambia las decisiones.
-- El agente ya captura el **99,3 % del máximo teórico** (6,08 sobre 6,12).
+- El agente ya captura el **99,6 % del máximo teórico** (6,09 sobre 6,12).
 - **Queda poco que ganar en el leaderboard y mucho que ganar ante el jurado.**
 
 | Rol | Dificultad de razonamiento | Volumen de trabajo | Impacto en el resultado |
@@ -110,7 +110,7 @@ que P1 y P2 entregan.
 3. Pegar como **primer mensaje** el prompt de tu rol de `docs/prompts-arranque.md`. Su **PASO 0** lo hace todo:
    - fija la rama del rol (si no, la sesión usaría una rama `claude/...`);
    - instala las librerías y descomprime `oficial.zip`;
-   - comprueba que sale "Datos oficiales", mpc 6,08 y oracle 6,12.
+   - comprueba que sale "Datos oficiales", mpc 6,09 y oracle 6,12.
 4. **Nadie tiene que descargar ni descomprimir el ZIP a mano**: viene con el repo.
 
 **Opcional: arranque más rápido.** Las sesiones en la nube empiezan de cero cada vez. Para no repetir la instalación,
@@ -153,7 +153,7 @@ python scripts/preparar_oficial.py
 python eval.py --agent all
 ```
 
-`eval.py` tiene que decir "Datos oficiales" y dar mpc 6,08 / oracle 6,12. Para trabajar en local con Claude Code:
+`eval.py` tiene que decir "Datos oficiales" y dar mpc 6,09 / oracle 6,12. Para trabajar en local con Claude Code:
 `claude` dentro de la carpeta y pegar el prompt del rol (el PASO 0 también sirve en local).
 
 ## 5. El día a día con git

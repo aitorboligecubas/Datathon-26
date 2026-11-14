@@ -18,8 +18,8 @@ python eval.py --agent all
 Datos oficiales: están en el repo comprimidos en `oficial.zip`; `python scripts/preparar_oficial.py` los descomprime en
 `oficial/` (también se hace solo). Funciona en Mac, Windows y en las sesiones de Claude en la nube.
 
-**Resultado en validación (últimas 168 h de cada mes del train, datos oficiales):** MPC 6,08 puntos
-(ΔCO₂ 5,73 %, ΔCoste 6,89 %, 0 infracciones, 4 s) frente a 6,12 del óptimo con información perfecta.
+**Resultado en validación (últimas 168 h de cada mes del train, datos oficiales):** MPC 6,09 puntos
+(ΔCO₂ 5,73 %, ΔCoste 6,92 %, 0 infracciones, 4 s) frente a 6,12 del óptimo con información perfecta.
 
 ## Estructura
 

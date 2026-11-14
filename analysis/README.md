@@ -15,6 +15,6 @@ Encargos (ver `docs/prompts-arranque.md`, P2):
 - Una semana tipo: carga de la batería sobre el CO₂ del mix (log de `--save-hourly`).
 - Por qué el ahorro máximo es de ~6 %.
 - Escenarios de tamaño de batería (1, 2, 4 y 8 MWh) con el oracle: toneladas de CO₂ y €/año.
-- Comparativa de estrategias ("capturamos el 99,3 % del máximo teórico").
+- Comparativa de estrategias ("capturamos el 99,6 % del máximo teórico").
 
 Cada gráfica, con una frase de "qué demuestra" para P3.
