@@ -323,7 +323,7 @@ def day_means(z: np.ndarray, hour: np.ndarray) -> tuple:
     return today, yday
 
 
-def training_rows(d: pd.DataFrame, feats: tuple, crossfit: bool) -> dict:
+def training_rows(d: pd.DataFrame, feats: tuple, crossfit: bool, centers=None) -> dict:
     """Filas de ajuste por variable y antelación: {name: [(X, Xcold, y, hora_objetivo) para k = 3..23]}.
 
     Con `crossfit`, cada bloque de días se mide contra el perfil del resto de su mes, y solo cuentan
@@ -350,7 +350,11 @@ def training_rows(d: pd.DataFrame, feats: tuple, crossfit: bool) -> dict:
                 if crossfit:
                     sb, cb = profile_sums(vals[name], mo, typ, hr, in_block)
                     s, c = s - sb, c - cb
-                prof = profile_from(s, c)[mo[sl], typ[sl], hr[sl]]
+                if centers is not None and not crossfit:
+                    import p1_hard as _b
+                    prof = _b.profile_blend(profile_from(s, c), idx[sl], typ[sl], centers)
+                else:
+                    prof = profile_from(s, c)[mo[sl], typ[sl], hr[sl]]
                 zz = np.log(np.clip(vals[name][sl], 1e-6, None) / np.clip(prof, 1e-6, None))
                 z[name] = np.r_[np.full(pad, np.nan), zz, np.full(pad, np.nan)]
             inb = np.r_[np.zeros(pad, bool), in_block[sl], np.zeros(pad, bool)]
@@ -447,7 +451,7 @@ def fit_cand(exclude=None, cfg: Optional[dict] = None) -> dict:
     cfg = {**DEFAULT_CFG, **(cfg or {})}
     feats = tuple(cfg["feats"])
     d = dense_market(exclude)
-    rows = training_rows(d, feats, bool(cfg["crossfit"]))
+    rows = training_rows(d, feats, bool(cfg["crossfit"]), cfg.get("centers"))
     full = {}
     for name in NAMES:
         full[name] = []

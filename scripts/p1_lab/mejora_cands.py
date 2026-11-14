@@ -313,3 +313,81 @@ def wcost(mult):
 
 
 CANDS = {"base": v9, "coste x0.8": wcost(0.8), "coste x1.15": wcost(1.15), "coste x1.3": wcost(1.3), "coste x1.6": wcost(1.6)}
+
+
+# --- perfil de precio y CO2 interpolado con el mes vecino (como el cielo despejado de la solar)
+from battery import hard_market as hmk  # noqa: E402
+
+
+class MarketInterp(hmk.MarketCand):
+    """El perfil de una fecha mezcla el de su mes con el del mes vecino, según lo lejos que cae el día del centro de los
+    datos del mes (los días 25-31 están a medio camino del mes siguiente). `strength` escala el peso del vecino."""
+
+    def __init__(self, prior, centers, strength=1.0, **kw):
+        self.centers, self.strength = list(centers), float(strength)
+        super().__init__(prior, **kw)
+
+    def profile(self, name, ts):
+        p = self.prof.get(name)
+        if p is None:
+            return float("nan")
+        typ, h = hmk.market_day_type(ts), ts.hour
+        base = float(p[ts.month - 1][typ][h])
+        other, w = hs.neighbour_month(ts.month, ts.day + h / 24.0, self.centers)
+        w = min(max(w * self.strength, 0.0), 1.0)
+        nb = float(p[other][typ][h])
+        if not (math.isfinite(nb) and nb > 0):
+            return base
+        return (1.0 - w) * base + w * nb
+
+
+def mkt_interp(strength=1.0):
+    def f(prior, solar_prior, exclude):
+        a = hard_agent(prior, solar_prior)
+        a.policy.netload.z_by_month = None
+        a.policy.market = MarketInterp(prior, solar_prior["cand"]["pv_day"], strength)
+        return a
+    return f
+
+
+def v10(prior, solar_prior, exclude):
+    a = hard_agent(prior, solar_prior)
+    a.policy.netload.z_by_month = None
+    return a
+
+
+CANDS = {"base": v10, "mercado interp x1": mkt_interp(1.0), "mercado interp x0.5": mkt_interp(0.5),
+         "mercado interp x1.5": mkt_interp(1.5)}
+
+
+# --- v12: perfil de mercado interpolado, AJUSTADO de forma coherente (p1_hard.fit_market con centros)
+import p1_hard as _bench  # noqa: E402
+_NOINTERP = {}
+
+
+def v10_old_market(prior, solar_prior, exclude):
+    """La v10 tal cual: el prior de mercado sin interpolar (se reajusta sin centros)."""
+    key = (len(exclude), min(exclude) if exclude else None)
+    if key not in _NOINTERP:
+        full = _bench.hard_table()
+        fit_df = full[~full.timestamp.isin(exclude)]
+        _NOINTERP[key] = _bench.fit_market(exclude, fit_df, interp=False)
+    a = hard_agent(_NOINTERP[key], solar_prior)
+    a.policy.netload.z_by_month = None
+    return a
+
+
+def v12(prior, solar_prior, exclude):
+    a = hard_agent(prior, solar_prior)
+    a.policy.netload.z_by_month = None
+    return a
+
+
+def v12_solo_inferencia(prior, solar_prior, exclude):
+    """Prior sin interpolar + perfil interpolado solo al prever (la prueba rápida de antes)."""
+    a = v10_old_market(prior, solar_prior, exclude)
+    a.policy.market = MarketInterp(_NOINTERP[(len(exclude), min(exclude) if exclude else None)], solar_prior["cand"]["pv_day"], 1.0)
+    return a
+
+
+CANDS = {"base": v10_old_market, "v12 (reajustado)": v12, "interp solo al prever": v12_solo_inferencia}

@@ -70,3 +70,23 @@ semana no se reproduce: el óptimo sí lo sabe y el agente no. Parte de los 0,37
 
 v10 (rama `mejora-score-hard-z10`): la v9 con el margen 1,0 de la v7, porque en el público, con los datos reales,
 1,0 ganó a 1,4 (+0,04). En el banco pierde unas centésimas; en el simulador oficial, 19,02 frente a 19,01.
+
+## v12: el perfil de precio y CO2 se mezcla con el del mes vecino (rama `mejora-score-hard-v12`)
+
+El perfil de mercado (mes x tipo de día x hora) sale de los días 1-24 de cada mes (centro ~12,5), pero el test son
+los días 25-31: a medio camino del mes siguiente. La solar ya se interpolaba entre meses por eso; el mercado no.
+La v12 mezcla el perfil de cada hora con el del mes vecino según lo lejos que cae el día del centro de los datos
+(`battery.hard_market.market_blend`), y reajusta con ese perfil las regresiones del previsor (`p1_hard.fit_market`,
+`hard_market_cand.training_rows`). Los centros y la fuerza van en `models/hard_market.json` ("centers", "blend").
+Sin esas claves, el agente decide como antes.
+
+| Fuerza | Banco, 8 ventanas con fechas correctas | Estrés: test con datos de 14 días antes | ... de 7 días antes |
+|---|---|---|---|
+| 1,0 | +0,056 (val +0,135; días 18-24 +0,144; 1-7 +0,099; peor 8-14 -0,026) | -0,032 | -0,213 |
+| 0,7 | +0,051 | +0,005 | -0,149 |
+| **0,5 (elegida)** | **+0,039** (val +0,075; 18-24 +0,090; peor 8-14 -0,051) | **+0,027** | **-0,057** |
+
+La ganancia crece con la distancia al centro del mes, como predice el mecanismo; el test (días 25-31) es lo más
+lejos. Los episodios de estrés ponen en los días 25-31 datos de días anteriores: ahí la mezcla está mal por
+construcción y mide cuánto se pierde si la tendencia de final de mes no es la que suponemos. 0,5 conserva el 70 %
+de la ganancia con un peor caso cuatro veces más suave. Simulador oficial: 19,01 (v10: 19,02), 0 infracciones.

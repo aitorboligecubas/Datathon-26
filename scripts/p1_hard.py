@@ -63,12 +63,39 @@ def market_types(index) -> np.ndarray:
     return np.where(hol, 2, t)
 
 
-def fit_market(exclude=None, refs_df: pd.DataFrame = None) -> dict:
+MARKET_INTERP = True     # perfil de mercado mezclado con el mes vecino (v12); False = como hasta la v11
+MARKET_BLEND = 0.5       # fuerza de la mezcla (1 = lineal entre los centros de los meses). 0,5: ver mejora_score_notas.md
+
+
+def market_centers(m: pd.DataFrame) -> list:
+    """Día medio (día + hora/24) de los datos de mercado de cada mes: el centro de su perfil."""
+    d = m.index.day + m.index.hour / 24.0
+    c = pd.Series(d, index=m.index).groupby(m.index.month).mean()
+    return [float(c.get(mo, 12.5)) for mo in range(1, 13)]
+
+
+def profile_blend(arr: np.ndarray, index, typ: np.ndarray, centers, strength: float = None) -> np.ndarray:
+    """Perfil de cada hora de `index` mezclado con el del mes vecino (battery.hard_market.market_blend)."""
+    from battery.hard_market import market_blend
+    mo = np.asarray(index.month); day = np.asarray(index.day + index.hour / 24.0); hr = np.asarray(index.hour)
+    base = arr[mo - 1, typ, hr]
+    if centers is None:
+        return base
+    strength = MARKET_BLEND if strength is None else strength
+    ow = [market_blend(int(a), float(b), centers, strength) for a, b in zip(mo, day)]
+    other = np.array([o for o, _ in ow]); w = np.array([x for _, x in ow])
+    nb = arr[other, typ, hr]
+    return np.where(np.isfinite(nb) & (nb > 0) & (w > 0), (1 - w) * base + w * nb, base)
+
+
+def fit_market(exclude=None, refs_df: pd.DataFrame = None, interp: bool = None) -> dict:
     """Perfil de precio y CO2 por mes, tipo de día (laborable, sábado, domingo) y hora."""
+    interp = MARKET_INTERP if interp is None else interp
     m = market_frame()
     if exclude is not None:
         m = m[~m.index.isin(exclude)]
     out = {}
+    centers = market_centers(m) if interp else None
     typ = market_types(m.index)
     for name in ("price", "co2"):
         g = m.groupby([m.index.month, typ, m.index.hour])[name].mean()
@@ -80,8 +107,11 @@ def fit_market(exclude=None, refs_df: pd.DataFrame = None) -> dict:
                     v = g.get((mo, t, h), np.nan)
                     arr[mo - 1, t, h] = v if np.isfinite(v) else by_h.get((mo, h), np.nan)
         out[name] = arr.tolist()
-    out["reg"] = fit_market_regression(m, out)
-    out["cand"] = fit_market_memory(exclude)
+    out["reg"] = fit_market_regression(m, out, centers)
+    out["cand"] = fit_market_memory(exclude, centers)
+    if centers is not None:
+        out["centers"] = centers
+        out["blend"] = MARKET_BLEND
     if refs_df is not None:
         b = baseline_totals(refs_df)
         out["co2_ref_kg_per_h"] = b["co2_kg"] / len(refs_df)
@@ -89,17 +119,17 @@ def fit_market(exclude=None, refs_df: pd.DataFrame = None) -> dict:
     return out
 
 
-def fit_market_memory(exclude=None) -> dict:
+def fit_market_memory(exclude=None, centers=None) -> dict:
     """Tablas del previsor con memoria del train (13 pistas y los últimos 7 días de cada mes como "semilla").
     El ajuste está en scripts/p1_lab/hard_market_cand.py (fit_cand), que es donde se diseñó."""
     lab = str(REPO / "scripts" / "p1_lab")
     if lab not in sys.path:
         sys.path.insert(0, lab)
     from hard_market_cand import fit_cand
-    return fit_cand(exclude)
+    return fit_cand(exclude, {"centers": centers} if centers is not None else None)
 
 
-def fit_market_regression(m: pd.DataFrame, prof: dict) -> dict:
+def fit_market_regression(m: pd.DataFrame, prof: dict, centers=None) -> dict:
     """Para cada antelación k = 3..23, regresión de la desviación futura z(t+k) = log(real/perfil) sobre
     las tres horas conocidas, la media de las últimas 6 y 24 horas y la de ayer a la misma hora ("full"),
     y otra solo con las tres horas conocidas para el arranque de cada semana ("cold").
@@ -107,7 +137,7 @@ def fit_market_regression(m: pd.DataFrame, prof: dict) -> dict:
     typ = market_types(m.index)
     reg = {}
     for name in ("price", "co2"):
-        p = np.asarray(prof[name])[m.index.month - 1, typ, m.index.hour]
+        p = profile_blend(np.asarray(prof[name]), m.index, typ, centers)
         z = pd.Series(np.log(np.clip(m[name].to_numpy(), 1e-6, None) / np.clip(p, 1e-6, None)), index=m.index)
         full_idx = pd.date_range(m.index.min(), m.index.max(), freq="h")
         z = z.reindex(full_idx)                                   # los huecos (otras semanas, horas excluidas) quedan en NaN

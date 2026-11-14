@@ -79,3 +79,25 @@ def test_optimizer_extras_default_to_the_old_plan():
     assert np.allclose(base, same)
     capped = plan(3000.0, load, pv, price, co2, 8.0, 2.0, 0.0, HARD_PARAMS, discharge_cap=np.full(24, 100.0))
     assert capped.min() >= -100.0 - 1e-6
+
+
+def test_market_profile_blends_with_the_next_month_at_month_end():
+    """v12: el perfil de precio y CO2 de los días 25-31 se mezcla con el del mes siguiente (como la solar). Sin
+    centros en el fichero, el perfil es el de siempre; con centros rotos, también."""
+    import json
+    from pathlib import Path
+
+    from battery.hard_market import MarketCand, market_blend
+
+    prior = json.loads((Path(__file__).resolve().parents[1] / "models" / "hard_market.json").read_text())
+    assert len(prior["centers"]) == 12
+    m = MarketCand(prior)
+    old = MarketCand({k: v for k, v in prior.items() if k != "centers"})
+    assert m.centers is not None and old.centers is None
+    mid, end = pd.Timestamp("2026-03-12 20:00"), pd.Timestamp("2026-03-28 20:00")
+    other, w = market_blend(3, 28 + 20 / 24, prior["centers"])
+    assert other == 3 and 0.3 < w < 0.8                       # índice 3 = abril
+    assert abs(m.profile("price", mid) - old.profile("price", mid)) < 0.15 * old.profile("price", mid)
+    assert m.profile("price", end) != old.profile("price", end)
+    for bad in ([1.0] * 11, ["x"] * 12, [float("nan")] * 12, None):
+        assert MarketCand({**prior, "centers": bad}).centers is None

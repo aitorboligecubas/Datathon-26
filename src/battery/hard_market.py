@@ -31,6 +31,22 @@ NATIONAL_HOLIDAYS = ((2025, 10, 12), (2025, 11, 1), (2025, 12, 6), (2025, 12, 8)
                      (2026, 1, 6), (2026, 4, 3), (2026, 5, 1), (2026, 8, 15))
 
 
+MARKET_MONTH_DAYS = 30.4      # días medios de un mes, para mezclar el perfil con el del mes vecino
+
+
+def market_blend(month: int, day: float, centers, strength: float = 1.0) -> tuple:
+    """(índice 0-11 del mes vecino, peso con el que entra su perfil). El perfil de cada mes sale de los días 1-24
+    (centro ~12): el test (días 25-31) está a medio camino del mes siguiente, igual que pasa con la solar."""
+    c = centers[month - 1]
+    if day >= c:
+        other = month % 12
+        w = (day - c) / (MARKET_MONTH_DAYS - c + centers[other])
+    else:
+        other = (month - 2) % 12
+        w = (c - day) / (c + MARKET_MONTH_DAYS - centers[other])
+    return other, min(max(w * strength, 0.0), 1.0)
+
+
 def market_day_type(ts) -> int:
     """0 = laborable, 1 = sábado, 2 = domingo o festivo nacional."""
     if (ts.year, ts.month, ts.day) in NATIONAL_HOLIDAYS:
@@ -71,12 +87,33 @@ class MarketForecaster:
                 self.reg = {}
         self.seen = {"price": {}, "co2": {}}       # número de hora -> (valor real, valor del perfil)
         self.yesterday_weight = yesterday_weight
+        # Perfil mezclado con el del mes vecino (rama mejora-score-hard-v12). Solo si el fichero trae los centros
+        # (día medio de los datos de cada mes) con los que también se ajustaron las regresiones.
+        self.centers = None
+        try:
+            self.blend = min(max(float((prior or {}).get("blend", 1.0)), 0.0), 1.0)
+        except Exception:
+            self.blend = 1.0
+        try:
+            cen = [float(v) for v in (prior or {}).get("centers") or []]
+            if len(cen) == 12 and all(math.isfinite(v) and 0 < v < 32 for v in cen):
+                self.centers = cen
+        except Exception:
+            self.centers = None
 
     def profile(self, name: str, ts) -> float:
         p = self.prof.get(name)
         if p is None:
             return float("nan")
-        return float(p[ts.month - 1][market_day_type(ts)][ts.hour])
+        typ, h = market_day_type(ts), ts.hour
+        base = float(p[ts.month - 1][typ][h])
+        if self.centers is None:
+            return base
+        other, w = market_blend(ts.month, ts.day + h / 24.0, self.centers, self.blend)
+        nb = float(p[other][typ][h])
+        if w <= 0 or not (math.isfinite(nb) and nb > 0 and math.isfinite(base)):
+            return base
+        return (1.0 - w) * base + w * nb
 
     def remember(self, obs: Obs, times: list) -> None:
         """Guarda los valores reales que se acaban de conocer (la hora actual y las siguientes)."""
