@@ -26,10 +26,12 @@ import math
 from typing import Optional
 
 import numpy as np
+import pandas as pd
 
 from .obs import Obs
 
 PV_FACTOR = 12.0            # la solar del modo difícil es 12 veces la del train
+ONE_HOUR_BACK = pd.Timedelta(hours=1)
 SOLAR_FILE = "hard_solar.json"
 CLEAR_MIN_KW = 30.0         # por debajo de esto el "cielo despejado" no sirve para medir la claridad
 PV_DAMP = 0.85              # cuánto se mantiene la claridad de una hora a la siguiente
@@ -37,6 +39,21 @@ LOAD_DAMP = 0.90            # ídem para el cociente consumo / perfil
 Z_DISCHARGE = 1.0           # margen al descargar, en desviaciones típicas del error de la hora actual
 Z_CHARGE = 1.0              # margen al cargar cuando puede haber excedente
 DEFAULT_SD_KW = 150.0       # error típico del consumo neto de la hora actual si no hay tabla
+# Días en que el campus funciona como un domingo: festivos nacionales, de Cataluña y de Barcelona, y el
+# cierre de Navidad (del 24 de diciembre al 6 de enero). En el train, del 1 al 6 de enero el consumo medio
+# es de 730-900 kW; el 7 de enero, 1.290.
+CAMPUS_HOLIDAYS = ((2025, 9, 11), (2025, 9, 24), (2025, 10, 12), (2025, 11, 1), (2025, 12, 6), (2025, 12, 8),
+                   (2025, 12, 24), (2025, 12, 25), (2025, 12, 26), (2025, 12, 27), (2025, 12, 28), (2025, 12, 29),
+                   (2025, 12, 30), (2025, 12, 31), (2026, 1, 1), (2026, 1, 2), (2026, 1, 3), (2026, 1, 4),
+                   (2026, 1, 5), (2026, 1, 6), (2026, 4, 3), (2026, 4, 6), (2026, 5, 1), (2026, 5, 25),
+                   (2026, 6, 24), (2026, 8, 15))
+
+
+def campus_hour_of_week(ts) -> int:
+    """Hora de la semana (lunes 00 h = 0) con la que se busca el perfil de consumo: los festivos, como domingo."""
+    if (ts.year, ts.month, ts.day) in CAMPUS_HOLIDAYS:
+        return 6 * 24 + ts.hour
+    return ts.dayofweek * 24 + ts.hour
 
 
 class NetLoadForecaster:
@@ -62,9 +79,20 @@ class NetLoadForecaster:
         self.net_now = float("nan")       # previsión del consumo neto de la hora actual (para adjust_action)
         self.hour_now = 0
 
+    def new_block(self) -> None:
+        """Empieza otra semana del test (hace un mes de la anterior): lo aprendido de las últimas horas no vale."""
+        self.clearness = float("nan")
+        self.load_ratio = 1.0
+        self.meter_down = False
+
     def update(self, obs: Obs, weather: Optional[dict] = None) -> None:
         self.weather = weather or {}
         prev_how = (obs.hour_of_week - 1) % 168
+        if obs.timestamp is not None:
+            try:
+                prev_how = campus_hour_of_week(obs.timestamp - ONE_HOUR_BACK)
+            except Exception:
+                pass
         expected = self.load_profile(prev_how)          # antes de que el perfil aprenda de esta lectura
         self.base.update(obs)
         load, pv, ts = obs.load_prev_kw, obs.pv_prev_kw, obs.timestamp
@@ -100,7 +128,7 @@ class NetLoadForecaster:
             c = self.clearness if math.isfinite(self.clearness) else typical
             c = typical + (c - typical) * PV_DAMP ** (k + 1)
             pv[k] = clear * c
-            prof = self.load_profile(t.dayofweek * 24 + h)
+            prof = self.load_profile(campus_hour_of_week(t))
             if math.isfinite(prof) and prof > 0:
                 load[k] = prof * (1.0 + (self.load_ratio - 1.0) * LOAD_DAMP ** (k + 1))
             else:
@@ -114,6 +142,8 @@ class NetLoadForecaster:
 
     def adjust_action(self, action_kw: float, obs: Obs, p) -> float:
         """Margen de seguridad con el consumo neto de ESTA hora, que solo se conoce aproximadamente."""
+        if self.meter_down:
+            return max(action_kw, 0.0)      # contador caído: no se descarga, y no hay excedente que guardar
         net = self.net_now
         if not math.isfinite(net):
             return action_kw

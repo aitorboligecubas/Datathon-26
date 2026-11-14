@@ -88,8 +88,26 @@ class HardPolicy(MPCPolicy):
             t = nxt
         return times
 
+    def no_data_week(self, times: list, load, pv, terminal: float, ends: bool) -> tuple:
+        """Semana con el contador a 0 desde la primera hora (o más de un día): no hay consumo que cubrir
+        hasta que acabe el mes. Lo que quede en la batería vale lo que costaría cargarlo más adelante
+        (precio de reserva, como en el modo estándar), así que solo se compra en horas más baratas que eso."""
+        month = times[0].month
+        same = np.array([t.month == month for t in times])
+        load, pv = np.array(load, dtype=float), np.array(pv, dtype=float)
+        load[same] = 0.0
+        pv[same] = 0.0
+        if not ends and bool(same.all()) and len(self.valleys) >= 7:
+            ts = times[0]
+            left_h = (ts.days_in_month - ts.day) * 24 + (24 - ts.hour) - len(times)
+            terminal = self.reserve_weight(int(math.ceil(max(left_h, 0) / 24.0)) + 1) / self.p.eta_charge
+        return load, pv, terminal
+
     def plan_action(self, obs: Obs) -> float:
         self.netload.update(obs, self.weather)
+        if self.no_data_block and self.no_reading:
+            # Semana sin lecturas del contador (ni siquiera ceros): no se descarga y la batería se deja llena.
+            return clip_action(self.p.max_charge_kw, obs.soc_kwh, self.p)
         times = self.horizon_times(obs)
         if times and len(obs.price) < KNOWN_HOURS:
             times = times[:len(obs.price)]          # el entorno ya da menos de 3 horas: se acaban los datos
@@ -111,6 +129,11 @@ class HardPolicy(MPCPolicy):
             marginal = self.w_co2 * co2 + self.w_cost * price
             ends = H < self.horizon
             terminal = 0.0 if ends else float(np.quantile(marginal, self.terminal_quantile)) * self.p.eta_discharge
+            if self.no_data_block and times[0] is not None:
+                try:
+                    load, pv, terminal = self.no_data_week(times, load, pv, terminal, ends)
+                except Exception:
+                    pass
             actions = plan(obs.soc_kwh, load, pv, price, co2, self.w_co2, self.w_cost, terminal, self.p)
             return clip_action(actions[0], obs.soc_kwh, self.p)
         except Exception:
@@ -118,6 +141,21 @@ class HardPolicy(MPCPolicy):
             return greedy_action(obs, load[0], pv[0], self.p)
 
     def act_obs(self, obs: Obs) -> float:
+        try:
+            new_block = self.track_block(obs)      # semanas del test y semanas sin datos de contador (policy.py)
+        except Exception:
+            new_block, self.no_data_block, self.no_reading = False, False, False
+        if new_block:
+            # Primera hora de una semana: la "hora anterior" es de hace un mes. No sirve ni para prever ni de tope.
+            obs = obs._replace(load_prev_kw=float("nan"), pv_prev_kw=float("nan"))
+            try:
+                self.netload.new_block()
+            except Exception:
+                pass
+        try:
+            self.note_weight(obs)
+        except Exception:
+            pass
         action = self.cap_discharge(self.plan_action(obs), obs)
         try:
             action = float(self.netload.adjust_action(action, obs, self.p))

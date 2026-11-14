@@ -24,6 +24,18 @@ LEVEL_PRIOR_H = 6.0         # horas "ficticias" a nivel 1 con las que se estima 
 LEVEL_WINDOW_H = 48         # horas recientes con las que se estima el nivel del precio y del CO2
 YESTERDAY_WEIGHT = 0.5      # cuánto pesa "ayer a esta hora" frente al nivel reciente
 REG_LEADS = 21              # antelaciones con regresión propia: de 3 a 23 horas
+# Festivos nacionales del periodo del reto (sep-2025 a ago-2026). Mueven la demanda de toda la red y, con
+# ella, el precio y el CO2: en el perfil cuentan como domingo.
+NATIONAL_HOLIDAYS = ((2025, 10, 12), (2025, 11, 1), (2025, 12, 6), (2025, 12, 8), (2025, 12, 25), (2026, 1, 1),
+                     (2026, 1, 6), (2026, 4, 3), (2026, 5, 1), (2026, 8, 15))
+
+
+def market_day_type(ts) -> int:
+    """0 = laborable, 1 = sábado, 2 = domingo o festivo nacional."""
+    if (ts.year, ts.month, ts.day) in NATIONAL_HOLIDAYS:
+        return 2
+    wd = ts.dayofweek
+    return 0 if wd < 5 else (1 if wd == 5 else 2)
 
 
 def hour_index(ts) -> int:
@@ -63,8 +75,7 @@ class MarketForecaster:
         p = self.prof.get(name)
         if p is None:
             return float("nan")
-        wd = ts.dayofweek
-        return float(p[ts.month - 1][0 if wd < 5 else (1 if wd == 5 else 2)][ts.hour])
+        return float(p[ts.month - 1][market_day_type(ts)][ts.hour])
 
     def remember(self, obs: Obs, times: list) -> None:
         """Guarda los valores reales que se acaban de conocer (la hora actual y las siguientes)."""

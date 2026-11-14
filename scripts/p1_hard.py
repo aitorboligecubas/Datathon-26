@@ -25,7 +25,7 @@ from battery.adapter import from_official  # noqa: E402
 from battery.baselines import OracleAgent  # noqa: E402
 from battery.data import TRAIN_DIR, ensure_official, load, train_split, validation_split  # noqa: E402
 from battery.hard import HARD_PARAMS, HardPolicy  # noqa: E402
-from battery.hard_market import KNOWN_HOURS, MarketForecaster  # noqa: E402
+from battery.hard_market import KNOWN_HOURS, NATIONAL_HOLIDAYS, MarketForecaster  # noqa: E402
 from battery.hard_solar import PV_FACTOR  # noqa: E402
 from battery.optimizer import score_weights  # noqa: E402
 from battery.safety import clip_action  # noqa: E402
@@ -56,13 +56,20 @@ def market_frame() -> pd.DataFrame:
     return m[m.index < "2026-09-01"]
 
 
+def market_types(index) -> np.ndarray:
+    """Tipo de día de cada hora, como battery.hard_market.market_day_type (festivo nacional = domingo)."""
+    t = np.where(index.dayofweek < 5, 0, np.where(index.dayofweek == 5, 1, 2))
+    hol = np.array([(y, mo, d) in NATIONAL_HOLIDAYS for y, mo, d in zip(index.year, index.month, index.day)])
+    return np.where(hol, 2, t)
+
+
 def fit_market(exclude=None, refs_df: pd.DataFrame = None) -> dict:
     """Perfil de precio y CO2 por mes, tipo de día (laborable, sábado, domingo) y hora."""
     m = market_frame()
     if exclude is not None:
         m = m[~m.index.isin(exclude)]
     out = {}
-    typ = np.where(m.index.dayofweek < 5, 0, np.where(m.index.dayofweek == 5, 1, 2))
+    typ = market_types(m.index)
     for name in ("price", "co2"):
         g = m.groupby([m.index.month, typ, m.index.hour])[name].mean()
         by_h = m.groupby([m.index.month, m.index.hour])[name].mean()
@@ -86,7 +93,7 @@ def fit_market_regression(m: pd.DataFrame, prof: dict) -> dict:
     las tres horas conocidas, la media de las últimas 6 y 24 horas y la de ayer a la misma hora ("full"),
     y otra solo con las tres horas conocidas para el arranque de cada semana ("cold").
     `m`: precio y CO2 horarios con los que se ajusta (ya sin las horas excluidas)."""
-    typ = np.where(m.index.dayofweek < 5, 0, np.where(m.index.dayofweek == 5, 1, 2))
+    typ = market_types(m.index)
     reg = {}
     for name in ("price", "co2"):
         p = np.asarray(prof[name])[m.index.month - 1, typ, m.index.hour]
