@@ -230,11 +230,14 @@ def neighbour_month(month: int, day: float, centers) -> tuple:
 # gana a 1,0 en tres ventanas disjuntas del train (días 1-7: +0,002; días 8-14: +0,031; validación: +0,051) y
 # el vertido al descargar baja a la mitad. Descargar de más es tirar la energía entera; descargar de menos solo
 # la mueve a una hora algo peor, y el test (días 25-31) se parece menos al train que el train a sí mismo.
-Z_SOLAR = 1.4
+# v10 (rama mejora-score-hard-z10): se vuelve a 1,0. La v7 (1,0) sacó +0,04 sobre la v8 (1,4) en el ranking público,
+# con los datos reales del test (sep-feb), y en el banco los meses de verano (la mitad privada) casi no notan el
+# cambio (-0,004 de media en 4 ventanas). En el banco completo 1,4 gana por unas centésimas.
+Z_SOLAR = 1.0
 # Margen con el que el PLAN de las horas siguientes (no la acción de esta hora) cuenta con la solar. Se deja igual
 # que el de la acción (1,4). Rama mejora-score-hard: 2,0 ganaba en validación (+0,031) pero en 9 ventanas solo
 # +0,001 de media sobre la semilla y -0,027 en el episodio con el calendario del test: no se cambia.
-Z_PLAN_SOLAR = 1.4
+Z_PLAN_SOLAR = Z_SOLAR
 
 
 class SolarCand:
