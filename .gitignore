@@ -1,0 +1,20 @@
+# Datos oficiales: NO se suben (el repo es público)
+starter_kit/
+data/
+*.zip
+
+# Generados
+dist/
+results/hourly/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Entornos
+.venv/
+venv/
+.env
+.DS_Store
+.idea/
+.vscode/

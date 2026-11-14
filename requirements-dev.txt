@@ -1,0 +1,4 @@
+# Solo para desarrollo y análisis (no van en el agente)
+pytest>=7
+matplotlib>=3.7
+jupyter>=1.0

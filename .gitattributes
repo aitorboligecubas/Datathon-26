@@ -1,0 +1,2 @@
+# El registro de experimentos lo escriben todos: git junta las líneas sin conflictos.
+results/experiments.csv merge=union
