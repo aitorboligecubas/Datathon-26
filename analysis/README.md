@@ -18,3 +18,12 @@ Encargos (ver `docs/prompts-arranque.md`, P2):
 - Comparativa de estrategias ("capturamos el 99,3 % del máximo teórico").
 
 Cada gráfica, con una frase de "qué demuestra" para P3.
+
+## Hecho (fase 1)
+
+| Informe | Script | Contenido |
+|---|---|---|
+| [`calidad_datos.md`](calidad_datos.md) | `python analysis/p2_calidad_datos.py` | Qué falla en los datos, cuánto y si cambia el score |
+| [`patrones.md`](patrones.md) | `python analysis/p2_patrones.py` | Cuándo es sucia y cara la red, y el conflicto entre CO₂ y precio |
+
+Las figuras están en `figs/` (PNG a 200 ppp, listas para una slide). El estilo común está en `p2_estilo.py`.
