@@ -14,9 +14,9 @@ Arreglos (cada uno, con su motivo):
   D. Sin fecha (None, ausente, ilegible, de 1970): reloj propio. La hora siguiente a la última conocida y, si
      nunca hubo fecha, el 24/09/2025 a las 00:00 (primera hora del test, docs/envios.md). Si la fecha no trae
      hora pero `hour` sí, se usa `hour`.
-  E. Listas de previsión con relleno: se quita la COLA de valores vacíos, no finitos o <= 0 (un precio o un
-     CO2 de 0 exacto no es un dato). Así 24 valores con 21 de relleno vuelven a ser 3. Un hueco en medio se
-     deja (el adaptador ya lo rellena).
+  E. Listas de previsión con relleno: se quita la COLA de valores vacíos o no finitos y, si llegan más de 3
+     valores, también la cola de ceros (el anuncio dice que solo llegan 3: lo demás es relleno). Así 24 valores
+     con 21 de relleno vuelven a ser 3. Un hueco en medio se deja (el adaptador ya lo rellena).
   H. "Se acaban los datos" = llega una lista MÁS CORTA que la más larga vista hasta ahora (no "menos de 3").
      Si el entorno diese siempre 2 valores, o 1, el agente actual cree en cada paso que el test acaba ya.
   I. ¿La batería sigue de una semana a otra o cada semana se simula por separado? El agente lo ve solo: al
@@ -59,7 +59,9 @@ def clean_list(v):
     except Exception:
         return None
     k = len(arr)
-    while k > 1 and not (math.isfinite(arr[k - 1]) and arr[k - 1] > 0):
+    while k > 1 and not math.isfinite(arr[k - 1]):                      # cola vacía (None, NaN): fuera
+        k -= 1
+    while k > hard.KNOWN_HOURS and not arr[k - 1] > 0:                  # más de 3 valores y la cola a 0: relleno
         k -= 1
     return arr[:k]
 
