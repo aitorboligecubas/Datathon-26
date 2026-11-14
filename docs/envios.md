@@ -41,6 +41,21 @@ validación rápida que no gasta cupo. El ZIP se genera con `python scripts/buil
 | # | Fecha y hora | Commit | Qué lleva | Validación reservada | Score público | ΔCO₂ | ΔCoste | Infr. | Notas |
 |---|---|---|---|---|---|---|---|---|---|
 | H1 | Sáb 14/11, 17:39 | `96bd4ef` | v2 del modo difícil: MPC con previsión propia de precio y CO₂ (regresión por antelación), solar por claridad y margen al descargar | 20,37 | **23,35** | 22,10 % (13.317,9 kg) | 26,25 % (24.936,50 €) | 0 | 2.º de 22 equipos, a 0,02 del 1.º (23,37). Equivalencia: 20,4 en casa ≈ 23,35 en la web |
-| H2 | pendiente | `dc7cb16` | v4: festivos, semana sin contador, el plan cuenta con el margen | 20,55 | | | | | |
-| H3 | pendiente | `dc7cb16` | v4e: como la v4, pero vacía la batería al final de cada semana | — | | | | | Si saca más que la v4, cada semana se simula por separado |
-| H4 | pendiente | `dc7cb16` | v4c: como la v4, pero vacía la batería en la hora 1.008 | — | | | | | Si saca más que la v4, el conjunto público se simula solo |
+| H2 | Sáb 14/11, 18:43 | `e8dab4c` | v6: previsor de precio y CO₂ con memoria del train (13 pistas) y blindaje del ataque de robustez (final por calendario solo en agosto, reinicios semanales, lecturas vacías, contador a 0 con solar viva) | 20,66 | **23,70** | 22,58 % (13.607,2 kg) | 26,30 % (24.974,56 €) | 0 | **1.º de 32 equipos** (2.º: 23,50). En casa +0,29 sobre H1; en la web +0,35 |
+| H3 | pendiente | `9f7cfc9` | v7: previsor ampliado de consumo y solar (regresión del consumo, noche con el contador congelado, márgenes por cuantiles, cielo despejado en hora solar e interpolado entre meses) | 20,78 | | | | | Entregada al integrador; puede saltarse si se sube la v8 |
+| H4 | pendiente | `b0d65ee` | v8: la v7 con el margen de seguridad en 1,4 desviaciones típicas (antes 1,0) | 20,83 | | | | | Tira la mitad de energía al descargar (2.865 kWh frente a 4.443 en validación) |
+
+Las horas son las que muestra la web, que van en UTC: una hora menos que la hora local.
+
+Las variantes "e" y "c" (vaciar la batería cada semana o en la hora 1.008) **no se envían**. Suben el ranking público
+en cualquier caso, porque esa carga se paga en la mitad pública y se usa en la privada, y pueden hundir el privado
+(−0,8 a −1,1 en nuestros episodios). No sirven para averiguar cómo encadena el servidor las semanas. En su lugar, el
+agente lo detecta solo: si la segunda semana empieza con la batería al 50 % y no como él la dejó, cierra cada semana vacía.
+
+Cómo se relacionan la nota de casa y la de la web (mismo agente):
+
+| Versión | Validación reservada (casa) | Ranking público (web) |
+|---|---|---|
+| v2 (H1) | 20,37 | 23,35 |
+| v6 (H2) | 20,66 | 23,70 |
+| v8 (H4) | 20,83 | pendiente |

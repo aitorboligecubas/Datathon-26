@@ -197,28 +197,43 @@ Dos trampas nuevas, que la organización avisa:
 
 **Nuestro agente del hard mode es el mismo GPS**, con tres piezas nuevas (`src/battery/hard*.py`):
 1. **Previsión de precio y CO₂** (`hard_market.py`). Un perfil por mes, tipo de día y hora aprendido en el
-   train, y una regresión que predice cuánto se desviará cada hora de ese perfil, usando las 3 horas conocidas,
-   las últimas 6 y 24 horas y lo que pasó ayer a la misma hora. Los festivos nacionales cuentan como domingo.
-2. **Previsión de solar y consumo** (`hard_solar.py`). La solar: "cielo despejado" del mes por la claridad que
-   había la hora anterior. El consumo: el perfil de la semana por el cociente de la hora anterior. Los festivos
-   del campus (la Mercè, Navidad, Sant Joan) cuentan como domingo.
-3. **Margen de seguridad.** La previsión de esta hora se equivoca unos 140 kW de día. Como descargar de más es
-   tirar energía y cargar de menos es perder excedente gratis, se descarga un poco menos de lo previsto y se
-   carga un poco más. El plan ya cuenta con ese margen.
+   train, y una regresión que predice cuánto se desviará cada hora de ese perfil. Usa 13 pistas: las 3 horas
+   conocidas, las últimas 6 y 24 horas, ayer y anteayer a la misma hora y el nivel del día. Cada semana del test
+   arranca con la "memoria" de los 7 días del train que la preceden. Los festivos nacionales cuentan como domingo.
+2. **Previsión de solar y consumo** (`hard_solar.py`).
+   - El consumo: el perfil de la semana, corregido con una regresión (por hora del día y antelación) sobre cuánto
+     se desviaba el consumo la hora anterior y ayer. De 23 a 5 h el contador del train está congelado, así que el
+     consumo de la noche se conoce exacto.
+   - La solar: "cielo despejado" de la fecha por la claridad de hoy (la última hora y la media del día). El cielo
+     despejado va en hora solar y se interpola entre meses, porque el test son los días 25–31 y el train los
+     días 1–24.
+   - Los festivos del campus (la Mercè, Navidad, Sant Joan) cuentan como domingo.
+3. **Margen de seguridad.** La previsión de esta hora se equivoca (la solar, unos 140 kW de día). Como descargar
+   de más es tirar energía y cargar de menos es perder excedente gratis, se descarga un poco menos de lo previsto
+   y se carga un poco más: 1,4 veces el error típico medido, por hora y por nivel de claridad. El plan ya cuenta
+   con ese margen.
 
-El final del test ya no se ve en la previsión (solo trae 3 horas): se sabe por calendario.
+El final del test ya no se ve en la previsión (solo trae 3 horas): se sabe por calendario (31/08/2026). Si el
+servidor reiniciara la batería cada semana, el agente lo detecta y cierra cada semana vacía.
 
 | Agente (validación reservada, hard mode) | Score |
 |---|---|
 | No usar la batería | 0,00 |
 | Planificar solo con las 3 horas conocidas | 15,5 |
-| **Nuestro agente (versión 4)** | **20,55** |
-| El mismo agente con el precio y el CO₂ reales a 24 h | 21,1 |
+| Versión 2 (primer envío) | 20,37 |
+| Versión 6 (previsor de precio y CO₂ con memoria) | 20,66 |
+| **Nuestro agente (versión 8)** | **20,83** |
+| El mismo agente con el precio y el CO₂ reales a 24 h | 21,56 |
 | Óptimo con todo el futuro conocido (techo) | 22,40 |
 
-**Ojo: la nota de casa y la de la web no son comparables.** El primer envío al hard mode tenía 20,37 en nuestra
-validación y sacó **23,35 en la web (2.º de 22 equipos, a 0,02 del 1.º)**. El conjunto público es otro grupo de
-semanas, más favorable.
+**Ojo: la nota de casa y la de la web no son comparables.** La versión 2 tenía 20,37 en nuestra validación y
+sacó 23,35 en la web. La versión 6 tenía 20,66 y sacó **23,70: primeros de 32 equipos el sábado por la tarde**
+(el segundo tenía 23,50). El conjunto público es otro grupo de semanas, más favorable. Envíos y versiones:
+`docs/envios.md`.
+
+Antes de cada envío del modo difícil se pasa el **ataque de robustez** (`scripts/p1_lab/hard_ataque_*.py`):
+observaciones deformadas, averías del contador, calendario del test, cambio de hora, el `agent.py` empaquetado
+frente al código y el simulador oficial. Lo que se exige: 0 infracciones y 0 excepciones.
 
 ```bash
 python scripts/p1_hard.py --split dev       # comparativa del hard mode en los días 8-14 de cada mes (para diseñar)
