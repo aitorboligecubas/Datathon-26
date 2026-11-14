@@ -4,8 +4,9 @@ Owner: P1. Simula el modo difícil con los datos del train tal como lo describe 
 sábado 14/11 16:33): solar x12, batería de 6.000 kWh y ±1.500 kW, precio y CO2 conocidos solo 3 horas, y la
 meteo de la hora anterior en `noves_dades_5min`.
 
-    python scripts/p1_hard.py                 # comparativa en validación (últimas 168 h de cada mes)
-    python scripts/p1_hard.py --split train   # en el resto del train
+    python scripts/p1_hard.py --split dev     # comparativa en los días 8-14 de cada mes (para diseñar)
+    python scripts/p1_hard.py                 # en las últimas 168 h de cada mes (RESERVADA para verificar)
+    python scripts/p1_hard.py --split dev --market scripts/p1_lab/hard_market_a.py:make   # probar un candidato
     python scripts/p1_hard.py --fit           # regenera models/hard_market.json con todo el train
 """
 import argparse
@@ -175,28 +176,76 @@ def perfect_market_agent(prior: dict, df: pd.DataFrame):
     return a
 
 
-def evaluate(split: str = "val") -> pd.DataFrame:
+def split_frame(full: pd.DataFrame, split: str) -> pd.DataFrame:
+    """val: últimas 168 h de cada mes (RESERVADA para verificar). dev: días 8 a 14 de cada mes (para diseñar)."""
+    if split == "val":
+        return validation_split(full).reset_index(drop=True)
+    if split == "dev":
+        d = full[(full.timestamp.dt.day >= 8) & (full.timestamp.dt.day <= 14)]
+        return d.reset_index(drop=True)
+    if split == "train":
+        return train_split(full).reset_index(drop=True)
+    return full.reset_index(drop=True)
+
+
+def load_factory(spec: str):
+    """'ruta.py:func' -> la función `func` de ese fichero."""
+    import importlib.util
+    path, _, func = spec.partition(":")
+    mod_spec = importlib.util.spec_from_file_location("cand_" + Path(path).stem, path)
+    mod = importlib.util.module_from_spec(mod_spec)
+    mod_spec.loader.exec_module(mod)
+    return getattr(mod, func)
+
+
+def evaluate(split: str = "val", market: str = "", solar: str = "", only: str = "") -> pd.DataFrame:
+    """Comparativa en `split`. Todo lo que se aprende (perfiles, modelos) se ajusta SIN las horas del split.
+
+    market: 'ruta.py:func' con func(exclude: set de pd.Timestamp, prior: dict) -> objeto con
+            .forecast(obs, times, weather) (contrato de battery.hard_market.MarketForecaster).
+    solar:  'ruta.py:func' con func(exclude, base_forecaster) -> objeto con .update(obs, weather),
+            .forecast(obs, times) y .adjust_action(action_kw, obs, p) (contrato de battery.hard_solar).
+    """
     full = hard_table()
-    df = (validation_split(full) if split == "val" else train_split(full) if split == "train" else full).reset_index(drop=True)
-    fit_df = train_split(full) if split == "val" else full
-    exclude = set(validation_split(full).timestamp) if split == "val" else None
+    df = split_frame(full, split)
+    exclude = set(df.timestamp) if split in ("val", "dev") else None
+    fit_df = full[~full.timestamp.isin(exclude)] if exclude else full
     prior = fit_market(exclude, fit_df)
     base = baseline_totals(df)
     w = score_weights(base["co2_kg"] / len(df), base["cost_eur"] / len(df))
-    rows = []
+
+    def candidate():
+        a = hard_agent(prior)
+        if market:
+            a.policy.market = load_factory(market)(exclude or set(), prior)
+        if solar:
+            a.policy.netload = load_factory(solar)(exclude or set(), a.policy.forecaster)
+        return a
+
     agents = {
         "nada": lambda: Nothing(),
         "plan de 3 h (sin prever)": lambda: hard_agent(prior, horizon=3),
-        "perfil del mes": lambda: hard_agent(prior, yesterday_weight=0.0),
-        "perfil + ayer (agente)": lambda: hard_agent(prior),
+        "agente actual": lambda: hard_agent(prior),
         "precio y CO2 reales a 24 h": lambda: perfect_market_agent(prior, df),
         "óptimo (todo el futuro)": lambda: OracleAgent(df, *w, p=HARD_PARAMS),
     }
+    if market or solar:
+        agents["CANDIDATO"] = candidate
+    if only:
+        agents = {k: v for k, v in agents.items() if k in only.split(",")}
+    rows = []
     for name, fac in agents.items():
-        totals, log = simulate_hard(fac(), df)
+        t0 = time.perf_counter()
+        ag = fac()
+        init_s = time.perf_counter() - t0
+        totals, log = simulate_hard(ag, df)
         sc = score(totals, base)
+        ex = log[log.export_kw > 1e-6]
         rows.append({"agente": name, "score": sc["score_raw"], "co2_pct": sc["d_co2_pct"], "coste_pct": sc["d_cost_pct"],
-                     "infr": sc["infractions"], "vertido_kwh": totals["export_kwh"], "ms_paso": 1000 * totals["runtime_s"] / len(df)})
+                     "infr": sc["infractions"], "vertido_kwh": totals["export_kwh"],
+                     "vert_descarga": float(ex[ex.action_kw < -1e-6].export_kw.sum()),
+                     "vert_solar": float(ex[ex.action_kw >= -1e-6].export_kw.sum()),
+                     "ms_paso": 1000 * totals["runtime_s"] / len(df), "s_2016h": init_s + totals["runtime_s"] / len(df) * 2016})
     out = pd.DataFrame(rows)
     b_exp = float(np.maximum(df.pv_kw - df.load_kw, 0).sum())
     print(f"{split}: {len(df)} h | referencia {base['co2_kg']/len(df):.1f} kg/h y {base['cost_eur']/len(df):.1f} EUR/h | "
@@ -207,7 +256,11 @@ def evaluate(split: str = "val") -> pd.DataFrame:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--split", default="val", choices=["val", "train", "todo"])
+    ap.add_argument("--split", default="val", choices=["val", "dev", "train", "todo"])
+    ap.add_argument("--market", default="", help="candidato de previsión de precio y CO2: ruta.py:func")
+    ap.add_argument("--solar", default="", help="candidato de previsión de consumo y solar: ruta.py:func")
+    ap.add_argument("--only", default="", help="agentes a ejecutar, separados por comas")
+    ap.add_argument("--out", default="", help="CSV donde guardar la tabla")
     ap.add_argument("--fit", action="store_true", help="guardar models/hard_market.json con todo el train")
     args = ap.parse_args()
     if args.fit:
@@ -216,7 +269,10 @@ def main() -> int:
         (MODELS / "hard_market.json").write_text(json.dumps(prior), encoding="utf-8")
         print("guardado models/hard_market.json")
         return 0
-    evaluate(args.split)
+    out = evaluate(args.split, args.market, args.solar, args.only)
+    if args.out:
+        Path(args.out).parent.mkdir(parents=True, exist_ok=True)
+        out.to_csv(args.out, index=False)
     return 0
 
 

@@ -7,6 +7,7 @@ CONTRATO (no cambiar sin avisar):
                                                 # base: el Forecaster de P2 (perfil de consumo y solar)
     f.update(obs, weather)                      # una vez por hora, antes de forecast
     load_kw, pv_kw = f.forecast(obs, times)     # np.ndarray de la longitud de `times`, >= 0, [0] = hora actual
+    a = f.adjust_action(action_kw, obs, p)      # último retoque de la acción de esta hora (p: BatteryParams)
         obs.load_prev_kw / obs.pv_prev_kw: consumo y solar (ya x12) de la hora ANTERIOR
         weather: {"irradiancia_wm2", "temp_ambient_c", "temp_panel_c", "vent_ms"} de la hora anterior
 Tiene que tardar menos de ~2 ms por hora. Solo numpy, pandas y math.
@@ -40,3 +41,8 @@ class NetLoadForecaster:
     def forecast(self, obs: Obs, times: list) -> tuple:
         load, pv = self.base.forecast(obs, max(1, len(times)))
         return np.maximum(load, 0.0), np.maximum(pv, 0.0)
+
+    def adjust_action(self, action_kw: float, obs: Obs, p) -> float:
+        """Último retoque de la acción con lo que se sabe del consumo y la solar de ESTA hora.
+        v0: no cambia nada (el tope de descarga por la lectura anterior ya lo aplica la política)."""
+        return action_kw

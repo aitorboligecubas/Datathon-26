@@ -17,6 +17,8 @@ la primera hora de una semana (en el train, noviembre no tiene datos de contador
 trata como "semana sin datos": no hay consumo que cubrir hasta que acabe el mes, así que no descarga
 y compra la energía para la semana siguiente en una hora barata, con un precio de reserva (ver
 `MPCPolicy.reserve_weight`). Una avería que empieza a media semana se sigue tratando como corta.
+Si lo que llega no es un 0 sino una lectura vacía (NaN), la semana se trata igual, pero la batería se
+llena cuanto antes: sin lectura no hay consumo medido contra el que descargar.
 
 Este fichero se empaqueta en dist/agent.py junto con params, obs, adapter,
 safety, forecaster y optimizer (scripts/build_submission.py). Solo imports permitidos.
@@ -124,6 +126,7 @@ class MPCPolicy:
         self.block_hours = 0         # horas desde el inicio del bloque de fechas seguidas
         self.zero_hours = 0          # horas seguidas con el contador a 0
         self.no_data_block = False   # el contador está a 0 desde el inicio del bloque (o más de un día)
+        self.no_reading = False      # ...y lo que llega no es un 0 sino una lectura vacía (NaN)
         self.valleys = deque(maxlen=VALLEY_DAYS)   # coste de las 4 horas más baratas de cada día reciente
         self.day_key = None
         self.day_weights = []
@@ -167,15 +170,17 @@ class MPCPolicy:
                 gap_h = abs((ts - prev).total_seconds()) / 3600.0
                 new_block = gap_h > BLOCK_GAP_H
         if new_block:
-            self.block_hours, self.zero_hours, self.no_data_block = 0, 0, False
+            self.block_hours, self.zero_hours, self.no_data_block, self.no_reading = 0, 0, False, False
             return True
         self.block_hours += 1
-        if obs.load_prev_kw == 0.0:
+        empty = not math.isfinite(obs.load_prev_kw)     # el contador no da ni siquiera un 0: lectura vacía
+        if obs.load_prev_kw == 0.0 or empty:
             self.zero_hours += 1
             if self.block_hours == 1 or self.zero_hours >= LONG_OUTAGE_H:
                 self.no_data_block = True
+                self.no_reading = empty
         else:
-            self.zero_hours, self.no_data_block = 0, False
+            self.zero_hours, self.no_data_block, self.no_reading = 0, False, False
         return False
 
     def note_weight(self, obs: Obs) -> None:
@@ -248,6 +253,10 @@ class MPCPolicy:
         if self.elapsed_s > self.time_budget_s:
             self.n_fallbacks += 1
             return greedy_action(obs, load[0], pv[0], self.p)
+        if self.no_data_block and self.no_reading:
+            # Semana sin lecturas del contador (ni siquiera ceros): no hay consumo medido que cubrir, así
+            # que no se descarga, y la batería se deja llena para la semana siguiente.
+            return clip_action(self.p.max_charge_kw, obs.soc_kwh, self.p)
         try:
             terminal = self.terminal_value(obs, H)
             if self.no_data_block:

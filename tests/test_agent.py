@@ -193,3 +193,21 @@ def test_train_has_no_meter_before_the_november_week():
         if before.empty:
             silent.append((month.year, month.month))
     assert silent == [(2025, 11)]
+
+
+def test_week_with_empty_readings_fills_the_battery_and_waits():
+    """Si el contador no da ni un 0 (lectura vacía) desde la primera hora de una semana, el agente no
+    descarga y deja la batería llena. Con lecturas normales no cambia nada."""
+    import numpy as np
+
+    from battery.policy import MPCPolicy
+
+    price = np.r_[0.30, np.full(23, 0.05)]            # esta hora es la más cara: con consumo tocaría descargar
+    nan = float("nan")
+    pol = MPCPolicy()
+    pol.act_obs(_obs_at("2026-01-25 00:00", 900.0, price, soc=1000.0))
+    a = pol.act_obs(_obs_at("2026-01-25 01:00", nan, price, soc=1000.0))
+    assert pol.no_data_block and pol.no_reading and a > 499.0
+    assert pol.act_obs(_obs_at("2026-01-25 02:00", nan, price, soc=1999.0)) < 2.0       # llena: espera
+    assert pol.act_obs(_obs_at("2026-01-25 03:00", 900.0, price, soc=2000.0)) < 0       # vuelve la lectura
+    assert not pol.no_data_block and not pol.no_reading

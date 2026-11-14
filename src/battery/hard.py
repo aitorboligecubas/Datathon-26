@@ -114,7 +114,12 @@ class HardPolicy(MPCPolicy):
             return greedy_action(obs, load[0], pv[0], self.p)
 
     def act_obs(self, obs: Obs) -> float:
-        return self.cap_discharge(self.plan_action(obs), obs)
+        action = self.cap_discharge(self.plan_action(obs), obs)
+        try:
+            action = float(self.netload.adjust_action(action, obs, self.p))
+        except Exception:
+            pass
+        return clip_action(action, obs.soc_kwh, self.p)
 
     def read_battery(self, raw_obs) -> None:
         """El entorno del modo difícil da la capacidad y la potencia en cada observación: mandan ellas."""
