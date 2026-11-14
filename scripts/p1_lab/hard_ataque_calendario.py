@@ -11,10 +11,11 @@ Todos los episodios llevan el calendario del test (hard_ataque_comun.episodio_te
     sin_final     LAST_MONTHS = ()                       (nunca sabe que el test acaba)
     informado     conoce las fechas reales de las próximas 24 filas del episodio (techo del calendario)
 
-Al final, la tabla G (sola, con --solo-g): las dos variantes del interruptor battery.hard.EMPTY_EVERY_WEEK
-(False y True) y un prototipo que lo detecta solo, con el calendario del test, en los tres mundos posibles (la
-batería sigue de una semana a otra; cada semana se simula por separado desde el 50 %; cada mitad por separado),
-con el score total y el de cada mitad (primeras y últimas 1.008 h). Ojo: el banco
+Al final, la tabla G (sola, con --solo-g): las variantes de sondeo de battery.hard (EMPTY_EVERY_WEEK = True,
+RUN_STEPS = 1008) y un prototipo que detecta solo el reinicio de la batería, con el calendario del test, en los
+tres mundos posibles (una sola simulación de 2.016 h; cada mitad por separado; cada semana por separado desde
+el 50 %), con el score total y el de cada mitad (primeras y últimas 1.008 h, como el ranking público y el
+privado). Sirve para saber qué se puede deducir del ranking público y qué no. Ojo: el banco
 (scripts/p1_hard.py) no sirve para esto, porque en sus fechas las semanas no acaban con el mes.
 """
 import sys
@@ -67,39 +68,42 @@ def score_mask(df, log, mask) -> float:
 
 
 def tabla_variantes(full, pm, ps) -> pd.DataFrame:
+    """Las variantes de sondeo del agente en los tres mundos posibles, con el score total y el de cada mitad."""
+    import hard_ataque_arreglos as arreglos
     n = len(full)
     pub = np.arange(n) < n // 2
+    variantes = [("actual (sigue la batería)", False, 0, c.agente),
+                 ("EMPTY_EVERY_WEEK = True", True, 0, c.agente),
+                 ("RUN_STEPS = 1008", False, n // 2, c.agente),
+                 ("auto (prototipo, arreglo I)", False, 0, arreglos.blindado)]
     rows = []
-    keep = hard.EMPTY_EVERY_WEEK
+    keep = (hard.EMPTY_EVERY_WEEK, getattr(hard, "RUN_STEPS", 0))
     try:
-        for vaciar in (False, True):
+        for nombre, vaciar, pasos, fabrica in variantes:
             hard.EMPTY_EVERY_WEEK = vaciar
-            r = c.simular(c.agente(pm, ps), full)
-            a = c.agente(pm, ps)
-            logs = [c.simular(a, full.iloc[i:i + c.WEEK].reset_index(drop=True))["log"] for i in range(0, n, c.WEEK)]
-            sep = pd.concat(logs, ignore_index=True)
-            a2 = c.agente(pm, ps)
-            half = [c.simular(a2, full.iloc[i:i + n // 2].reset_index(drop=True))["log"] for i in (0, n // 2)]
-            for mundo, log in (("la batería sigue", r["log"]), ("cada semana por separado", sep),
-                               ("cada mitad por separado", pd.concat(half, ignore_index=True))):
-                rows.append({"EMPTY_EVERY_WEEK": vaciar, "mundo": mundo, "total": score_mask(full, log, np.ones(n, bool)),
+            if hasattr(hard, "RUN_STEPS"):
+                hard.RUN_STEPS = pasos
+            elif pasos:
+                continue
+            mundos = {}
+            mundos["1. una sola simulación de 2.016 h"] = c.simular(fabrica(pm, ps), full)["log"]
+            for mundo, largo in (("2. cada mitad por separado", n // 2), ("3. cada semana por separado", c.WEEK)):
+                a = fabrica(pm, ps)
+                mundos[mundo] = pd.concat([c.simular(a, full.iloc[i:i + largo].reset_index(drop=True))["log"]
+                                           for i in range(0, n, largo)], ignore_index=True)
+            for mundo, log in mundos.items():
+                rows.append({"mundo": mundo, "variante": nombre, "total": score_mask(full, log, np.ones(n, bool)),
                              "mitad_publica": score_mask(full, log, pub), "mitad_privada": score_mask(full, log, ~pub)})
     finally:
-        hard.EMPTY_EVERY_WEEK = keep
-    # Prototipo que lo detecta solo (hard_ataque_arreglos.Blindado, arreglo I; lleva también los demás arreglos).
-    import hard_ataque_arreglos as arreglos
-    r = c.simular(arreglos.blindado(pm, ps), full)
-    a = arreglos.blindado(pm, ps)
-    logs = [c.simular(a, full.iloc[i:i + c.WEEK].reset_index(drop=True))["log"] for i in range(0, n, c.WEEK)]
-    a2 = arreglos.blindado(pm, ps)
-    half = [c.simular(a2, full.iloc[i:i + n // 2].reset_index(drop=True))["log"] for i in (0, n // 2)]
-    for mundo, log in (("la batería sigue", r["log"]), ("cada semana por separado", pd.concat(logs, ignore_index=True)),
-                       ("cada mitad por separado", pd.concat(half, ignore_index=True))):
-        rows.append({"EMPTY_EVERY_WEEK": "auto (prototipo)", "mundo": mundo, "total": score_mask(full, log, np.ones(n, bool)),
-                     "mitad_publica": score_mask(full, log, pub), "mitad_privada": score_mask(full, log, ~pub)})
-    out = pd.DataFrame(rows)
-    out["EMPTY_EVERY_WEEK"] = out["EMPTY_EVERY_WEEK"].astype(str)
-    return out.sort_values(["mundo", "EMPTY_EVERY_WEEK"])
+        hard.EMPTY_EVERY_WEEK = keep[0]
+        if hasattr(hard, "RUN_STEPS"):
+            hard.RUN_STEPS = keep[1]
+    out = pd.DataFrame(rows).sort_values(["mundo"], kind="stable").reset_index(drop=True)
+    ref = out.groupby("mundo")[["total", "mitad_publica", "mitad_privada"]].transform("first")
+    out["dif_total"] = out["total"] - ref["total"]
+    out["dif_publica"] = out["mitad_publica"] - ref["mitad_publica"]
+    out["dif_privada"] = out["mitad_privada"] - ref["mitad_privada"]
+    return out
 
 
 def main() -> int:
@@ -107,8 +111,11 @@ def main() -> int:
     pm, ps = c.priors(origen)
     if "--solo-g" in sys.argv:
         g = tabla_variantes(full, pm, ps)
-        print("G. Variantes de EMPTY_EVERY_WEEK con el calendario del test")
+        print("G. Variantes de sondeo con el calendario del test (dif = frente a la variante actual en ese mundo)")
         print(g.round(3).to_string(index=False))
+        out_dir = c.REPO / "results" / "p1_hard"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        g.to_csv(out_dir / "ataque_calendario_variantes.csv", index=False)
         return 0
     sin_nov, _ = c.episodio_test("omitir")
     casos = [
@@ -139,7 +146,7 @@ def main() -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
     out.to_csv(out_dir / "ataque_calendario.csv", index=False)
     g = tabla_variantes(full, pm, ps)
-    print("\nG. Variantes de EMPTY_EVERY_WEEK con el calendario del test")
+    print("\nG. Variantes de sondeo con el calendario del test (dif = frente a la variante actual en ese mundo)")
     print(g.round(3).to_string(index=False))
     g.to_csv(out_dir / "ataque_calendario_variantes.csv", index=False)
     return 0
