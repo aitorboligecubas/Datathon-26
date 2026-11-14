@@ -6,8 +6,8 @@ Owner: integrador (P3).
 
 | Rol | Persona | GitHub | Rama | Perfil ideal |
 |---|---|---|---|---|
-| **P1 · Optimización y robustez** | _nombre_ | _@usuario_ | `p1-optimizador` | Quien tenga más base matemática (optimización, razonar con rigor) |
-| **P2 · Datos y análisis** | _nombre_ | _@usuario_ | `p2-datos` | Quien se mueva mejor con pandas y gráficas, y sepa sacar conclusiones de los datos |
+| **P1 · Optimización y robustez** | Aitor Bolige | @aitorboligecubas | `p1-optimizador` | Quien tenga más base matemática (optimización, razonar con rigor) |
+| **P2 · Datos y análisis** | Ivan Torres | @ivan-torres-ros | `p2-datos` | Quien se mueva mejor con pandas y gráficas, y sepa sacar conclusiones de los datos |
 | **P3 · Relato, presentación e integración** | _nombre_ | _@usuario_ | `p3-relato` | Quien comunique mejor y sea más ordenado |
 
 Si sois 4, la cuarta persona se queda con la integración (pull requests, `main` y envíos) y P3 se dedica solo
