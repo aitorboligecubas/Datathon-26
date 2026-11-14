@@ -20,6 +20,9 @@ Banco oficial, dev, misma ejecución
   mientras yo terminaba. Desde entonces "agente actual" ya lleva el candidato y da 20,073, idéntico a
   CANDIDATO; el agente de partida sale como "solar sencilla (v6)" (19,922). Ver sección 7.
 - Segunda ventana (días 1-7 de cada mes, ajustando sin ellos): 20,803 -> **20,977 (+0,174)**.
+- Por meses la ganancia está repartida, pero no gana siempre: en dev mejoran 8 de 11 meses (de -0,017 a
+  +0,049 por mes) y en los días 1-7, 7 de 11 (de -0,023 a +0,060). Ningún mes pasa de un tercio del total.
+  Para el test, esperad entre +0,1 y +0,2.
 - Con precio y CO2 reales (aísla mi parte), dev: 20,492 -> 20,696 (+0,204).
 - 0 infracciones. La previsión cuesta 0,06 ms por hora. El ajuste tarda 0,6 s. JSON: 88 KB.
 - No he ejecutado el split val.
