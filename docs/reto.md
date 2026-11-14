@@ -19,10 +19,10 @@ Owner: integrador. Resumen de lo que dicen los documentos oficiales (`oficial/do
 | Excedente | No se paga (`export_price = 0`) y no ahorra CO₂ | environment.py, ENUNCIAT |
 | Referencia | Sin batería: compra = max(demanda − solar, 0) | environment.py |
 | Score | `max(0, 100·(0,7·ΔCO₂ + 0,3·ΔCoste − 0,002·infracciones))`, es decir, **0,20 puntos por infracción** | environment.py |
-| Test | Los últimos 7 días de cada mes de sep 2025 a ago 2026. **~1.700 h según las slides** (el ENUNCIAT dice 2.016: faltan datos, como noviembre en el train). El train son las 3 primeras semanas de cada mes (~6.000 h) | ENUNCIAT, slides |
+| Test | Los últimos 7 días de cada mes de sep 2025 a ago 2026. **2.016 h seguidas, empezando el 24/09/2025 (confirmado en la web al enviar)**; ~1.700 h según las slides (el ENUNCIAT dice 2.016: faltan datos, como noviembre en el train). El train son las 3 primeras semanas de cada mes (~6.000 h) | ENUNCIAT, slides |
 | Fin de los datos | Al final, `preus_properes_24h` trae menos de 24 valores: el agente sabe que el episodio acaba (lo usamos para gastar la carga final) | environment.py |
 | Envíos web | 3 niveles: (1) `check_submission.py` en local, (2) **dry-run en la web, gratis e ilimitado (48 pasos)**, (3) envío oficial al leaderboard (50 % público / 50 % privado) | slides |
-| Envío | `submission.zip` (o solo `agent.py`) ≤ 25 MB, 60 s por simulación, 10 envíos/día (los fallidos no cuentan), PIN de equipo en el primer envío | ENUNCIAT |
+| Envío | `submission.zip` (o solo `agent.py`) ≤ 25 MB, 60 s por simulación, 10 envíos por turno (turno 1: sábado hasta las 21:00; los fallidos no cuentan); el jurado evalúa en el ranking privado las 2 entregas seleccionadas, PIN de equipo en el primer envío | ENUNCIAT |
 | Librerías | numpy, pandas, scipy, scikit-learn, joblib, xgboost, lightgbm, math, random, datetime, collections, itertools, json, pathlib, typing, dataclasses (+ functools, heapq, bisect, re, copy, pickle) | ENUNCIAT |
 | Vetado (AST) | os, sys, subprocess, importlib, inspect, socket, threading…; llamadas `.stack()`, `.system()`, `.popen()`, `.rmtree()`…; `eval`, `exec`, `compile`, `globals`, `locals`, `vars`, `__import__` | check_submission.py |
 | Artefactos | Se cargan con `Path(__file__).parent / "fichero"` | ENUNCIAT, check_submission.py |

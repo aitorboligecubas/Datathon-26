@@ -65,15 +65,17 @@ Score = 0,70 · (% de CO₂ ahorrado) + 0,30 · (% de euros ahorrados) − penal
 - **Infracción:** pedir algo imposible, como cargar con la batería llena, descargar con la batería vacía o
   pasar de 500 kW. Se penaliza cada vez: −0,20 según el simulador oficial y −1,00 según el enunciado y las
   slides. Por eso nuestro objetivo es **cero infracciones, siempre**.
-- **El test** son los **últimos 7 días de cada mes** de un año (sep 2025 a ago 2026), unas **1.700 horas** (las slides;
-  el enunciado dice 2.016, pero faltan datos). Nos dan para entrenar las 3 primeras semanas de cada mes.
+- **El test** son los **últimos 7 días de cada mes** de un año (sep 2025 a ago 2026), **2.016 horas** seguidas (lo confirma la web al
+  enviar; las slides decían ~1.700). Nos dan para entrenar las 3 primeras semanas de cada mes.
 - **El jurado decide de forma decisiva**: el leaderboard cuenta, pero también la presentación, el razonamiento
   y la justificación de la estrategia.
 
 ### Cómo se entrega
 - Un `submission.zip` de 25 MB como máximo, con `agent.py` y los ficheros de modelos en la raíz.
 - Toda la simulación tiene que tardar menos de **60 segundos**.
-- **10 envíos oficiales al día** (los fallidos no cuentan). Antes, la web ofrece una **prueba rápida (dry-run)
+- **10 envíos oficiales por turno** (turno 1: sábado hasta las 21:00; los fallidos no cuentan). **El jurado solo
+  evalúa, en el ranking privado, las 2 entregas que seleccionemos** en la web (por defecto, las 2 mejores del
+  público). Registro en `docs/envios.md`: primer envío, **6,43 puntos** con 0 infracciones. Antes, la web ofrece una **prueba rápida (dry-run)
   gratis e ilimitada** de 48 pasos.
 - El leaderboard es 50 % público y 50 % privado: **no hay que obsesionarse con el público**.
 

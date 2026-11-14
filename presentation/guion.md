@@ -6,7 +6,7 @@ Borrador de P1 con el material de P1 (`presentation/resumen-agente.md`, `results
 - **Duración:** pensado para **5 minutos** (unas 650 palabras habladas). La organización no ha publicado el tiempo
   de las demos: si son 3 minutos, se quitan los bloques marcados con ✂.
 - **Quién habla:** por decidir. Propuesta: Aitor los bloques 1, 3 y 4; Ivan los bloques 2, 5 y 6.
-- **Pendiente antes de ensayar:** poner la puntuación del leaderboard en el bloque 4 (todavía no hay envío oficial).
+- **Pendiente antes de ensayar:** poner la posición en el leaderboard en el bloque 4 (primer envío: 6,43 puntos).
 - **Gráficas:** las 11 de P2, ordenadas por bloque y con la cifra que hay que decir, en `analysis/resumen_graficas.md`.
 
 ---
@@ -71,7 +71,8 @@ Borrador de P1 con el material de P1 (`presentation/resumen-agente.md`, `results
 > Para saber si es bueno, calculamos lo imposible: el plan perfecto de alguien que conociera todo el futuro.
 > Ese máximo es 6,12. Nuestro agente saca **6,09: el 99,6 %**. La plantilla oficial, 0,03.
 >
-> En el leaderboard: **[PENDIENTE: puntuación y posición]**.
+> En el test oficial, con semanas que nunca habíamos visto: **6,43 puntos, cero infracciones**.
+> **[PENDIENTE: posición en el leaderboard]**.
 >
 > Y no es suerte de una semana concreta. En los datos que no usamos para validar, captura el 99,97 %.
 > Si las previsiones fallaran un 20 %, sacaría 6,01. Tarda 4 segundos de los 60 permitidos.
