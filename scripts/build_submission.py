@@ -16,6 +16,7 @@ solo fichero, quitando los imports relativos, y comprobamos:
 Uso:
     python scripts/build_submission.py            # genera y comprueba
     python scripts/build_submission.py --no-smoke # sin la prueba aislada
+    python scripts/build_submission.py --hard     # el agente del HARD MODE, en dist/hard/
 """
 import argparse
 import ast
@@ -34,6 +35,13 @@ DIST = REPO / "dist"
 
 # Orden de concatenación: cada módulo solo puede usar los anteriores.
 BUNDLE_MODULES = ["params", "obs", "adapter", "safety", "forecaster", "optimizer", "policy"]
+# El modo difícil (hard mode) añade sus módulos detrás y cambia la clase que carga el evaluador.
+HARD_MODULES = ["hard_market", "hard_solar", "hard"]
+HARD_FOOTER = """
+
+# El evaluador carga `BatteryAgent`: en este fichero es el agente del modo difícil.
+BatteryAgent = HardBatteryAgent
+"""
 # Permitidas según oficial/docs/ENUNCIAT.md (somos más estrictos que check_submission.py,
 # que solo veta una lista negra).
 ALLOWED_IMPORTS = {
@@ -71,12 +79,13 @@ def _top_names(tree: ast.Module) -> set:
     return names
 
 
-def bundle() -> str:
+def bundle(hard: bool = False) -> str:
     imports = {}        # nombre ligado -> sentencia de import
     import_lines = []   # en orden de aparición, sin duplicados
     defined = {}        # nombre -> módulo que lo define
     bodies = []
-    for mod in BUNDLE_MODULES:
+    modules = BUNDLE_MODULES + [m for m in HARD_MODULES if (SRC / (m + ".py")).exists()] if hard else BUNDLE_MODULES
+    for mod in modules:
         path = SRC / (mod + ".py")
         src = path.read_text(encoding="utf-8")
         tree = ast.parse(src)
@@ -130,7 +139,9 @@ def bundle() -> str:
         body = "\n".join(l for i, l in enumerate(lines) if i not in drop).strip("\n")
         bodies.append(f"# {'=' * 70}\n# {mod}.py\n# {'=' * 70}\n{body}\n")
 
-    code = HEADER + "\n".join(import_lines) + "\n\n\n" + "\n\n".join(bodies)
+    code = (HARD_HEADER if hard else HEADER) + "\n".join(import_lines) + "\n\n\n" + "\n\n".join(bodies)
+    if hard:
+        code += HARD_FOOTER
     return embed_models(code)
 
 
@@ -170,6 +181,29 @@ No lo editéis a mano: cambiad src/battery/ y volved a generarlo.
 Repositorio: https://github.com/aitorboligecubas/Datathon-26
 """
 '''
+HARD_HEADER = '''"""BatteryAgent (HARD MODE) — Reto UPC Sostenible, Datathon FME 2026. Equipo SanHackobos.
+
+QUÉ CAMBIA EN EL MODO DIFÍCIL
+    Batería de 6.000 kWh y 1.500 kW, 12 veces más solar (hay horas con excedente, que se vierte gratis)
+    y solo 3 horas de precio y CO2 conocidas. El resto hay que preverlo.
+
+QUÉ HACE
+    Lo mismo que en el modo estándar: planifica 24 horas con un problema de programación lineal que
+    minimiza lo que puntúa el reto (0,70 CO2 + 0,30 coste), ejecuta la primera hora y vuelve a planificar.
+    La diferencia es de dónde sale la información:
+      - precio y CO2: las 3 horas que da el entorno y, más allá, un perfil por mes, tipo de día y hora
+        aprendido en el train, ajustado al nivel de los últimos días y a lo que pasó ayer a la misma hora;
+      - solar y consumo: previsión propia con la lectura de la hora anterior;
+      - final del test: por calendario (ya no se ve en la previsión).
+
+PROTECCIONES
+    Cero infracciones (toda acción se recorta a lo físicamente posible), nunca se descarga por encima de
+    lo que el campus compró la hora anterior, y el agente nunca lanza una excepción.
+
+FICHERO GENERADO por scripts/build_submission.py --hard a partir de src/battery/.
+Repositorio: https://github.com/aitorboligecubas/Datathon-26
+"""
+'''
 EMBED_MARK = "EMBEDDED_MODELS = {}"
 
 
@@ -201,10 +235,15 @@ def embed_models(code: str) -> str:
     return code.replace(EMBED_MARK, "\n".join(lines))
 
 
+HARD_BUILD = False   # lo activa main() con --hard
+
+
 def model_files() -> list:
+    """Artefactos de models/. Los que empiezan por "hard_" son solo del modo difícil."""
     if not MODELS.exists():
         return []
-    return sorted(f for f in MODELS.iterdir() if f.suffix in MODEL_SUFFIXES)
+    return sorted(f for f in MODELS.iterdir()
+                  if f.suffix in MODEL_SUFFIXES and (HARD_BUILD or not f.name.startswith("hard_")))
 
 
 SMOKE_CHILD = r"""
@@ -260,29 +299,74 @@ def smoke_test(zip_path: Path, n: int = 72) -> None:
             print(f"  prueba aislada OK {label}: {n} pasos, mismas acciones que src/ (dif. máx. {diff:.1e})")
 
 
+def smoke_test_hard(zip_path: Path, n: int = 96) -> None:
+    """Como smoke_test, con observaciones del modo difícil (3 horas de previsión, solar x12 y meteo)."""
+    sys.path.insert(0, str(REPO / "src"))
+    sys.path.insert(0, str(REPO / "scripts"))
+    import p1_hard
+    from battery.data import validation_split
+    from battery.hard import HardBatteryAgent
+
+    df = validation_split(p1_hard.hard_table()).iloc[:n].reset_index(drop=True)
+    obs_list = []
+
+    class Recorder:
+        def __init__(self):
+            self.agent = HardBatteryAgent()
+
+        def act(self, obs):
+            obs_list.append(obs)
+            return self.agent.act(obs)
+
+    _, log = p1_hard.simulate_hard(Recorder(), df)
+    ref = [float(a) for a in log.action_kw]
+    with tempfile.TemporaryDirectory() as tmp:
+        with zipfile.ZipFile(zip_path) as z:
+            z.extractall(tmp)
+        with open(Path(tmp, "obs.pkl"), "wb") as fh:
+            pickle.dump(obs_list, fh)
+        for label in ("con los ficheros del ZIP", "sin ficheros auxiliares"):
+            if label.startswith("sin"):
+                for f in Path(tmp).iterdir():
+                    if f.name not in ("agent.py", "obs.pkl"):
+                        f.unlink()
+            out = subprocess.run([sys.executable, "-I", "-c", SMOKE_CHILD], cwd=tmp,
+                                 capture_output=True, text=True, timeout=180)
+            if out.returncode != 0:
+                raise BundleError(f"dist/hard/agent.py falla ejecutado aislado ({label}):\n" + out.stderr[-3000:])
+            got = json.loads(out.stdout.strip().splitlines()[-1])
+            diff = max(abs(a - b) for a, b in zip(got, ref))
+            if diff > 1e-6:
+                raise BundleError(f"dist/hard/agent.py {label} no da las mismas acciones que src/ (dif. máx. {diff:.3g})")
+            print(f"  prueba aislada OK {label}: {n} pasos, mismas acciones que src/ (dif. máx. {diff:.1e})")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--no-smoke", action="store_true", help="no ejecutar la prueba aislada")
+    ap.add_argument("--hard", action="store_true", help="empaquetar el agente del modo difícil en dist/hard/")
     args = ap.parse_args()
+    global HARD_BUILD
+    HARD_BUILD = bool(args.hard)
     try:
-        code = bundle()
-        DIST.mkdir(exist_ok=True)
-        (DIST / "agent.py").write_text(code, encoding="utf-8")
-        for f in model_files():  # también junto a dist/agent.py, para `eval.py --agent dist`
-            (DIST / f.name).write_bytes(f.read_bytes())
-        zip_path = DIST / "submission.zip"
+        code = bundle(args.hard)
+        out_dir = DIST / "hard" if args.hard else DIST
+        out_dir.mkdir(parents=True, exist_ok=True)
+        (out_dir / "agent.py").write_text(code, encoding="utf-8")
+        for f in model_files():  # también junto a agent.py, para `eval.py --agent dist`
+            (out_dir / f.name).write_bytes(f.read_bytes())
+        zip_path = out_dir / "submission.zip"
         with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as z:
-            z.write(DIST / "agent.py", "agent.py")
+            z.write(out_dir / "agent.py", "agent.py")
             for f in model_files():
                 z.write(f, f.name)
         size_mb = zip_path.stat().st_size / 1e6
-        print(f"dist/agent.py: {len(code.splitlines())} líneas, módulos {', '.join(BUNDLE_MODULES)}")
-        print(f"dist/submission.zip: {size_mb:.2f} MB, artefactos: "
-              f"{[f.name for f in model_files()] or 'ninguno'}")
+        print(f"{zip_path.relative_to(REPO)}: {len(code.splitlines())} líneas de agent.py, {size_mb:.2f} MB, "
+              f"artefactos: {[f.name for f in model_files()] or 'ninguno'}")
         if size_mb > MAX_ZIP_MB:
             raise BundleError(f"el ZIP pesa {size_mb:.1f} MB (> {MAX_ZIP_MB} MB)")
         if not args.no_smoke:
-            smoke_test(zip_path)
+            (smoke_test_hard if args.hard else smoke_test)(zip_path)
         sys.path.insert(0, str(REPO / "src"))
         from battery.data import ensure_official
         ensure_official()
@@ -297,7 +381,7 @@ def main() -> int:
     except BundleError as e:
         print("ERROR:", e, file=sys.stderr)
         return 1
-    print("Listo para subir: dist/submission.zip (apuntad el envío en docs/envios.md)")
+    print(f"Listo para subir: {zip_path.relative_to(REPO)} (apuntad el envío en docs/envios.md)")
     return 0
 
 

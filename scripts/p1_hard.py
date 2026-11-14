@@ -1,0 +1,224 @@
+"""Banco de pruebas del HARD MODE. NO se empaqueta.
+
+Owner: P1. Simula el modo difícil con los datos del train tal como lo describe la organización (Discord,
+sábado 14/11 16:33): solar x12, batería de 6.000 kWh y ±1.500 kW, precio y CO2 conocidos solo 3 horas, y la
+meteo de la hora anterior en `noves_dades_5min`.
+
+    python scripts/p1_hard.py                 # comparativa en validación (últimas 168 h de cada mes)
+    python scripts/p1_hard.py --split train   # en el resto del train
+    python scripts/p1_hard.py --fit           # regenera models/hard_market.json con todo el train
+"""
+import argparse
+import json
+import sys
+import time
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+REPO = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO / "src"))
+
+from battery.adapter import from_official  # noqa: E402
+from battery.baselines import OracleAgent  # noqa: E402
+from battery.data import TRAIN_DIR, ensure_official, load, train_split, validation_split  # noqa: E402
+from battery.hard import HARD_PARAMS, HardPolicy  # noqa: E402
+from battery.hard_market import KNOWN_HOURS, MarketForecaster  # noqa: E402
+from battery.hard_solar import PV_FACTOR  # noqa: E402
+from battery.optimizer import score_weights  # noqa: E402
+from battery.safety import clip_action  # noqa: E402
+from battery.sim import apply_action, baseline_totals, score  # noqa: E402
+
+METEO_COLS = {"Atersa - IRRADIANCIA (W/m2)": "irradiancia_wm2",
+              "Atersa - TEMPERATURA AMBIENTE (SENSOR 1) (ºC)": "temp_ambient_c",
+              "Atersa - TEMPERATURA PANEL (SENSOR 1) (ºC)": "temp_panel_c",
+              "Atersa - VELOCIDAD VIENTO (SENSOR 1) (m/s)": "vent_ms"}
+MODELS = REPO / "models"
+
+
+def hard_table() -> pd.DataFrame:
+    """Tabla horaria del modo difícil: la estándar con la solar x12 y la meteo horaria."""
+    ensure_official()
+    df = load().copy()
+    df["pv_kw"] = df["pv_kw"] * PV_FACTOR
+    met = pd.read_csv(TRAIN_DIR / "meteo.csv", usecols=["Fecha"] + list(METEO_COLS), parse_dates=["Fecha"])
+    met = met.set_index("Fecha").rename(columns=METEO_COLS).resample("1h").mean()
+    return df.merge(met, left_on="timestamp", right_index=True, how="left")
+
+
+def market_frame() -> pd.DataFrame:
+    """Precio y CO2 horarios del train (todos los meses, noviembre incluido)."""
+    pr = pd.read_csv(TRAIN_DIR / "precio_pvpc.csv", parse_dates=["Fecha"]).set_index("Fecha")
+    co = pd.read_csv(TRAIN_DIR / "co2_red.csv", parse_dates=["Fecha"]).set_index("Fecha")
+    m = pd.DataFrame({"price": pr.precio_eur_per_kwh, "co2": co.co2_kg_per_kwh}).dropna()
+    return m[m.index < "2026-09-01"]
+
+
+def fit_market(exclude=None, refs_df: pd.DataFrame = None) -> dict:
+    """Perfil de precio y CO2 por mes, tipo de día (laborable, sábado, domingo) y hora."""
+    m = market_frame()
+    if exclude is not None:
+        m = m[~m.index.isin(exclude)]
+    out = {}
+    typ = np.where(m.index.dayofweek < 5, 0, np.where(m.index.dayofweek == 5, 1, 2))
+    for name in ("price", "co2"):
+        g = m.groupby([m.index.month, typ, m.index.hour])[name].mean()
+        by_h = m.groupby([m.index.month, m.index.hour])[name].mean()
+        arr = np.full((12, 3, 24), np.nan)
+        for mo in range(1, 13):
+            for t in range(3):
+                for h in range(24):
+                    v = g.get((mo, t, h), np.nan)
+                    arr[mo - 1, t, h] = v if np.isfinite(v) else by_h.get((mo, h), np.nan)
+        out[name] = arr.tolist()
+    if refs_df is not None:
+        b = baseline_totals(refs_df)
+        out["co2_ref_kg_per_h"] = b["co2_kg"] / len(refs_df)
+        out["cost_ref_eur_per_h"] = b["cost_eur"] / len(refs_df)
+    return out
+
+
+def simulate_hard(agent, df: pd.DataFrame, known: int = KNOWN_HOURS, p=HARD_PARAMS):
+    load_ = df["load_kw"].to_numpy(float); pv = df["pv_kw"].to_numpy(float)
+    price = df["price_eur_kwh"].to_numpy(float); co2 = df["co2_kg_kwh"].to_numpy(float)
+    met = {c: df[c].to_numpy(float) for c in METEO_COLS.values() if c in df}
+    ts = pd.DatetimeIndex(df["timestamp"])
+    n = len(df)
+    soc = p.soc_init_kwh
+    imp = np.zeros(n); exp = np.zeros(n); act = np.zeros(n); socs = np.zeros(n); infr = 0
+    t_agent = 0.0
+    for t in range(n):
+        end = min(t + known, n)
+        prev = t - 1 if t > 0 else t
+        recent = {"ultim_consum_kw": float(load_[prev]), "ultima_solar_kw": float(pv[prev])}
+        for c, v in met.items():
+            recent[c] = float(v[prev])
+        obs = {"timestamp": ts[t], "hour": int(ts[t].hour), "day_of_week": int(ts[t].dayofweek), "soc_kwh": float(soc),
+               "soc_pct": float(soc / p.capacity_kwh), "soc_percent": float(soc / p.capacity_kwh * 100),
+               "preu_actual": float(price[t]), "co2_actual": float(co2[t]),
+               "preus_properes_24h": [float(v) for v in price[t:end]], "co2_properes_24h": [float(v) for v in co2[t:end]],
+               "noves_dades_5min": recent, "cap_max_kwh": float(p.capacity_kwh), "power_max_kw": float(p.max_charge_kw)}
+        t0 = time.perf_counter()
+        a_req = float(agent.act(obs))
+        t_agent += time.perf_counter() - t0
+        a, soc, i = apply_action(soc, a_req, p)
+        infr += i
+        grid = load_[t] - pv[t] + a
+        imp[t], exp[t], act[t], socs[t] = max(grid, 0.0), max(-grid, 0.0), a, soc
+    totals = {"co2_kg": float((imp * co2).sum()), "cost_eur": float((imp * price).sum()), "infractions": infr,
+              "export_kwh": float(exp.sum()), "runtime_s": t_agent, "final_soc_kwh": float(soc)}
+    log = pd.DataFrame({"timestamp": ts, "load_kw": load_, "pv_kw": pv, "action_kw": act, "soc_kwh": socs, "import_kw": imp, "export_kw": exp})
+    return totals, log
+
+
+# ----------------------------------------------------------------------------------- agentes
+class Nothing:
+    def act(self, obs):
+        return 0.0
+
+
+class _Wrap:
+    def __init__(self, policy):
+        self.policy = policy
+
+    def act(self, obs):
+        return self.policy.act(obs)
+
+
+def hard_agent(prior: dict, **cfg):
+    """El agente del modo difícil con el perfil de mercado `prior` (sin leer models/hard_market.json)."""
+    pol = HardPolicy()
+    pol.market = MarketForecaster(prior, **{k: v for k, v in cfg.items() if k in ("yesterday_weight",)})
+    pol.w_co2, pol.w_cost = score_weights(prior["co2_ref_kg_per_h"], prior["cost_ref_eur_per_h"])
+    for k, v in cfg.items():
+        if k not in ("yesterday_weight",):
+            setattr(pol, k, v)
+    return _Wrap(pol)
+
+
+class _TrueMarket:
+    """Previsor tramposo: devuelve el precio y el CO2 reales de las fechas pedidas (techo de la previsión)."""
+
+    def __init__(self, df):
+        self.price = dict(zip(df.timestamp, df.price_eur_kwh)); self.co2 = dict(zip(df.timestamp, df.co2_kg_kwh))
+        self.fallback = MarketForecaster(None)
+
+    def forecast(self, obs, times, weather=None):
+        p = np.array([self.price.get(t, np.nan) for t in times]); c = np.array([self.co2.get(t, np.nan) for t in times])
+        n = len(obs.price)
+        p[:n], c[:n] = obs.price[:n], obs.co2[:n]
+        for a in (p, c):
+            bad = ~np.isfinite(a)
+            if bad.any():
+                a[bad] = a[~bad][-1] if (~bad).any() else 0.0
+        return p, c
+
+
+class _RowMarket:
+    """Previsor tramposo por filas: las 24 filas siguientes del episodio, como en el modo estándar."""
+
+    def __init__(self, df):
+        self.price = df.price_eur_kwh.to_numpy(float); self.co2 = df.co2_kg_kwh.to_numpy(float); self.t = 0
+
+    def forecast(self, obs, times, weather=None):
+        t = self.t; self.t += 1
+        p = self.price[t:t + len(times)]; c = self.co2[t:t + len(times)]
+        if len(p) < len(times):
+            p = np.r_[p, np.full(len(times) - len(p), p[-1])]; c = np.r_[c, np.full(len(times) - len(c), c[-1])]
+        return p.copy(), c.copy()
+
+
+def perfect_market_agent(prior: dict, df: pd.DataFrame):
+    a = hard_agent(prior)
+    a.policy.market = _RowMarket(df)
+    return a
+
+
+def evaluate(split: str = "val") -> pd.DataFrame:
+    full = hard_table()
+    df = (validation_split(full) if split == "val" else train_split(full) if split == "train" else full).reset_index(drop=True)
+    fit_df = train_split(full) if split == "val" else full
+    exclude = set(validation_split(full).timestamp) if split == "val" else None
+    prior = fit_market(exclude, fit_df)
+    base = baseline_totals(df)
+    w = score_weights(base["co2_kg"] / len(df), base["cost_eur"] / len(df))
+    rows = []
+    agents = {
+        "nada": lambda: Nothing(),
+        "plan de 3 h (sin prever)": lambda: hard_agent(prior, horizon=3),
+        "perfil del mes": lambda: hard_agent(prior, yesterday_weight=0.0),
+        "perfil + ayer (agente)": lambda: hard_agent(prior),
+        "precio y CO2 reales a 24 h": lambda: perfect_market_agent(prior, df),
+        "óptimo (todo el futuro)": lambda: OracleAgent(df, *w, p=HARD_PARAMS),
+    }
+    for name, fac in agents.items():
+        totals, log = simulate_hard(fac(), df)
+        sc = score(totals, base)
+        rows.append({"agente": name, "score": sc["score_raw"], "co2_pct": sc["d_co2_pct"], "coste_pct": sc["d_cost_pct"],
+                     "infr": sc["infractions"], "vertido_kwh": totals["export_kwh"], "ms_paso": 1000 * totals["runtime_s"] / len(df)})
+    out = pd.DataFrame(rows)
+    b_exp = float(np.maximum(df.pv_kw - df.load_kw, 0).sum())
+    print(f"{split}: {len(df)} h | referencia {base['co2_kg']/len(df):.1f} kg/h y {base['cost_eur']/len(df):.1f} EUR/h | "
+          f"excedente solar sin batería {b_exp:.0f} kWh ({100*(df.pv_kw>df.load_kw).mean():.1f} % de las horas)")
+    print(out.round(3).to_string(index=False))
+    return out
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--split", default="val", choices=["val", "train", "todo"])
+    ap.add_argument("--fit", action="store_true", help="guardar models/hard_market.json con todo el train")
+    args = ap.parse_args()
+    if args.fit:
+        full = hard_table()
+        prior = fit_market(None, full)
+        (MODELS / "hard_market.json").write_text(json.dumps(prior), encoding="utf-8")
+        print("guardado models/hard_market.json")
+        return 0
+    evaluate(args.split)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
