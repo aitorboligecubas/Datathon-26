@@ -240,6 +240,22 @@ Z_SOLAR = 1.0
 Z_PLAN_SOLAR = Z_SOLAR
 
 
+def scen_probs(alphas) -> tuple:
+    """Para K cuantiles del consumo neto de niveles `alphas`: probabilidad de que el consumo neto supere cada tramo
+    de descarga (tail, K valores) y de que haya que comprar en cada tramo de carga (head, K + 1 valores). Cada
+    cuantil representa la masa que va de la mitad del hueco anterior a la mitad del siguiente."""
+    a = [float(v) for v in alphas]
+    K = len(a)
+    mass = []
+    for j in range(K):
+        lo = 0.0 if j == 0 else 0.5 * (a[j - 1] + a[j])
+        hi = 1.0 if j == K - 1 else 0.5 * (a[j] + a[j + 1])
+        mass.append(hi - lo)
+    tail = [sum(mass[i:]) for i in range(K)]                 # tramo i de descarga: de q[i-1] a q[i]
+    head = [sum(mass[K - i:]) for i in range(K + 1)]         # tramo i de carga: de -q[K-i] a -q[K-i-1]
+    return np.array(tail), np.array(head)
+
+
 class SolarCand:
     """Previsor de consumo y solar con tablas ampliadas (mismo contrato que NetLoadForecaster). Qué añade:
     1. Consumo: una regresión por hora del día y antelación con el cociente consumo/perfil de la hora
@@ -297,6 +313,13 @@ class SolarCand:
         self.net_lo0 = float("nan")     # consumo neto de esta hora menos el margen (lo usa adjust_action)
         self.net_lo0_charge = float("nan")
         self.fresh = False              # True si forecast() ha dejado net_lo0 para esta hora
+        # Plan con incertidumbre (v12): cuantiles del error del consumo neto de la hora actual, en unidades del margen.
+        self.scen_ok = False            # hay tabla de cuantiles válida
+        self.scen_used = False          # la acción de esta hora ha salido del plan con incertidumbre
+        self.hold = False               # update() ya se ha hecho en esta hora (para no aprender dos veces de ella)
+        self.scen_u = None
+        self.scen_tail = None
+        self.scen_head = None
 
     def new_block(self) -> None:
         """Empieza otra semana del test (hace un mes de la anterior): lo aprendido de las últimas horas no vale."""
@@ -332,7 +355,39 @@ class SolarCand:
         except Exception:
             return float("nan")
 
+    def set_scenarios(self, scen: Optional[dict]) -> None:
+        """scen = {"alphas": [K niveles], "u": [K cuantiles del error del consumo neto / margen]} (hard_solar.json).
+        Con ella, cada hora del plan lleva la distribución entera del consumo neto que se verá al llegar."""
+        self.scen_ok, self.scen_used, self.hold = False, False, False
+        try:
+            alphas = [float(v) for v in scen["alphas"]]
+            u = [float(v) for v in scen["u"]]
+            good = (len(alphas) == len(u) and len(u) >= 3 and all(math.isfinite(v) for v in u)
+                    and all(0.0 < v < 1.0 for v in alphas)
+                    and all(alphas[i] < alphas[i + 1] and u[i] <= u[i + 1] for i in range(len(u) - 1)))
+            if good and self.ok:
+                self.scen_u = np.array(u)
+                self.scen_tail, self.scen_head = scen_probs(alphas)
+                self.scen_ok = True
+        except Exception:
+            self.scen_ok = False
+
+    def scenarios(self, times: list) -> tuple:
+        """Consumo y solar previstos (sin margen) y margen de cada hora del plan, con las tablas del previsor."""
+        z, z_plan = self.z, self.z_plan
+        try:
+            self.z, self.z_plan = 0.0, 0.0
+            load, pv = self.forecast_tables(times)
+            self.z, self.z_plan = 1.0, 1.0
+            pv1 = self.forecast_tables(times)[1]
+        finally:
+            self.z, self.z_plan = z, z_plan
+            self.fresh = False          # net_lo0 ha quedado calculado con otro margen: que nadie lo use
+        return load, pv, np.maximum(pv1 - pv, 0.0)
+
     def update(self, obs, weather: Optional[dict] = None) -> None:
+        if self.hold:
+            return                      # ya se ha aprendido de esta hora (el plan con incertidumbre llamó antes)
         self.weather = weather or {}
         self.fresh = False
         try:
@@ -517,6 +572,9 @@ class SolarCand:
 
     def adjust_action(self, action_kw: float, obs, p) -> float:
         """Margen de seguridad con el consumo neto de ESTA hora, que solo se conoce aproximadamente."""
+        if self.scen_used:
+            # La acción ya cuenta con la incertidumbre. Único seguro: con el contador caído no se descarga.
+            return max(action_kw, 0.0) if self.meter_down else action_kw
         if self.meter_down and not self.pv_alive:
             return max(action_kw, 0.0)      # contador caído y sin solar: no se descarga ni hay excedente que guardar
         if not self.fresh or not math.isfinite(self.net_lo0):
@@ -549,6 +607,7 @@ def make_netload(prior: Optional[dict], base, **cfg):
                     base.pv_prior = base.pv_prior * PV_FACTOR
                 except Exception:
                     pass
+                cand.set_scenarios((prior or {}).get("scen"))      # sin tabla: plan con el margen fijo
                 return cand
     except Exception:
         pass

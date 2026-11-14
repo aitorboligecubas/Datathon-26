@@ -17,11 +17,13 @@ from typing import Mapping
 
 import numpy as np
 import pandas as pd
+import scipy.sparse as sp
+from scipy.optimize import linprog
 
 from .hard_market import KNOWN_HOURS, MARKET_FILE, MarketCand
 from .hard_solar import SOLAR_FILE, make_netload
 from .obs import Obs
-from .optimizer import plan, score_weights
+from .optimizer import LP_METHODS, plan, score_weights
 from .params import BatteryParams
 from .policy import MPCPolicy, find_models_dir, greedy_action, load_json
 from .safety import clip_action, feasible_range, soc_after
@@ -65,6 +67,66 @@ def netload_seed_dict(solar_prior) -> dict:
     return out
 
 
+# Plan con incertidumbre (v12). El consumo neto de cada hora no se conoce: solo su previsión y cómo de lejos suele
+# caer. Descargar d kW saca d/eta de la batería, pero solo ahorra min(d, n): el primer kW se aprovecha casi seguro
+# y el último casi nunca. Cargar c kW con un excedente s incierto solo es gratis hasta s. El LP lo ve como tramos
+# de descarga con rendimiento decreciente (peso de la hora x probabilidad de que el consumo neto supere el tramo) y
+# tramos de carga con coste creciente (peso x probabilidad de que ese tramo no sea excedente). Así decide solo cuánto
+# apurar: mucho cuando la energía guardada vale poco (la batería se va a rellenar con excedente solar) y poco cuando
+# vale casi lo mismo que la hora actual. Sustituye al margen fijo (1,0 o 1,4 desviaciones típicas en todas las horas).
+SCEN_LP_CACHE = {}
+
+
+def scen_structure(H: int, K: int, eta_c: float, eta_d: float):
+    """Matriz de la dinámica: s_k - s_(k-1) + (suma de tramos de descarga)/eta_d - eta_c·(suma de tramos de carga) = 0.
+    Columnas: H·K tramos de descarga, H·(K+1) tramos de carga y H cargas al final de cada hora."""
+    key = (H, K, eta_c, eta_d)
+    if key not in SCEN_LP_CACHE:
+        nd, nc = H * K, H * (K + 1)
+        dis = sp.csr_matrix((np.full(nd, 1.0 / eta_d), (np.repeat(np.arange(H), K), np.arange(nd))), shape=(H, nd))
+        cha = sp.csr_matrix((np.full(nc, -eta_c), (np.repeat(np.arange(H), K + 1), np.arange(nc))), shape=(H, nc))
+        eye = sp.identity(H, format="csr")
+        shift = sp.diags([np.ones(H - 1)], [-1], shape=(H, H), format="csr")
+        SCEN_LP_CACHE[key] = sp.hstack([dis, cha, eye - shift], format="csr")
+    return SCEN_LP_CACHE[key]
+
+
+def plan_scen(soc_kwh: float, nodes, tail, head, weight, terminal_value: float, p) -> np.ndarray:
+    """Plan con la incertidumbre del consumo neto: acciones_kw[H] (+ carga).
+
+    nodes[H][K]: cuantiles del consumo neto de cada hora (kW), ascendentes. weight[H]: peso de comprar en cada
+    hora. Minimiza la compra ESPERADA ponderada: suma_k w_k·E[max(n_k + c_k - d_k, 0)] - valor_final·s_(H-1).
+    Lanza RuntimeError si el LP no se resuelve."""
+    nodes = np.asarray(nodes, dtype=float)
+    weight = np.asarray(weight, dtype=float)
+    H, K = nodes.shape
+    pos = np.clip(nodes, 0.0, p.max_discharge_kw)
+    wd = np.diff(pos, axis=1, prepend=0.0)                               # anchos de los tramos de descarga
+    neg = np.clip(-nodes[:, ::-1], 0.0, p.max_charge_kw)
+    wc = np.diff(np.c_[neg, np.full(H, float(p.max_charge_kw))], axis=1, prepend=0.0)   # ídem de carga
+    nd, nc = H * K, H * (K + 1)
+    cost = np.zeros(nd + nc + H)
+    cost[:nd] = -(weight[:, None] * tail[None, :]).ravel()
+    cost[nd:nd + nc] = (weight[:, None] * head[None, :]).ravel()
+    cost[-1] = -terminal_value
+    bounds = np.zeros((nd + nc + H, 2))
+    bounds[:nd, 1] = np.maximum(wd, 0.0).ravel()
+    bounds[nd:nd + nc, 1] = np.maximum(wc, 0.0).ravel()
+    bounds[nd + nc:, 1] = p.capacity_kwh
+    b_eq = np.zeros(H)
+    b_eq[0] = soc_kwh
+    A_eq = scen_structure(H, K, float(p.eta_charge), float(p.eta_discharge))
+    for method in LP_METHODS:
+        try:
+            res = linprog(cost, A_eq=A_eq, b_eq=b_eq, bounds=bounds, method=method)
+        except Exception:
+            continue
+        if res.status == 0:
+            x = res.x
+            return x[nd:nd + nc].reshape(H, K + 1).sum(axis=1) - x[:nd].reshape(H, K).sum(axis=1)
+    raise RuntimeError("LP con incertidumbre sin solución")
+
+
 def read_weather(raw_obs) -> dict:
     """Meteo de la hora anterior que trae `noves_dades_5min` en el modo difícil (NaN si falta)."""
     out = {}
@@ -106,6 +168,8 @@ class HardPolicy(MPCPolicy):
         # semilla no casa con el test, esa hora se decide con un dato falso). False: la semilla solo da memoria al previsor.
         self.seed_first_hour = False
         self.seed_mismatches = 0
+        self.use_scenarios = True    # plan con la incertidumbre del consumo neto (si el previsor trae sus cuantiles)
+        self.n_scen = 0              # horas decididas con ese plan
         try:    # pesos del objetivo con la referencia del modo difícil (con 12 veces más solar cambia)
             self.w_co2, self.w_cost = score_weights(float(prior["co2_ref_kg_per_h"]), float(prior["cost_ref_eur_per_h"]))
         except Exception:
@@ -149,6 +213,60 @@ class HardPolicy(MPCPolicy):
         return load, pv, terminal
 
     def plan_action(self, obs: Obs) -> float:
+        """La acción de esta hora: con el plan con incertidumbre si se puede; si no, con el plan de margen fijo."""
+        nl = self.netload
+        action = None
+        try:
+            nl.scen_used = False
+            if self.use_scenarios and getattr(nl, "scen_ok", False):
+                nl.hold = False
+                nl.update(obs, self.weather)
+                nl.hold = True          # si hay que volver al plan de margen fijo, que no aprenda dos veces de esta hora
+                action = self.plan_scenarios(obs)
+        except Exception:
+            action = None
+        try:
+            if action is not None:
+                nl.scen_used = True
+                self.n_scen += 1
+                return action
+            return self.plan_fixed(obs)
+        finally:
+            try:
+                nl.hold = False         # siempre: la semilla del principio de cada semana entra por update()
+            except Exception:
+                pass
+
+    def plan_scenarios(self, obs: Obs):
+        """Acción de esta hora con el plan con incertidumbre, o None si toca decidir con el plan de margen fijo."""
+        nl = self.netload
+        if self.no_data_block or self.elapsed_s > self.time_budget_s:
+            return None                 # semana sin datos de contador o sin tiempo: el plan de siempre
+        times = self.horizon_times(obs)
+        if times and len(obs.price) < KNOWN_HOURS:
+            times = times[:len(obs.price)]
+        if not times or times[0] is None:
+            return None
+        H = len(times)
+        load, pv, margin = nl.scenarios(times)
+        price, co2 = self.market.forecast(obs, times, self.weather)
+        weight = self.w_co2 * co2 + self.w_cost * price
+        ends = H < self.horizon
+        terminal = 0.0 if ends else float(np.quantile(weight, self.terminal_quantile)) * self.p.eta_discharge
+        net = load - pv
+        nodes = net[:, None] + margin[:, None] * nl.scen_u[None, :]
+        if not (np.isfinite(nodes).all() and np.isfinite(weight).all() and math.isfinite(obs.soc_kwh)):
+            return None
+        actions = plan_scen(obs.soc_kwh, nodes, nl.scen_tail, nl.scen_head, weight, terminal, self.p)
+        return clip_action(float(actions[0]), obs.soc_kwh, self.p)
+
+    def cap_discharge(self, action_kw: float, obs: Obs) -> float:
+        if getattr(self.netload, "scen_used", False):
+            return action_kw            # el plan con incertidumbre ya cuenta con cuánto puede consumir el campus
+        return MPCPolicy.cap_discharge(self, action_kw, obs)
+
+    def plan_fixed(self, obs: Obs) -> float:
+        """El plan de las versiones anteriores: previsión con un margen fijo y LP determinista."""
         self.netload.update(obs, self.weather)
         if self.no_data_block and self.no_reading:
             # Semana sin lecturas del contador (ni siquiera ceros): no se descarga y la batería se deja llena.

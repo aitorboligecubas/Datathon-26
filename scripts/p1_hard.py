@@ -156,8 +156,19 @@ def fit_solar(table: pd.DataFrame) -> dict:
     load_hat = p_now * (1 + ((t.load_kw.shift(1) / p_prev).clip(0.3, 3.0) - 1) * 0.9)
     err = ((t.load_kw - t.pv_kw) - (load_hat - pv_hat))[ok]
     sd = err.groupby(h[ok]).std().reindex(range(24)).fillna(err.std()).clip(lower=15.0)
+    cand = fit_solar_tables(table)
     return {"pv_clear": clear.tolist(), "pv_mean": mean.tolist(), "net_sd": [float(v) for v in sd],
-            "cand": fit_solar_tables(table), "seed": netload_seed_segments(table)}
+            "cand": cand, "seed": netload_seed_segments(table), "scen": fit_solar_scen(table, cand)}
+
+
+def fit_solar_scen(table: pd.DataFrame, cand_tables: dict) -> dict:
+    """Cuantiles del error del consumo neto de la hora actual (plan con incertidumbre, v12). El ajuste está en
+    scripts/p1_lab/hard_plan_cand.py (fit_scen): pasa el previsor por las horas de `table` como en el test."""
+    lab = str(REPO / "scripts" / "p1_lab")
+    if lab not in sys.path:
+        sys.path.insert(0, lab)
+    from hard_plan_cand import fit_scen
+    return fit_scen(table, cand_tables)
 
 
 def netload_seed_segments(table: pd.DataFrame, hours: int = 48) -> list:
@@ -350,6 +361,7 @@ def evaluate(split: str = "val", market: str = "", solar: str = "", only: str = 
         "plan de 3 h (sin prever)": lambda: hard_agent(prior, solar_prior, horizon=3),
         "mercado sin memoria (v4)": lambda: hard_agent({k: v for k, v in prior.items() if k != "cand"}, solar_prior),
         "solar sencilla (v6)": lambda: hard_agent(prior, {k: v for k, v in solar_prior.items() if k != "cand"}),
+        "plan con margen fijo (v10)": lambda: hard_agent(prior, solar_prior, use_scenarios=False),
         "agente actual": lambda: hard_agent(prior, solar_prior),
         "precio y CO2 reales a 24 h": lambda: perfect_market_agent(prior, df, solar_prior),
         "óptimo (todo el futuro)": lambda: OracleAgent(df, *w, p=HARD_PARAMS),

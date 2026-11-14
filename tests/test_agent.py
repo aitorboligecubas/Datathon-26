@@ -325,3 +325,48 @@ def test_hard_detects_weekly_resets_and_restarts():
     pol.act(_hard_obs("2025-09-30 23:00", 5000.0))
     pol.act(_hard_obs("2025-10-25 00:00", pol.expected_soc))
     assert pol.n_blocks == 2 and not pol.empty_weeks
+
+
+def test_plan_with_uncertainty_discharges_more_when_stored_energy_is_cheap():
+    """El plan con incertidumbre: cada kW adicional de descarga tiene menos probabilidad de aprovecharse. Si lo
+    guardado no vale nada se apura hasta el cuantil más alto del consumo neto; si vale casi como esta hora, solo
+    se descarga lo seguro. Nunca se descarga por encima del cuantil más alto."""
+    import numpy as np
+
+    from battery.hard import HARD_PARAMS as p
+    from battery.hard import plan_scen
+    from battery.hard_solar import scen_probs
+
+    tail, head = scen_probs((0.2, 0.5, 0.8))                 # P(consumo neto > tramo) = 1,00 / 0,65 / 0,35
+    assert np.allclose(tail, [1.0, 0.65, 0.35]) and np.allclose(head, [0.0, 0.35, 0.65, 1.0])
+    nodes = np.array([[200.0, 600.0, 1000.0]])
+    for stored_value, expected in ((0.0, -1000.0), (0.5, -600.0), (0.9, -200.0), (1.1, 0.0)):
+        a = plan_scen(3000.0, nodes, tail, head, np.array([1.0]), stored_value * p.eta_discharge, p)
+        assert abs(a[0] - expected) < 1e-6, (stored_value, a)
+    # Con excedente incierto (consumo neto negativo): se carga gratis lo seguro y se paga la parte dudosa solo si compensa.
+    surplus = np.array([[-900.0, -500.0, -100.0]])
+    for stored_value, expected in ((0.01, 100.0), (0.5, 500.0), (0.9, 900.0)):
+        a = plan_scen(0.0, surplus, tail, head, np.array([1.0]), stored_value / p.eta_charge, p)
+        assert abs(a[0] - expected) < 1e-6, (stored_value, a)
+
+
+def test_hard_uses_the_uncertainty_plan_and_falls_back_without_its_table():
+    """Con la tabla de cuantiles en models/hard_solar.json decide el plan con incertidumbre; sin ella (o apagado),
+    el plan de margen fijo de las versiones anteriores. En los dos casos, sin infracciones ni errores."""
+    from battery.hard import HardBatteryAgent
+
+    df = _hard_frame("2026-05-11", 2)
+    agent = HardBatteryAgent()
+    assert agent.policy.netload.scen_ok
+    totals, _ = _hard_run(agent, df)
+    assert totals["infractions"] == 0 and agent.policy.n_scen == len(df) and agent.policy.n_fallbacks == 0
+
+    for broken in ("apagado", "sin tabla"):
+        agent = HardBatteryAgent()
+        if broken == "apagado":
+            agent.policy.use_scenarios = False
+        else:
+            agent.policy.netload.set_scenarios({"alphas": [0.5], "u": [float("nan")]})
+            assert not agent.policy.netload.scen_ok
+        totals, _ = _hard_run(agent, df)
+        assert totals["infractions"] == 0 and agent.policy.n_scen == 0 and agent.policy.n_fallbacks == 0

@@ -152,14 +152,20 @@ class PlanSolar(SolarCand):
 
     def scenarios(self, times: list) -> tuple:
         """Consumo y solar previstos (sin margen) y margen de cada hora, con las tablas del agente."""
-        z = self.z
+        z, z_plan = self.z, getattr(self, "z_plan", None)      # desde la v10 el plan tiene su propio margen (z_plan)
         try:
             self.z = 0.0
+            if z_plan is not None:
+                self.z_plan = 0.0
             load, pv = self.forecast_tables(times)
             self.z = 1.0
+            if z_plan is not None:
+                self.z_plan = 1.0
             pv1 = self.forecast_tables(times)[1]
         finally:
             self.z = z
+            if z_plan is not None:
+                self.z_plan = z_plan
             self.fresh = False          # net_lo0 ha quedado calculado con otro margen: que nadie lo use
         return load, pv, np.maximum(pv1 - pv, 0.0)
 
@@ -179,24 +185,25 @@ class PlanPolicy(HardPolicy):
 
     def plan_action(self, obs) -> float:
         nl = self.netload
+        action = None
         try:
             nl.scen_used = False
             if getattr(nl, "scen_ok", False):
                 nl.hold = False
                 nl.update(obs, self.weather)
-                nl.hold = True
+                nl.hold = True          # si hay que volver a la política actual, que no aprenda dos veces de esta hora
                 action = self.plan_scenarios(obs)
-                if action is not None:
-                    nl.scen_used = True
-                    self.n_scen += 1
-                    return action
         except Exception:
-            pass
+            action = None
         try:
+            if action is not None:
+                nl.scen_used = True
+                self.n_scen += 1
+                return action
             return HardPolicy.plan_action(self, obs)
         finally:
             try:
-                nl.hold = False
+                nl.hold = False         # siempre: la semilla del principio de cada semana entra por update()
             except Exception:
                 pass
 
