@@ -56,3 +56,17 @@ Media +0,008, nunca peor que -0,002. Con una semilla falsa (consumo x1,3) y la c
 Ojo: ninguna ventana del banco tiene el calendario del test (todas acaban antes del día 25), así que el final de cada
 semana no se reproduce: el óptimo sí lo sabe y el agente no. Parte de los 0,37 entre "todo perfecto a 24 h" y el
 óptimo es eso, no algo que se pueda ganar en el test.
+
+## Segunda ronda (después de que la v9 empatara con la v7 en el público, 24,10)
+
+| Idea | Resultado |
+|---|---|
+| ¿Dónde está el hueco de consumo y solar? (`mejora_cands_diag.py`) | hora actual exacta +0,43; horas siguientes exactas +0,02; todo exacto +0,55 |
+| LightGBM para la hora actual (`mejora_nowcast.py`) | peor que SolarCand: cubre 82-87 % (frente a 92 %) y deja más hueco |
+| Margen según la variabilidad reciente de la solar | la variabilidad no predice el error (cobertura 88-92 % en los 4 cuartiles) |
+| Pesos inclinados al coste (x0,8 a x1,6) | todos pierden salvo x0,8 (+0,005, ruido) |
+| Margen 1,0 por estaciones (`mejora_meses.py`) | en el banco el invierno prefiere 1,4 (-0,022); el verano casi no lo nota (-0,004) |
+| Tipo de cambio CO2/€ del agente frente al del test público | 3,82 frente a 3,68 €/kg: no es la causa |
+
+v10 (rama `mejora-score-hard-z10`): la v9 con el margen 1,0 de la v7, porque en el público, con los datos reales,
+1,0 ganó a 1,4 (+0,04). En el banco pierde unas centésimas; en el simulador oficial, 19,02 frente a 19,01.

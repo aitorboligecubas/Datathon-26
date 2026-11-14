@@ -302,3 +302,14 @@ def zp(zp_):
 
 
 CANDS = {"base": v8, "semilla+plan2.0 (v9)": v9, "semilla (plan 1.4)": seed_only, "semilla+plan1.7": zp(1.7)}
+
+
+def wcost(mult):
+    def f(prior, solar_prior, exclude):
+        a = hard_agent(prior, solar_prior)
+        a.policy.w_cost *= mult
+        return a
+    return f
+
+
+CANDS = {"base": v9, "coste x0.8": wcost(0.8), "coste x1.15": wcost(1.15), "coste x1.3": wcost(1.3), "coste x1.6": wcost(1.6)}

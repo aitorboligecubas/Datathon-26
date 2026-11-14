@@ -149,3 +149,47 @@ def show_weights(prior, solar_prior, exclude):
     print("pesos agente", w1, "ratio", w1[0] / w1[1], "| pesos test", (a.policy.w_co2, a.policy.w_cost), "ratio", a.policy.w_co2 / a.policy.w_cost)
     print("solar_prior pesos", solar_prior["cand"].get("w_co2"), solar_prior["cand"].get("w_cost"))
     return hard_agent(prior, solar_prior)
+
+
+class MixNetload:
+    """Previsión real en unas antelaciones y verdad en otras. now_true: la hora actual exacta (sin margen);
+    future_true: las horas siguientes exactas."""
+
+    def __init__(self, real, df, now_true, future_true):
+        self.real, self.true = real, TrueNetload(df)
+        self.now_true, self.future_true = now_true, future_true
+
+    def new_block(self):
+        self.real.new_block()
+
+    def update(self, obs, weather=None):
+        self.real.update(obs, weather)
+
+    def forecast(self, obs, times):
+        lr, pr = self.real.forecast(obs, times)
+        lt, pt = self.true.forecast(obs, times)
+        load, pv = lr.copy(), pr.copy()
+        if self.now_true:
+            load[0], pv[0] = lt[0], pt[0]
+        if self.future_true:
+            load[1:], pv[1:] = lt[1:], pt[1:]
+        return load, pv
+
+    def adjust_action(self, action_kw, obs, p):
+        return action_kw if self.now_true else self.real.adjust_action(action_kw, obs, p)
+
+
+def _mix(prior, solar_prior, now_true, future_true):
+    a = hard_agent(prior, solar_prior)
+    a.policy.netload = MixNetload(a.policy.netload, table(), now_true, future_true)
+    if now_true:
+        a.policy.cap_discharge = lambda action, obs: action
+    return a
+
+
+def perfect_now(prior, solar_prior, exclude):
+    return _mix(prior, solar_prior, True, False)
+
+
+def perfect_future(prior, solar_prior, exclude):
+    return _mix(prior, solar_prior, False, True)
