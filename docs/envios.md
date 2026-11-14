@@ -42,15 +42,34 @@ validación rápida que no gasta cupo. El ZIP se genera con `python scripts/buil
 |---|---|---|---|---|---|---|---|---|---|
 | H1 | Sáb 14/11, 17:39 | `96bd4ef` | v2 del modo difícil: MPC con previsión propia de precio y CO₂ (regresión por antelación), solar por claridad y margen al descargar | 20,37 | **23,35** | 22,10 % (13.317,9 kg) | 26,25 % (24.936,50 €) | 0 | 2.º de 22 equipos, a 0,02 del 1.º (23,37). Equivalencia: 20,4 en casa ≈ 23,35 en la web |
 | H2 | Sáb 14/11, 18:43 | `e8dab4c` | v6: previsor de precio y CO₂ con memoria del train (13 pistas) y blindaje del ataque de robustez (final por calendario solo en agosto, reinicios semanales, lecturas vacías, contador a 0 con solar viva) | 20,66 | **23,70** | 22,58 % (13.607,2 kg) | 26,30 % (24.974,56 €) | 0 | **1.º de 32 equipos** (2.º: 23,50). En casa +0,29 sobre H1; en la web +0,35 |
-| H3 | pendiente | `9f7cfc9` | v7: previsor ampliado de consumo y solar (regresión del consumo, noche con el contador congelado, márgenes por cuantiles, cielo despejado en hora solar e interpolado entre meses) | 20,78 | | | | | En reserva; puede saltarse si se sube la v8 |
-| H4 | pendiente | `b0d65ee` | v8: la v7 con el margen de seguridad en 1,4 desviaciones típicas (antes 1,0) | 20,83 | | | | | En reserva. Tira la mitad de energía al descargar (2.865 kWh frente a 4.443 en validación) |
+| H3 | Sáb 14/11, 19:22 | `9f7cfc9` | v7: previsor ampliado de consumo y solar (regresión del consumo, noche con el contador congelado, márgenes por cuantiles, cielo despejado en hora solar e interpolado entre meses) | 20,78 | **24,10** | 22,86 % (13.776,6 kg) | 26,99 % (25.636,04 €) | 0 | |
+| H4 | Sáb 14/11, 19:59 | `b0d65ee` | v8: la v7 con el margen de seguridad en 1,4 desviaciones típicas (antes 1,0) | 20,83 | **24,06** | 22,88 % (13.789,2 kg) | 26,79 % (25.442,25 €) | 0 | En casa +0,05 sobre la v7; en la web −0,04 |
+| H5 | Sáb 14/11, 21:15 | `7a45e40` | v9: la v8 con la semilla de consumo y solar al empezar cada semana (otra sesión, rama `mejora-score-hard`) | 20,84 | **24,10** | 22,94 % (13.822,8 kg) | 26,82 % (25.468,67 €) | 0 | |
+| H6 | Sáb 14/11, 22:40 | `34a0f5f` | v10: la v9 con el margen 1,0 (rama `mejora-score-hard-z10`) | 20,79 | **24,15** | 22,92 % (13.809,7 kg) | 27,02 % (25.665,85 €) | 0 | **2.º de 41 equipos** (1.º: Fanboy & Chum Chum, 24,25). Mejor nota pública nuestra |
+| H7 | Dom 15/11, madrugada | `9b75248` | v12: la v10 con el plan que cuenta con la incertidumbre del consumo neto (sin margen fijo) | **20,92** | **24,11** | 22,93 % (13.815,8 kg) | 26,86 % (25.511,18 €) | 0 | En casa gana a la v10 en 6 ventanas de 6 (+0,04 a +0,13); en la web −0,04. Ver "Cómo leer el ranking público" |
 
-Las horas son las que muestra la web, que van en UTC: una hora menos que la hora local.
+Las horas son las que muestra la web, que van en UTC: una hora menos que la hora local. La v11 (margen 0,7 de
+septiembre a febrero, rama `mejora-score-hard-v11`) no se integra: en el banco pierde frente a la v10 en las tres
+ventanas (validación 20,75 frente a 20,79) y se apoya en suponer qué meses son públicos.
 
-**Decisión del equipo (sábado por la tarde): las versiones 7 y 8 se guardan en reserva** y no se envían mientras
-sigamos primeros con la v6. Ojo: el jurado solo evalúa en el ranking privado entregas enviadas y seleccionadas, así
-que la mejor versión tiene que subirse antes del cierre (como tarde, el domingo a primera hora), después de pasarle
-la validación rápida, que no gasta cupo.
+## Cómo leer el ranking público (análisis del domingo de madrugada)
+
+- **El servidor simula como nuestro banco.** El desplegable del modo difícil usa el `CampusBatteryEnv` oficial con
+  `forecast_horizon: 3` y la solar ×12, que es lo que hace `scripts/p1_hard.py` (comprobado además con
+  `scripts/p1_lab/hard_ataque_oficial.py`).
+- **El conjunto público es una mezcla de todo el año**, no las seis primeras semanas. La solar ×12 baja la referencia
+  pública un 16,1 % en CO₂ y un 20,0 % en coste (71.816 → 60.255 kg; 118.746 → 94.985 €). En el train, el año entero
+  da 16,0 % y 19,5 %; de septiembre a febrero, 12,0 % y 14,9 % (`scripts/p1_lab/hard_publico_referencias.py`). Y una
+  nota de 24 solo cuadra con una mezcla anual: en invierno el banco da unos 14 y en verano unos 26.
+- **Comparar dos versiones en el público tiene mucho ruido si el público es la mitad de las horas al azar.** Medido
+  con los registros hora a hora del banco (`scripts/p1_lab/hard_publico_ruido.py`): v12 frente a v10, desviación de
+  0,15 a 0,21 puntos; margen 1,0 frente a 1,4, de 0,08 a 0,10. Con seis semanas enteras sería de 0,02 a 0,04, y
+  entonces cuatro de nuestras comparaciones (v7–v6, v8–v7, v9–v8 y v12–v10) quedarían a entre 2 y 5 desviaciones
+  de lo que mide el banco. La lectura más sencilla es que el reparto es por horas.
+- **Consecuencia.** Las diferencias de la web entre v7, v8, v9, v10 y v12 (de 24,06 a 24,15) y la distancia al líder
+  (0,10) están dentro del ruido. Si el privado son las otras horas de la misma simulación, lo que una versión pierde
+  por azar en el público lo gana en el privado: manda la nota sobre el episodio completo, que es lo que mide el banco.
+- **Selección para el jurado: v10 (mejor nota pública) y v12 (mejor nota en el banco).**
 
 Las variantes "e" y "c" (vaciar la batería cada semana o en la hora 1.008) **no se envían**. Suben el ranking público
 en cualquier caso, porque esa carga se paga en la mitad pública y se usa en la privada, y pueden hundir el privado
@@ -63,4 +82,7 @@ Cómo se relacionan la nota de casa y la de la web (mismo agente):
 |---|---|---|
 | v2 (H1) | 20,37 | 23,35 |
 | v6 (H2) | 20,66 | 23,70 |
-| v8 (H4) | 20,83 | pendiente |
+| v7 (H3) | 20,78 | 24,10 |
+| v8 (H4) | 20,83 | 24,06 |
+| v10 (H6) | 20,79 | 24,15 |
+| v12 (H7) | 20,92 | 24,11 |

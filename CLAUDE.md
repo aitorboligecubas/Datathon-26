@@ -208,28 +208,37 @@ Dos trampas nuevas, que la organización avisa:
      despejado va en hora solar y se interpola entre meses, porque el test son los días 25–31 y el train los
      días 1–24.
    - Los festivos del campus (la Mercè, Navidad, Sant Joan) cuentan como domingo.
-3. **Margen de seguridad.** La previsión de esta hora se equivoca (la solar, unos 140 kW de día). Como descargar
-   de más es tirar energía y cargar de menos es perder excedente gratis, se descarga un poco menos de lo previsto
-   y se carga un poco más: 1,4 veces el error típico medido, por hora y por nivel de claridad. El plan ya cuenta
-   con ese margen.
+3. **El plan cuenta con la incertidumbre** (versión 12). El consumo neto de cada hora no se conoce: solo su
+   previsión y cuánto suele fallar (la solar, unos 140 kW de día). Descargar de más es tirar energía y cargar de
+   menos es perder excedente gratis. En vez de un margen fijo, el LP lleva 11 cuantiles del error medido: el primer
+   kW que se descarga se aprovecha casi seguro y el último casi nunca. Así decide solo cuánto apurar: mucho cuando
+   lo guardado vale poco (la batería se va a rellenar con excedente solar) y poco cuando vale casi como esta hora.
+4. **Memoria al empezar cada semana** (versión 9). Cada semana del test empieza justo donde acaba el train de su
+   mes, así que el previsor de consumo y solar arranca con las últimas 48 h del train. Se comprueba en la segunda
+   hora (de noche el contador está congelado) y, si no casa, se olvida.
 
 El final del test ya no se ve en la previsión (solo trae 3 horas): se sabe por calendario (31/08/2026). Si el
 servidor reiniciara la batería cada semana, el agente lo detecta y cierra cada semana vacía.
 
-| Agente (validación reservada, hard mode) | Score |
-|---|---|
-| No usar la batería | 0,00 |
-| Planificar solo con las 3 horas conocidas | 15,5 |
-| Versión 2 (primer envío) | 20,37 |
-| Versión 6 (previsor de precio y CO₂ con memoria) | 20,66 |
-| **Nuestro agente (versión 8)** | **20,83** |
-| El mismo agente con el precio y el CO₂ reales a 24 h | 21,56 |
-| Óptimo con todo el futuro conocido (techo) | 22,40 |
+| Agente (validación reservada, hard mode) | Score en casa | Score en la web |
+|---|---|---|
+| No usar la batería | 0,00 | |
+| Planificar solo con las 3 horas conocidas | 15,5 | |
+| Versión 2 (primer envío) | 20,37 | 23,35 |
+| Versión 6 (previsor de precio y CO₂ con memoria) | 20,66 | 23,70 |
+| Versión 10 (previsor ampliado de consumo y solar, semilla y margen 1,0) | 20,79 | **24,15** |
+| **Versión 12 (la 10 con el plan que cuenta con la incertidumbre)** | **20,92** | 24,11 |
+| La versión 12 con el precio y el CO₂ reales a 24 h | 21,65 | |
+| Óptimo con todo el futuro conocido (techo) | 22,40 | |
 
-**Ojo: la nota de casa y la de la web no son comparables.** La versión 2 tenía 20,37 en nuestra validación y
-sacó 23,35 en la web. La versión 6 tenía 20,66 y sacó **23,70: primeros de 32 equipos el sábado por la tarde**
-(el segundo tenía 23,50). El conjunto público es otro grupo de semanas, más favorable. Envíos y versiones:
-`docs/envios.md`.
+**Dónde estamos (domingo de madrugada): segundos de 41 equipos con la v10 (24,15); el líder tiene 24,25.**
+
+**Cómo leer la web.** La nota de casa y la de la web no son comparables en valor (el conjunto público tiene una
+referencia más baja). Y las diferencias pequeñas de la web tampoco ordenan bien las versiones: el público es una
+mezcla de horas de todo el año y, si son la mitad de las horas al azar, comparar dos versiones tiene un ruido de
+0,1 a 0,2 puntos. La v12 gana a la v10 en las seis ventanas del banco y en la web salió 0,04 por debajo. Por eso
+**se seleccionan para el jurado la v10 (mejor nota pública) y la v12 (mejor nota en el banco)**, y no se persiguen
+décimas del público con variantes. El análisis completo está en `docs/envios.md`.
 
 Antes de cada envío del modo difícil se pasa el **ataque de robustez** (`scripts/p1_lab/hard_ataque_*.py`):
 observaciones deformadas, averías del contador, calendario del test, cambio de hora, el `agent.py` empaquetado
