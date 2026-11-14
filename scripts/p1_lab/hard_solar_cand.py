@@ -43,6 +43,7 @@ Q_LOW, Q_HIGH = 0.16, 0.84   # cuantiles del margen: equivalen a 1 desviación t
 MONTH_DAYS = 30.4            # días medios de un mes, para interpolar el cielo despejado
 MIN_DAY_HOURS = 3            # horas de sol vistas hoy para que la media de hoy sirva de pista para mañana
 DEFAULT_SD = 150.0           # kW; margen si no hay tablas (como hard_solar)
+VALUE_RANK = 6               # la séptima peor hora de las últimas 24 (una descarga cubre unas 6 h de consumo medio)
 MIN_FIT_ROWS = 200           # filas mínimas para ajustar un coeficiente de la solar (si no, vale el día típico)
 HOUR_NS = 3600 * 10 ** 9
 ONE_HOUR_CAND = pd.Timedelta(hours=1)
@@ -99,11 +100,16 @@ def neighbour_month(month: int, day: float, centers) -> tuple:
 class SolarCand:
     def __init__(self, prior: Optional[dict], base, z: float = 1.0, reg: bool = True, freeze: bool = True,
                  quant: bool = True, uncap: bool = True, pvreg: bool = True, shade_now: bool = True,
-                 room: bool = False, pv_factor: float = 1.0):
+                 room: bool = False, pv_factor: float = 1.0, value_z: bool = False):
         self.base = base
         self.z = z                    # márgenes en "desviaciones típicas" (1 = cuantiles 16 % y 84 %)
         self.reg, self.freeze, self.quant, self.uncap, self.pvreg, self.shade_now = reg, freeze, quant, uncap, pvreg, shade_now
         self.room = room              # margen de la solar de las horas siguientes con el error a esa antelación
+        self.value_z = value_z        # margen al descargar según lo que vale esta hora frente a la alternativa
+        try:
+            self.w_co2, self.w_cost = float(prior["w_co2"]), float(prior["w_cost"])
+        except Exception:
+            self.w_co2, self.w_cost = 0.7 / 0.085, 0.3 / 0.138      # medias del train: solo importa la proporción
         prior = prior or {}
         try:
             self.clear = [[float(v) for v in row] for row in prior["pv_clear"]]      # [mes][hora solar], kW ya x12
@@ -135,11 +141,13 @@ class SolarCand:
         self.weather = {}
         self.new_block()
         self.net_lo0 = float("nan")     # consumo neto de esta hora menos el margen (lo usa adjust_action)
+        self.net_lo0_charge = float("nan")
         self.fresh = False              # True si forecast() ha dejado net_lo0 para esta hora
 
     def new_block(self) -> None:
         """Empieza otra semana del test (hace un mes de la anterior): lo aprendido de las últimas horas no vale."""
         self.r_hist = []                # consumo / perfil - 1 de las últimas horas; [-1] = hora anterior
+        self.w_hist = []                # peso (0,7 CO2 + 0,3 precio) de las últimas horas; [-1] = hora actual
         self.last_value = None          # fecha (ns) de la última observación, para saber si las horas son seguidas
         self.meter_down = False
         self.load_prev = float("nan")
@@ -183,6 +191,11 @@ class SolarCand:
 
     def learn(self, obs) -> None:
         load, pv, ts = obs.load_prev_kw, obs.pv_prev_kw, obs.timestamp
+        w_now = float("nan")
+        try:
+            w_now = self.w_co2 * float(obs.co2[0]) + self.w_cost * float(obs.price[0])
+        except Exception:
+            pass
         self.meter_down = load == 0.0
         self.load_prev = load if (math.isfinite(load) and load > 0) else float("nan")
         if not self.ok or ts is None:
@@ -194,6 +207,10 @@ class SolarCand:
             self.new_block()
             self.load_prev = keep
         self.last_value = value
+        if math.isfinite(w_now):
+            self.w_hist.append(w_now)
+            if len(self.w_hist) > 60:
+                del self.w_hist[:30]
         prev = ts - ONE_HOUR_CAND
         r = float("nan")
         if math.isfinite(self.load_prev):
@@ -227,6 +244,7 @@ class SolarCand:
         load, pv = self.base.forecast(obs, H)
         load, pv = np.maximum(load, 0.0), np.maximum(pv, 0.0)
         self.net_lo0, self.fresh = float(load[0] - pv[0]) - self.z * DEFAULT_SD, True
+        self.net_lo0_charge = self.net_lo0
         return load, pv
 
     def forecast_tables(self, times: list) -> tuple:
@@ -309,13 +327,30 @@ class SolarCand:
         if self.meter_down:              # contador caído (lectura 0 exacta): si sigue, descargar es tirar energía
             load[0], pv[0], margin[0] = 0.0, 0.0, 0.0
         load, pv = np.maximum(load, 0.0), np.maximum(pv, 0.0)
-        self.net_lo0 = float(load[0] - pv[0]) - self.z * float(margin[0])
+        z_now = self.discharge_z()
+        self.net_lo0 = float(load[0] - pv[0]) - z_now * float(margin[0])           # tope de la descarga
+        self.net_lo0_charge = float(load[0] - pv[0]) - self.z * float(margin[0])    # excedente que puede haber
         self.fresh = True
         # El plan cuenta ya con el margen en todas las horas (se suma a la solar; solo mueve decisiones).
         shade = self.z * margin
-        if not self.shade_now:
-            shade[0] = 0.0
+        shade[0] = z_now * float(margin[0]) if self.shade_now else 0.0
         return load, pv + shade
+
+    def discharge_z(self) -> float:
+        """Margen al descargar, en desviaciones típicas. Regla del vendedor de periódicos: si lo que no se
+        descarga ahora acabará usándose en una hora de peso mu, conviene descargar hasta el cuantil 1 - mu/w
+        del consumo neto, es decir, z = F^-1(mu / w). mu = peso de la séptima peor hora de las últimas 24:
+        una descarga completa cubre unas 6 horas de consumo medio."""
+        hist = self.w_hist
+        if not self.value_z or len(hist) < 12:
+            return self.z
+        w_now = hist[-1]
+        ranked = sorted(hist[-24:], reverse=True)
+        mu = ranked[min(VALUE_RANK, len(ranked) - 1)]
+        if not (w_now > 0 and mu > 0):
+            return self.z
+        ratio = min(max(mu / w_now, 0.5), 0.977)        # z entre 0 y 2
+        return 4.91 * (ratio ** 0.14 - (1.0 - ratio) ** 0.14)   # inversa de la normal (aproximación de Tukey)
 
     def adjust_action(self, action_kw: float, obs, p) -> float:
         """Margen de seguridad con el consumo neto de ESTA hora, que solo se conoce aproximadamente."""
@@ -333,7 +368,7 @@ class SolarCand:
                 if math.isfinite(net_prev) and net_prev > 0 and abs(d - net_prev) <= 1e-6:
                     d = limit
             return -min(d, limit)           # descargar por encima del consumo neto real es verter
-        surplus = -self.net_lo0             # excedente solar que puede llegar a haber esta hora
+        surplus = -self.net_lo0_charge      # excedente solar que puede llegar a haber esta hora
         if surplus > action_kw:
             return min(surplus, p.max_charge_kw)    # lo que no se guarde se regala a la red
         return action_kw
@@ -485,7 +520,13 @@ def fit_prior(table: pd.DataFrame, sky: bool = True) -> dict:
         load_lo.append(max(-float(np.quantile(err[sel], Q_LOW)), 0.0) + 0.0 if sel.sum() >= 20 else 0.1)
         sel = np.isfinite(r) & (hour == h)
         load_lo0.append(max(-float(np.quantile(r[sel], Q_LOW)), 0.0) if sel.sum() >= 20 else 0.2)
-    return {"sky": bool(sky), "pv_clear": clear.tolist(), "pv_mean": mean.tolist(), "pv_day": [float(v) for v in centers],
+    weights = {}
+    if "co2_kg_kwh" in T and "price_eur_kwh" in T:          # pesos del objetivo (solo importa su proporción)
+        imp = np.maximum(T.load_kw.to_numpy(float) - pv, 0.0)
+        okw = np.isfinite(imp)
+        weights = {"w_co2": 0.7 / max(float((imp * T.co2_kg_kwh.to_numpy(float))[okw].mean()), 1e-9),
+                   "w_cost": 0.3 / max(float((imp * T.price_eur_kwh.to_numpy(float))[okw].mean()), 1e-9)}
+    return {**weights, "sky": bool(sky), "pv_clear": clear.tolist(), "pv_mean": mean.tolist(), "pv_day": [float(v) for v in centers],
             "pv_a": pv_a, "pv_b": pv_b, "pv_c": pv_c, "pv_up": pv_up, "pv_up_lead": pv_up_lead, "pv_up_next": pv_up_next,
             "load_how": [float(v) for v in prof],
             "load_reg3": reg3, "load_reg1": reg1, "load_lo": load_lo, "load_lo0": load_lo0}

@@ -56,7 +56,7 @@ class TrueNet:
         for k in range(last):
             if times[k] in self.load:
                 load[k], pv[k] = self.load[times[k]], self.pv[times[k]]
-        self.inner.net_lo0 = float(load[0] - pv[0])
+        self.inner.net_lo0 = self.inner.net_lo0_charge = float(load[0] - pv[0])
         return load, pv
 
     def adjust_action(self, action_kw, obs, p):
@@ -71,6 +71,8 @@ def run(days: str, variants: list, perfect: bool, diag: bool, opts: dict) -> pd.
     fit_df = full[~full.timestamp.isin(exclude)]
     prior = bench.fit_market(exclude, fit_df)
     solar_prior = bench.fit_solar(fit_df)
+    # "base" es el agente de partida (solar sencilla): sin las tablas `cand` que el banco añade desde la v7.
+    solar_prior = {k: v for k, v in solar_prior.items() if k != "cand"}
     base = baseline_totals(df)
     w = score_weights(base["co2_kg"] / len(df), base["cost_eur"] / len(df))
     weight = w[0] * df.co2_kg_kwh.to_numpy() + w[1] * df.price_eur_kwh.to_numpy()

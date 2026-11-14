@@ -129,3 +129,30 @@ variante  score  co2_pct  coste_pct  infr  vert_descarga  vert_solar  ms_paso
     base 20.803   19.888     22.940     0       2998.460    2510.882    2.800
     cand 20.977   19.978     23.307     0       3176.207    1942.432    2.707
   oracle 22.442   21.448     24.763     0          0.000       0.000    0.010
+
+## Cada pieza sola (dev): 'nada' = candidato con todas las piezas apagadas (reproduce al agente actual)
+días 8-14 (1848 h)
+   variante  score  co2_pct  coste_pct  infr  vert_descarga  vert_solar  ms_paso
+       base 19.922   19.080     21.887     0       2674.274    2887.179    3.019
+       nada 19.926   19.062     21.942     0       2409.165    2992.708    2.699
+   solo_reg 19.990   19.125     22.009     0       1992.677    2536.797    2.917
+solo_freeze 19.925   19.061     21.940     0       2409.165    3004.885    3.002
+días 8-14 (1848 h)
+  variante  score  co2_pct  coste_pct  infr  vert_descarga  vert_solar  ms_paso
+solo_quant 19.963   19.030     22.139     0       3225.855    3239.379    3.237
+solo_uncap 19.942   19.089     21.933     0       2703.686    2992.708    3.037
+solo_pvreg 19.943   19.079     21.960     0       2242.238    2912.305    3.419
+  solo_sky 19.926   19.060     21.946     0       2426.330    3027.399    2.810
+ reg_quant 20.050   19.117     22.228     0       2674.931    3037.519    3.159
+
+## Margen según el valor de la hora ('vz'), dev y días 1-7
+días 8-14 (1848 h)
+variante  score  co2_pct  coste_pct  infr  vert_descarga  vert_solar  ms_paso
+    cand 20.073   19.150     22.227     0       3820.868    2417.312    2.707
+      vz 20.039   19.187     22.026     0       2033.955    2282.285    2.681
+     z14 20.104   19.233     22.135     0       2107.426    1851.800    2.869
+días 1-7 (1844 h)
+variante  score  co2_pct  coste_pct  infr  vert_descarga  vert_solar  ms_paso
+    cand 20.977   19.978     23.307     0       3176.207    1942.432    3.039
+      vz 20.944   20.017     23.108     0       2429.459     965.427    2.876
+     z14 20.979   20.043     23.162     0       2061.221    1206.674    2.659
