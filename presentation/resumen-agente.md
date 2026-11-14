@@ -22,9 +22,14 @@ Estrategia **cerrada** el sábado 14/11. Números de la validación con datos of
 
 ## Por qué la damos por cerrada
 
-Lo que falta hasta el techo son 0,03 puntos, y no se pueden capturar con rigor:
-- **Mirar más allá de 24 h** vale como mucho 0,01, y eso con previsiones perfectas del segundo día.
-- **Las otras 0,02** vienen de las horas de avería del contador, que no se pueden prever.
+Lo que falta hasta el techo son 0,025 puntos, y **todo está en junio, el mes de la avería del contador**
+(0,0245 de 0,0247; desglose por meses de P2, comprobado por P1). En los otros 10 meses, el agente y el óptimo
+coinciden a la diezmilésima (0,0002 entre todos).
+- **Mirar más allá de 24 h no vale nada:** fuera de la avería no queda distancia que cerrar.
+- **La avería no se puede prever:** su primera hora llega sin aviso y, mientras dura, no hay consumo que cubrir.
+
+(Una versión anterior de este resumen atribuía 0,01 al horizonte de 24 h. Era una lectura errónea de la variante
+"con consumo real", que tampoco puede recolocar la descarga perdida durante la avería.)
 
 Cualquier "mejora" de ese tamaño sería ajustarse a la validación. Preferimos una solución sin parámetros que
 podamos explicar entera.

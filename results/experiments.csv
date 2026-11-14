@@ -28,3 +28,5 @@ fecha_utc,rama,commit,agente,datos,fc_noise,pasos,score,d_co2_pct,d_cost_pct,inf
 2026-11-14 12:15,p2-datos,ead275e,mpc,oficiales,0.0,1848,6.090,5.734,6.922,0,3.94,P2: no descargar si el contador marcó 0 la hora anterior (fallo de comunicación)
 2026-11-14 12:15,p2-datos,ead275e,oracle,oficiales,0.0,1848,6.115,5.778,6.902,0,0.05,P2: no descargar si el contador marcó 0 la hora anterior (fallo de comunicación)
 2026-11-14 12:19,p2-datos,dba422f,mpc,oficiales,0.0,1848,6.090,5.734,6.922,0,3.72,"P2 fase 1: datos, patrones y regla de fallo del contador (PR)"
+2026-11-14 12:52,p2-datos,4c9f321,mpc,oficiales,0.0,1848,6.090,5.734,6.922,0,3.70,P2: resumen de gráficas e informe para P1 (sin cambios de código empaquetado)
+2026-11-14 12:55,p1-optimizador,7cd5a63,mpc,oficiales,0.0,1848,6.090,5.734,6.922,0,4.45,Integración P1+P2: adaptador robusto a arrays

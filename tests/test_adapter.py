@@ -40,3 +40,23 @@ def test_end_of_data_and_missing_fields():
     raw["noves_dades_5min"] = None
     obs = from_official(raw)
     assert np.isnan(obs.load_prev_kw) and np.isnan(obs.pv_prev_kw)
+
+
+def test_forecasts_as_list_tuple_array_or_series():
+    """El servidor podría pasar las previsiones como array o Series: el agente tiene que actuar igual."""
+    from battery.policy import BatteryAgent
+
+    price = np.r_[np.full(4, 0.05), np.full(20, 0.30)]      # barato ahora: hay que cargar
+    base = make_official_obs(pd.Timestamp("2025-03-26 03:00"), 200.0, price, price, 900.0, 0.0)
+    actions = []
+    for conv in (list, tuple, np.array, pd.Series):
+        raw = dict(base, preus_properes_24h=conv(price), co2_properes_24h=conv(price))
+        assert len(from_official(raw).price) == 24
+        actions.append(BatteryAgent().act(raw))
+    assert actions[0] > 0 and max(actions) - min(actions) < 1e-9
+    for empty in ([], None, np.array([])):
+        raw = dict(base, preus_properes_24h=empty, co2_properes_24h=empty)
+        assert list(from_official(raw).price) == [price[0]]
+    for odd in (None, pd.DataFrame({"x": [1]}), "texto"):   # lecturas en un formato inesperado: sin romper
+        obs = from_official(dict(base, noves_dades_5min=odd))
+        assert np.isnan(obs.load_prev_kw)
