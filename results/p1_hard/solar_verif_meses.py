@@ -100,8 +100,15 @@ def run(split: str, make, piezas: bool):
     soc_a = pd.Series(logs["partida (v6)"].soc_kwh.to_numpy(float), index=ts).groupby(month).last()
     soc_b = pd.Series(logs["CANDIDATO"].soc_kwh.to_numpy(float), index=ts).groupby(month).last()
     pm["carga_fin_partida"], pm["carga_fin_cand"] = soc_a, soc_b
+    # Lo que un agente deja de más en la batería al acabar un mes lo ha pagado ese mes y lo cobra el siguiente.
+    # "dif_ajustada" lo devuelve al mes que lo pagó, valorado al peso medio de compra (con el rendimiento de descarga).
+    v_kwh = float((0.7 * co2 / base["co2_kg"] + 0.3 * price / base["cost_eur"]).mean()) * 100 * 0.9487
+    extra = (soc_b - soc_a)
+    pm["dif_ajustada"] = pm.dif + v_kwh * (extra - extra.shift(1).fillna(0.0))
     print("\nPor meses (parte del score; la suma es el score):")
     print(pm.round(4).to_string())
+    print(f"meses que gana con la diferencia ajustada por la carga de fin de mes: {int((pm.dif_ajustada > 0).sum())} de {len(pm)} "
+          f"(suma {pm.dif_ajustada.sum():+.4f})")
     n_win = int((pm.dif > 0).sum())
     se = pm.dif.std(ddof=1) / np.sqrt(len(pm))
     print(f"meses que gana el candidato: {n_win} de {len(pm)} | suma {pm.dif.sum():+.4f} | media por mes {pm.dif.mean():+.4f} "
