@@ -196,3 +196,22 @@ determinismo: dev dos veces -> 19.719496338322887 y 19.922437774251165 las dos (
 tiempo: banco s_2016h entre 4,8 y 6,0 s (límite propio 15 s) | previsor 0,20 ms por llamada (base 0,14) | la memoria se monta 1 vez (14-16 ms) con el calendario del test
 peor caso (fechas que alternan entre 2025 y 2031 en cada paso): 7,3 ms por llamada -> +14,7 s en 2.016 pasos; sin salidas malas
 coeficientes de la regresión: máx |coef| 0,97 (precio) y 1,29 (CO2); desviaciones de la semilla entre -1,11 y +0,82 (nada recortado a +-2)
+
+==============================================================================================================
+10. Por mitades del episodio, cada una con su referencia (como el ranking público y el privado). Código: commit 4a2af81
+  orden: python results/p1_hard/mercado_verif_meses.py --ventanas dev,val,15-21,10-16
+==============================================================================================================
+dev   : primera mitad v4 15.016 -> candidato 15.216 (+0.201) | segunda mitad v4 25.127 -> candidato 25.331 (+0.205)
+val   : primera mitad v4 14.518 -> candidato 14.715 (+0.198) | segunda mitad v4 26.959 -> candidato 26.976 (+0.016)
+15-21 : primera mitad v4 13.722 -> candidato 13.854 (+0.132) | segunda mitad v4 24.346 -> candidato 24.423 (+0.077)
+10-16 : primera mitad v4 14.537 -> candidato 14.607 (+0.070) | segunda mitad v4 24.948 -> candidato 24.975 (+0.027)
+(primera mitad = septiembre a febrero; segunda = marzo a agosto. En val casi toda la ganancia está en la primera.)
+
+==============================================================================================================
+11. Repetido con el agente v6 (commit e8dab4c, 18:41: cambia la política, no el previsor). La ganancia no cambia
+==============================================================================================================
+dev  (18:42): mercado sin memoria (v4) 19.719 -> CANDIDATO 19.922 (+0.203) | 0 infracciones | s_2016h 5.9
+val  (18:37): mercado sin memoria (v4) 20.551 -> CANDIDATO 20.661 (+0.109) | 0 infracciones | s_2016h 5.0
+calendario del test (18:42): v4 18.586 -> candidato 18.736 (+0.151) | sin semilla +0.120 | gana 7 meses, pierde 2 (por 0,002 o menos), de 10
+calendario del test con noviembre a 0 (18:42): v4 18.766 -> candidato 18.880 (+0.114) | sin semilla +0.094
+(con la v6, julio ya no cuenta como final del test: en estos dos episodios, que acaban el 31/07, los cuatro agentes acaban con 2.379 kWh sin usar)
