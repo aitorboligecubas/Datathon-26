@@ -26,7 +26,26 @@ def zf(z, zp=None):
     return f
 
 
-VARS = {"z1.4": zf(1.4), "z1.0": zf(1.0), "z0.7": zf(0.7), "z1.2": zf(1.2)}
+def v10(prior, sp, ex):
+    a = bench.hard_agent(prior, sp)
+    a.policy.netload.z_by_month = None
+    a.policy.netload.z = a.policy.netload.z_plan = 1.0
+    return a
+
+
+def v11(z_inv):
+    def f(prior, sp, ex):
+        a = bench.hard_agent(prior, sp)
+        a.policy.netload.z_by_month = {m: z_inv for m in (9, 10, 11, 12, 1, 2)}
+        return a
+    return f
+
+
+import os
+if os.environ.get("MESES_V11"):
+    VARS = {"z1.4": v10, "inv0.7": v11(0.7), "inv0.5": v11(0.5)}     # "z1.4" = referencia (aquí, la v10)
+else:
+    VARS = {"z1.4": zf(1.4), "z1.0": zf(1.0), "z0.7": zf(0.7), "z1.2": zf(1.2)}
 
 
 def run(args):

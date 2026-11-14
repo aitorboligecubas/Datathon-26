@@ -238,6 +238,10 @@ Z_SOLAR = 1.0
 # que el de la acción (1,4). Rama mejora-score-hard: 2,0 ganaba en validación (+0,031) pero en 9 ventanas solo
 # +0,001 de media sobre la semilla y -0,027 en el episodio con el calendario del test: no se cambia.
 Z_PLAN_SOLAR = Z_SOLAR
+# v11: margen por mes. En las semanas de septiembre a febrero (la mitad pública del test) el ranking público, con los
+# datos reales, ha premiado dos veces seguidas un margen más bajo (1,4 -> 1,0: +0,04 y +0,05). De marzo a agosto
+# (la mitad privada) se deja el de la v10. Un mes que no esté aquí usa Z_SOLAR.
+Z_SOLAR_BY_MONTH = {9: 0.7, 10: 0.7, 11: 0.7, 12: 0.7, 1: 0.7, 2: 0.7}
 
 
 class SolarCand:
@@ -262,6 +266,8 @@ class SolarCand:
         self.base = base
         self.z = z                    # márgenes en "desviaciones típicas" (1 = cuantiles 16 % y 84 %)
         self.z_plan = Z_PLAN_SOLAR    # margen de las horas siguientes en el plan
+        self.z_default = z
+        self.z_by_month = dict(Z_SOLAR_BY_MONTH) if Z_SOLAR_BY_MONTH else None   # None: margen fijo
         self.reg, self.freeze, self.quant, self.uncap, self.pvreg, self.shade_now = reg, freeze, quant, uncap, pvreg, shade_now
         self.room = room              # margen de la solar de las horas siguientes con el error a esa antelación
         self.value_z = value_z        # margen al descargar según lo que vale esta hora frente a la alternativa
@@ -406,6 +412,8 @@ class SolarCand:
     def forecast_tables(self, times: list) -> tuple:
         H = len(times)
         now = times[0]
+        if self.z_by_month is not None:
+            self.z = self.z_plan = float(self.z_by_month.get(now.month, self.z_default))
         v0 = now.value
         hist = self.r_hist
         n = len(hist)
