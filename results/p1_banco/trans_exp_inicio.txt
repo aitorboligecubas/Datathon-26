@@ -1,0 +1,22 @@
+inicios de semana: 360 en 30 episodios; el plan normal quiere descargar en 81 (22 %)
+coste de no descargar nunca en la primera hora, por episodio normal: 0.00471 puntos
+cuando quiere descargar: gana_N media 0.00175, mediana 0.00138, máx 0.00847 | pierde_Z media 0.01152
+   con p0 = 0.083: descargaría a ciegas en 48 de 81; coste en semanas normales de los que se abstiene: 0.00060 por episodio
+   con p0 = 0.143: descargaría a ciegas en 23 de 81; coste en semanas normales de los que se abstiene: 0.00185 por episodio
+   con p0 = 0.250: descargaría a ciegas en 5 de 81; coste en semanas normales de los que se abstiene: 0.00355 por episodio
+   con p0 = 0.500: descargaría a ciegas en 0 de 81; coste en semanas normales de los que se abstiene: 0.00471 por episodio
+      n  quiere   gana_N  pierde_Z
+mes                               
+1    30       8  0.00613   0.00209
+2    30       0  0.00000   0.00000
+3    30      18  0.02159   0.00783
+4    30       0 -0.00000   0.00000
+5    30       3  0.00261   0.00114
+6    30       8  0.01895   0.00281
+7    30      16  0.05134   0.00571
+8    30       2  0.00071   0.00057
+9    30      14  0.02130   0.00585
+10   30       1  0.00071   0.00041
+11   30       3  0.00271   0.00126
+12   30       8  0.01530   0.00344
+

@@ -39,6 +39,7 @@ def make_custom(seed, fam):
     averia_x   una avería en 6 semanas distintas, de 1, 3, 6, 14, 30 y 60 h (orden y posición al azar)
     parcial_x  4 semanas que empiezan a 0 y recuperan el consumo entre la hora 24 y la 120
     cae_x      4 semanas en las que el contador cae entre la hora 30 y la 140 y ya no vuelve
+    normal_x   episodio normal (sin semanas a 0), para comprobar que una pieza no cambia nada donde no debe
     """
     df = make_episode(seed, "normal")
     rng = np.random.default_rng(100000 + seed)
@@ -58,6 +59,8 @@ def make_custom(seed, fam):
     elif fam == "cae_x":
         for i in [1, 4, 7, 10]:
             zero(i, int(rng.integers(30, 141)), week)
+    elif fam == "normal_x":
+        pass                                  # episodio normal del banco, con otras semillas
     else:
         raise ValueError(fam)
     return df

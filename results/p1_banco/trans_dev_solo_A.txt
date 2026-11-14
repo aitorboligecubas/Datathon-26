@@ -1,0 +1,17 @@
+suite dev, agente scripts/p1_lab/cand_trans.py:solo_A: 30 episodios en 73 s
+familia      n    score   mitad1   mitad2  a óptimo  m1 a ópt  m2 a ópt  infr  vertido  t máx
+averia       9   6.1041   5.0563   7.1977    0.0216    0.0190    0.0254     0      187    5.0
+cero_otra    3   6.0376   4.7195   7.2089    0.0054    0.0112   -0.0002     0        1    5.0
+dos_ceros    3   6.3160   4.9101   7.5279    0.0447    0.0874    0.0298     0       61    5.1
+nov0        12   6.2022   5.2574   7.0016    0.0324    0.0681    0.0026     0      206    5.0
+parcial      3   6.1604   4.7832   7.3644    0.0531    0.1167    0.0019     0       37    4.2
+TODOS       30   6.1635   5.0612   7.1701    0.0297    0.0545    0.0118     0      149    5.1
+
+Diferencia con la referencia, episodio a episodio (30 comunes): media [mín, máx]
+averia     score +0.0000 [+0.0000, +0.0000]   mitad1 +0.0000 [+0.0000, +0.0000]   mitad2 -0.0000 [-0.0000, +0.0000]
+cero_otra  score +0.0000 [+0.0000, +0.0000]   mitad1 +0.0000 [+0.0000, +0.0000]   mitad2 +0.0000 [+0.0000, +0.0000]
+dos_ceros  score +0.0170 [+0.0117, +0.0216]   mitad1 +0.0350 [+0.0000, +0.0602]   mitad2 +0.0092 [+0.0000, +0.0276]
+nov0       score -0.0007 [-0.0038, +0.0021]   mitad1 -0.0015 [-0.0082, +0.0045]   mitad2 +0.0000 [+0.0000, +0.0000]
+parcial    score +0.0000 [+0.0000, +0.0000]   mitad1 -0.0000 [-0.0000, +0.0000]   mitad2 +0.0000 [+0.0000, +0.0000]
+TODOS      score +0.0014 [-0.0038, +0.0216]   mitad1 +0.0029 [-0.0082, +0.0602]   mitad2 +0.0009 [-0.0000, +0.0276]
+guardado en results/p1_banco/trans_dev_solo_A.csv

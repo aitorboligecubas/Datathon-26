@@ -1,0 +1,6 @@
+imports: ['battery', 'collections', 'math', 'numpy', 'pathlib', 'sys'] | todos permitidos 
+validación  candidato 6.09046  actual 6.09046  dif +0.00000  infr 0  tiempo 3.9 s (2.09 ms/paso)
+            determinista: sí
+train       candidato 5.54349  actual 5.54349  dif +0.00000  infr 0  tiempo 9.7 s (2.35 ms/paso)
+todo        candidato 5.66689  actual 5.66689  dif +0.00000  infr 0  tiempo 13.7 s (2.29 ms/paso)
+peor diferencia en datos estándar: +0.00000

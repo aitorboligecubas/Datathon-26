@@ -1,6 +1,6 @@
 """Candidato "trans": transiciones y creencias sobre cuánto dura un contador a 0.
 
-Parte de MPCPolicy (el agente actual, "v2") y cambia cuatro piezas. Cada una tiene su interruptor para
+Parte de MPCPolicy (el agente actual, "v2") y cambia cinco piezas. Cada una tiene su interruptor para
 poder medirla sola (números en results/p1_banco/trans_notas.md):
 
 A. CARRY_ZERO: la racha a 0 no se corta al cambiar de semana.
@@ -21,6 +21,11 @@ E. LINDY: en una avería corta a media semana, el consumo vuelve "probablemente"
    v2 planifica como si el consumo volviese seguro en la hora siguiente, y compra de madrugada para un
    pico de la mañana que, si la avería sigue, no se puede cubrir. Aquí, tras z horas a 0, la probabilidad
    de poder descargar dentro de k horas es k / (z + k), y el LP recibe la descarga esperada.
+
+G. RESET_ERR: al cambiar de semana, el previsor olvida el error de la última hora de la semana anterior.
+   v2 ya no usa esa lectura (es de otro mes), pero el previsor seguía sumando su corrección por
+   persistencia: tras la semana de Navidad, la previsión de la primera hora de enero quedaba en ~220 kW
+   (real: 1.104) y el agente descargaba 220 kW en vez de 471. v1 no lo sufría.
 
 Probado y NO adoptado (queda el interruptor para reproducir los números):
 D. PATIENCE = "half": contar solo con la mitad de los días que quedan para comprar. Cuesta 0,0007 en nov0
@@ -51,6 +56,7 @@ class TransPolicy(MPCPolicy):
     POOL_DAYS = 7           # C (v2: 35)
     PATIENCE = "full"       # D, no adoptada: "full" (v2) | "half" | "one"
     LINDY = True            # E: tras z horas de avería a media semana, P(poder descargar en k horas) = k/(z+k)
+    RESET_ERR = True        # G: el previsor olvida el error de la semana anterior al cambiar de semana
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -98,6 +104,13 @@ class TransPolicy(MPCPolicy):
             # Primera hora de una semana nueva y la anterior acabó con consumo: esa lectura es de hace
             # un mes y no sirve ni de previsión ni de tope.
             obs = obs._replace(load_prev_kw=NAN, pv_prev_kw=NAN)
+            if self.RESET_ERR:
+                # La corrección por persistencia del previsor es el error de la última hora de la semana
+                # anterior (otro mes): tras Navidad deja la previsión de la primera hora de enero en ~220 kW.
+                try:
+                    self.forecaster.err_load, self.forecaster.err_pv = 0.0, 0.0
+                except Exception:
+                    pass
         try:
             self.note_weight(obs)
         except Exception:
@@ -201,7 +214,7 @@ def make_agent():
 
 
 # Variantes para las ablaciones (scripts/p1_banco.py --agent scripts/p1_lab/cand_trans.py:solo_A, etc.)
-V2 = dict(CARRY_ZERO=False, FIRST_READING=False, POOL_DAYS=35, PATIENCE="full", LINDY=False)
+V2 = dict(CARRY_ZERO=False, FIRST_READING=False, POOL_DAYS=35, PATIENCE="full", LINDY=False, RESET_ERR=False)
 
 
 def como_v2():
@@ -238,6 +251,14 @@ def sin_C():
 
 def sin_E():
     return variant(LINDY=False)()
+
+
+def solo_G():
+    return variant(**dict(V2, RESET_ERR=True))()
+
+
+def sin_G():
+    return variant(RESET_ERR=False)()
 
 
 def con_D():
