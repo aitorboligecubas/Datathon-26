@@ -42,17 +42,29 @@ def _to_timestamp(x: Any):
         return None
 
 
+def _to_series(x: Any, fallback: float) -> np.ndarray:
+    """Lista, tupla, array de numpy o Series de pandas -> array 1-D; vacío o None -> [fallback].
+
+    El simulador local pasa listas, pero el servidor podría pasar arrays: con `x or [...]` un array
+    lanzaría ValueError y el agente se quedaría parado todo el test sin avisar.
+    """
+    if x is None:
+        return np.asarray([fallback], dtype=float)
+    arr = np.asarray(x, dtype=float).ravel()
+    return arr if arr.size else np.asarray([fallback], dtype=float)
+
+
 def from_official(raw: Mapping[str, Any]) -> Obs:
     """Diccionario oficial -> Obs interna."""
     price_now = _to_float(raw["preu_actual"])
     co2_now = _to_float(raw["co2_actual"])
-    price = np.asarray(raw.get("preus_properes_24h") or [price_now], dtype=float)
-    co2 = np.asarray(raw.get("co2_properes_24h") or [co2_now], dtype=float)
+    price = _to_series(raw.get("preus_properes_24h"), price_now)
+    co2 = _to_series(raw.get("co2_properes_24h"), co2_now)
     n = min(len(price), len(co2))
     price, co2 = price[:n].copy(), co2[:n].copy()
     price[0], co2[0] = price_now, co2_now
-    recent = raw.get("noves_dades_5min") or {}
-    if not isinstance(recent, Mapping):
+    recent = raw.get("noves_dades_5min")
+    if not isinstance(recent, Mapping):   # None, o un formato inesperado: seguimos sin esas lecturas
         recent = {}
     return Obs(
         hour=int(raw["hour"]),

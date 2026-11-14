@@ -7,6 +7,7 @@ Borrador de P1 con el material de P1 (`presentation/resumen-agente.md`, `results
   de las demos: si son 3 minutos, se quitan los bloques marcados con ✂.
 - **Quién habla:** por decidir. Propuesta: Aitor los bloques 1, 3 y 4; Ivan los bloques 2, 5 y 6.
 - **Pendiente antes de ensayar:** poner la puntuación del leaderboard en el bloque 4 (todavía no hay envío oficial).
+- **Gráficas:** las 11 de P2, ordenadas por bloque y con la cifra que hay que decir, en `analysis/resumen_graficas.md`.
 
 ---
 
@@ -21,8 +22,8 @@ Borrador de P1 con el material de P1 (`presentation/resumen-agente.md`, `results
 
 **Slide:** foto del campus + tres cifras: 27 MWh al día · 805 t de CO₂ al año · 1,38 M€ al año.
 
-> El Campus Nord compra a la red casi toda su electricidad: 27 megavatios hora cada día, 805 toneladas de CO₂ y
-> 1,4 millones de euros al año. Las placas solares cubren apenas un 2 %.
+> El Campus Nord compra a la red casi toda su electricidad: según su contador, 27 megavatios hora cada día,
+> 805 toneladas de CO₂ y 1,4 millones de euros al año. Las placas solares cubren apenas un 2 %.
 >
 > UPC Sostenible quiere instalar una batería de 2 megavatios hora. Nuestra tarea: decidir cada hora si carga,
 > descarga o espera, para emitir menos y pagar menos.
@@ -38,7 +39,7 @@ Borrador de P1 con el material de P1 (`presentation/resumen-agente.md`, `results
 > comprar de más a mediodía para comprar de menos al anochecer.
 >
 > Pero la batería pierde un 10 % en cada ida y vuelta. Mover energía solo compensa si la hora mala es al menos
-> un 11 % peor que la buena. Todos los días del año lo es.
+> un 11 % peor que la buena. Lo es todos los días de los datos.
 
 ✂ **Si hay tiempo (15 s):** `analysis/figs/patrones_conflicto.png`.
 
@@ -47,7 +48,8 @@ Borrador de P1 con el material de P1 (`presentation/resumen-agente.md`, `results
 
 ## 3. Nuestro agente (60 s)
 
-**Slide:** esquema del GPS: "planifico 24 h → ejecuto 1 h → vuelvo a planificar".
+**Slide:** esquema del GPS: "planifico 24 h → ejecuto 1 h → vuelvo a planificar" + `analysis/figs/resultados_semana_tipo.png`
+(una semana de julio: cuándo carga y cuándo descarga).
 
 > Nuestro agente funciona como un GPS. Cada hora calcula el plan óptimo para las próximas 24 horas, ejecuta solo
 > el primer paso y, una hora después, recalcula.
@@ -63,7 +65,8 @@ Borrador de P1 con el material de P1 (`presentation/resumen-agente.md`, `results
 
 ## 4. Resultados (50 s)
 
-**Slide:** barras: plantilla oficial 0,03 · reglas simples 0,08 · **nuestro agente 6,09** · máximo teórico 6,12.
+**Slide:** `analysis/figs/resultados_estrategias.png` (plantilla oficial 0,03 · reglas simples 0,08 ·
+**nuestro agente 6,09** · máximo teórico 6,12).
 
 > Para saber si es bueno, calculamos lo imposible: el plan perfecto de alguien que conociera todo el futuro.
 > Ese máximo es 6,12. Nuestro agente saca **6,09: el 99,6 %**. La plantilla oficial, 0,03.
@@ -84,10 +87,12 @@ Borrador de P1 con el material de P1 (`presentation/resumen-agente.md`, `results
 
 > Esas tres centésimas que faltan tienen nombre: una avería. El 17 de junio el contador perdió la comunicación y
 > marcó cero durante 14 horas. El agente descargaba la batería contra un consumo que "no existía". Añadimos una
-> protección: nunca descarga más de lo que el campus consumió la hora anterior.
+> protección: nunca descarga más de lo que el campus consumió la hora anterior. En los otros diez meses, nuestro
+> agente y el óptimo coinciden.
 >
 > Y un hallazgo para UPC Sostenible: de diez de la noche a seis de la mañana el contador no se lee, y el dataset
-> repite el último valor. El consumo nocturno real es un 19 % menor de lo que dicen los datos.
+> repite el último valor. El consumo nocturno real es un 19 % menor de lo que dicen los datos: el campus gasta
+> en realidad unos 25 megavatios hora al día, no 27.
 
 **Transparencia (decirlo siempre):**
 
@@ -99,7 +104,7 @@ Borrador de P1 con el material de P1 (`presentation/resumen-agente.md`, `results
 **Slide:** `analysis/figs/escenarios_ahorro.png` + "4 MWh · 1.000 kW".
 
 > ¿Por qué solo un 6 %? Porque el techo lo pone el tamaño de la batería, no el algoritmo: 2 megavatios hora son
-> el 7 % del consumo diario.
+> casi el 8 % del consumo diario.
 >
 > Esta batería evita **43 toneladas de CO₂ y 92.000 euros al año**. Con el doble, 4 megavatios hora y
 > 1.000 kilovatios, el ahorro se duplica. A partir de ahí cada megavatio hora añadido rinde cada vez menos,
@@ -138,6 +143,6 @@ Quitar los dos bloques ✂ y, además:
 | Doble de sucia y triple de cara a las 21 h; conflicto de madrugada | `analysis/patrones.md` |
 | 6,09 / 6,12 / 99,6 %; 99,97 % en el train; 6,01 con ruido del 20 %; 4 s | `results/p1_ablaciones.md` |
 | Plantilla oficial 0,03 (con 7 infracciones) | `python scripts/calibrate_sim.py` |
-| Avería de 14 h; consumo nocturno un 19 % menor | `analysis/calidad_datos.md` |
-| Batería = 7 % del consumo diario | `analysis/techo.md` |
+| Avería de 14 h; en los otros 10 meses el agente iguala al óptimo; consumo nocturno un 19 % menor | `analysis/calidad_datos.md` |
+| Batería = casi el 8 % del consumo diario (7,6 %); consumo real de 24,7 MWh al día | `analysis/techo.md`, `analysis/informe_p2_para_p1.md` |
 | La solar equivale a un 2 % de lo que se compra a la red (2,4 %) | tabla horaria oficial (`battery.data.load`) |
