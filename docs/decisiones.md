@@ -18,3 +18,4 @@ Al jurado le interesa tanto el razonamiento como el resultado.
 | Sáb 14/11 | Mantener el valor de la carga al final del horizonte aunque no aporte | quitarlo | 0,00 de diferencia con cualquier valor (cuantil 0 a 1): el plan de 24 h ya fija la primera hora | P1 |
 | Sáb 14/11 | No invertir en prever el consumo | GBDT de demanda | previsión propia frente a una plana de 1.000 kW: 0,00; con el consumo real: +0,02 | P1 |
 | Sáb 14/11 | La duda "seguido o por semanas" no es un riesgo | — | por semanas: mpc 6,47 / oracle 6,49, 0 infracciones. Con ruido del 20 % en precio y CO₂: 6,01. Train: 5,54 / 5,54 | P1 |
+| Sáb 14/11 | **Estrategia cerrada.** No añadir previsión de precio/CO₂ más allá de 24 h | horizonte de 48 h con un modelo de previsión | con consumo real y horizonte de 24 h: 6,11; óptimo con todo el futuro: 6,12 → ver más lejos vale como mucho 0,01. Resumen en `presentation/resumen-agente.md` | P1 |
