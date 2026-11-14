@@ -16,6 +16,9 @@ Estrategia **cerrada** el sábado 14/11. Números de la validación con datos of
    anterior, para no tirar energía si el contador se avería (pasó 14 horas seguidas en los datos).
    Esta protección tiene dos capas: la previsión de P2 no espera consumo si el contador marcó 0, y la política
    de P1 pone el tope aunque la previsión falle.
+   Y reconoce una **semana sin datos de contador** (el contador a 0 desde su primera hora, como noviembre
+   en el train): no descarga y compra la carga de la semana siguiente en una hora barata, con un precio de
+   reserva. En un episodio simulado con noviembre a cero vale 0,06 puntos.
 5. **Está al 99,6 % del máximo teórico y aguanta.** Saca 6,09 frente a 6,12 del óptimo con todo el futuro conocido.
    En el train, 5,54 de 5,54. Si el servidor evaluase por semanas, 6,47 de 6,49. Con un 20 % de ruido en las
    previsiones, 6,01. Tarda 4 segundos de los 60 permitidos.

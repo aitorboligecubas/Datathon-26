@@ -8,7 +8,9 @@ solo fichero, quitando los imports relativos, y comprobamos:
   1. Que solo se importan librerías permitidas.
   2. Que dos módulos no definen el mismo nombre (se pisarían al concatenar).
   3. Que el ZIP (agent.py + artefactos de models/ en la raíz) pesa <= 25 MB.
-  4. Que dist/agent.py, ejecutado aislado del repo, da las mismas acciones que src/.
+  4. Que dist/agent.py, ejecutado aislado del repo, da las mismas acciones que src/,
+     con los ficheros auxiliares del ZIP y también SIN ellos (el contenido de models/*.json va
+     además incrustado en agent.py, por si el servidor no encontrara los ficheros).
   5. Que pasa oficial/starter_kit/check_submission.py (si tenéis el ZIP oficial descomprimido).
 
 Uso:
@@ -128,10 +130,75 @@ def bundle() -> str:
         body = "\n".join(l for i, l in enumerate(lines) if i not in drop).strip("\n")
         bodies.append(f"# {'=' * 70}\n# {mod}.py\n# {'=' * 70}\n{body}\n")
 
-    header = ('"""BatteryAgent — Datathon FME 2026, reto UPC Sostenible.\n\n'
-              "FICHERO GENERADO por scripts/build_submission.py a partir de src/battery/.\n"
-              'No lo editéis a mano: cambiad src/battery/ y volved a generarlo.\n"""\n')
-    return header + "\n".join(import_lines) + "\n\n\n" + "\n\n".join(bodies)
+    code = HEADER + "\n".join(import_lines) + "\n\n\n" + "\n\n".join(bodies)
+    return embed_models(code)
+
+
+HEADER = '''"""BatteryAgent — Reto UPC Sostenible, Datathon FME 2026. Equipo SanHackobos.
+
+QUÉ HACE
+    Cada hora decide cuánto carga (+) o descarga (-) la batería del campus, en kW.
+    Funciona como un GPS: planifica las próximas 24 horas, ejecuta solo la primera y, una hora
+    después, vuelve a planificar con la información nueva (control predictivo, MPC).
+
+CÓMO DECIDE
+    El plan de 24 horas es un problema de programación lineal (LP, solver HiGHS de scipy) que
+    minimiza exactamente lo que puntúa el reto,
+        suma de  compra_a_la_red(h) * ( 0,70 * CO2(h) / CO2_ref  +  0,30 * precio(h) / coste_ref ),
+    con la física real de la batería: 2.000 kWh, 500 kW y rendimiento sqrt(0,9) en cada sentido.
+    El precio y el CO2 de las próximas 24 horas los da el entorno; el consumo se prevé con un perfil
+    por hora de la semana corregido con la última lectura. No hay parámetros ajustados a mano.
+
+PROTECCIONES
+    - Cero infracciones: toda acción se recorta a lo físicamente posible (safety.clip_action).
+    - Avería del contador: si la última lectura de consumo es 0, no se descarga (sería tirar energía).
+    - Final de los datos: cuando la previsión llega recortada, se gasta la carga que queda,
+      porque la carga final no puntúa.
+    - El agente nunca lanza una excepción: ante cualquier error devuelve una acción segura.
+
+ESTRUCTURA DE ESTE FICHERO (un bloque por módulo de src/battery/)
+    params      constantes del reto y de la batería
+    obs         la observación en nuestro formato interno
+    adapter     traduce el diccionario oficial `obs` a ese formato
+    safety      límites físicos de la batería
+    forecaster  previsión de consumo y de producción solar
+    optimizer   el LP de 24 horas
+    policy      el MPC y la clase BatteryAgent que llama el evaluador
+
+FICHERO GENERADO por scripts/build_submission.py a partir de src/battery/.
+No lo editéis a mano: cambiad src/battery/ y volved a generarlo.
+Repositorio: https://github.com/aitorboligecubas/Datathon-26
+"""
+'''
+EMBED_MARK = "EMBEDDED_MODELS = {}"
+
+
+def _finite(obj) -> bool:
+    if isinstance(obj, dict):
+        return all(_finite(v) for v in obj.values())
+    if isinstance(obj, (list, tuple)):
+        return all(_finite(v) for v in obj)
+    if isinstance(obj, float):
+        return obj == obj and abs(obj) != float("inf")
+    return isinstance(obj, (int, str, bool)) or obj is None
+
+
+def embed_models(code: str) -> str:
+    """Copia models/*.json dentro de agent.py (EMBEDDED_MODELS), como respaldo de los ficheros."""
+    if code.count(EMBED_MARK) != 1:
+        raise BundleError(f"no encuentro la línea '{EMBED_MARK}' (una sola vez) para incrustar los modelos")
+    models = {}
+    for f in model_files():
+        if f.suffix == ".json":
+            data = json.loads(f.read_text(encoding="utf-8"))
+            if not _finite(data):
+                raise BundleError(f"{f.name} tiene valores no finitos: no se puede incrustar")
+            models[f.name] = data
+    lines = ["EMBEDDED_MODELS = {"]
+    for name, data in models.items():
+        lines.append(f"    {name!r}: {data!r},")
+    lines.append("}")
+    return code.replace(EMBED_MARK, "\n".join(lines))
 
 
 def model_files() -> list:
@@ -176,15 +243,21 @@ def smoke_test(zip_path: Path, n: int = 72) -> None:
             z.extractall(tmp)
         with open(Path(tmp, "obs.pkl"), "wb") as fh:
             pickle.dump(obs_list, fh)
-        out = subprocess.run([sys.executable, "-I", "-c", SMOKE_CHILD], cwd=tmp,
-                             capture_output=True, text=True, timeout=120)
-        if out.returncode != 0:
-            raise BundleError("dist/agent.py falla ejecutado aislado:\n" + out.stderr[-3000:])
-        got = json.loads(out.stdout.strip().splitlines()[-1])
-    diff = max(abs(a - b) for a, b in zip(got, ref))
-    if diff > 1e-6:
-        raise BundleError(f"dist/agent.py no da las mismas acciones que src/ (dif. máx. {diff:.3g})")
-    print(f"  prueba aislada OK: {n} pasos, mismas acciones que src/ (dif. máx. {diff:.1e})")
+        for label in ("con los ficheros del ZIP", "sin ficheros auxiliares"):
+            if label.startswith("sin"):
+                for f in Path(tmp).iterdir():
+                    if f.name not in ("agent.py", "obs.pkl"):
+                        f.unlink()
+            out = subprocess.run([sys.executable, "-I", "-c", SMOKE_CHILD], cwd=tmp,
+                                 capture_output=True, text=True, timeout=120)
+            if out.returncode != 0:
+                raise BundleError(f"dist/agent.py falla ejecutado aislado ({label}):\n" + out.stderr[-3000:])
+            got = json.loads(out.stdout.strip().splitlines()[-1])
+            diff = max(abs(a - b) for a, b in zip(got, ref))
+            if diff > 1e-6:
+                raise BundleError(f"dist/agent.py {label} no da las mismas acciones que src/ "
+                                  f"(dif. máx. {diff:.3g})")
+            print(f"  prueba aislada OK {label}: {n} pasos, mismas acciones que src/ (dif. máx. {diff:.1e})")
 
 
 def main() -> int:

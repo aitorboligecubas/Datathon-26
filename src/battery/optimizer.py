@@ -24,6 +24,7 @@ from scipy.optimize import linprog
 from .params import DEFAULT_PARAMS, W_CO2, W_COST, BatteryParams
 
 _LP_STRUCT_CACHE = {}
+LP_METHODS = ("highs", "highs-ds", "highs-ipm")
 
 
 def score_weights(co2_ref: float, cost_ref: float) -> tuple:
@@ -70,8 +71,13 @@ def plan(soc_kwh: float, load_kw, pv_kw, price, co2, w_co2: float, w_cost: float
     b_dyn[0] = soc_kwh
     bounds = ([(0.0, p.max_charge_kw)] * H + [(0.0, p.max_discharge_kw)] * H
               + [(0.0, None)] * (2 * H) + [(0.0, p.capacity_kwh)] * H)
-    res = linprog(c, A_eq=_lp_structure(H, float(p.eta_charge), float(p.eta_discharge)),
-                  b_eq=np.concatenate([net, b_dyn]), bounds=bounds, method="highs")
-    if res.status != 0:
-        raise RuntimeError("LP sin solución: " + str(res.message))
-    return res.x[:H] - res.x[H:2 * H]
+    A_eq = _lp_structure(H, float(p.eta_charge), float(p.eta_discharge))
+    b_eq = np.concatenate([net, b_dyn])
+    for method in LP_METHODS:   # si el método por defecto fallara, se prueban los otros dos de HiGHS
+        try:
+            res = linprog(c, A_eq=A_eq, b_eq=b_eq, bounds=bounds, method=method)
+        except Exception:
+            continue
+        if res.status == 0:
+            return res.x[:H] - res.x[H:2 * H]
+    raise RuntimeError("LP sin solución con ningún método")

@@ -141,10 +141,18 @@ Dos detalles importantes:
   y descargar contra un consumo nulo es tirar la energía.
 - **No cuenta pasos.** El final se detecta solo por la previsión recortada, así que el agente funciona igual dure
   lo que dure el test.
+- **Sabe reconocer una semana sin datos de contador.** El test son 12 semanas sueltas puestas una detrás de otra.
+  Si el contador marca 0 desde la primera hora de una semana (en el train, noviembre no tiene datos de contador),
+  no hay consumo que cubrir hasta que acabe el mes: el agente no descarga y compra la carga para la semana
+  siguiente en una hora barata, con un precio de reserva, en vez de en la primera que aparece. En un episodio
+  simulado con noviembre a cero esto vale 0,06 puntos; en semanas normales no cambia ninguna decisión.
+- **Ignora la lectura "de la hora anterior" en la primera hora de cada semana**, porque es de un mes antes.
 - **Si algo falla o vamos justos de tiempo**, el agente usa una regla simple de respaldo. **Nunca** lanza un error.
 
 Cuánto aporta cada pieza y cómo aguanta el agente (por semanas, con ruido, fuera de la validación):
 `results/p1_ablaciones.md`, que se regenera con `python scripts/p1_ablaciones.py`.
+Auditoría completa (calibración, episodios tipo test, semana sin datos, lectura del leaderboard, 12.000
+observaciones hostiles, latencia): `results/p1_auditoria.md`, con `python scripts/p1_auditoria.py`.
 
 Para tener contexto, comparamos siempre con otras estrategias (`python eval.py --agent all`):
 
@@ -334,6 +342,7 @@ python eval.py --fc-noise 0.1               # ¿y si las previsiones de precio/C
 python eval.py --save-hourly                # guardar el detalle hora a hora (para gráficas)
 python scripts/calibrate_sim.py             # ¿nuestro simulador sigue dando lo mismo que el oficial?
 python scripts/p1_ablaciones.py             # ¿cuánto aporta cada pieza y cómo aguanta? (P1, 2-3 min)
+python scripts/p1_auditoria.py              # auditoría completa del agente (P1, unos 10 min)
 python scripts/train_forecaster.py          # regenerar los modelos de models/ (P2)
 python scripts/build_submission.py          # crear dist/submission.zip y comprobarlo
 python eval.py --agent dist                 # medir el agent.py empaquetado

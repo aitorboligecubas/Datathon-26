@@ -91,6 +91,10 @@ Borrador de P1 con el material de P1 (`presentation/resumen-agente.md`, `results
 > protección: nunca descarga más de lo que el campus consumió la hora anterior. En los otros diez meses, nuestro
 > agente y el óptimo coinciden.
 >
+> Y noviembre entero no tiene datos de contador. Preparamos al agente para una semana así: si el contador
+> marca cero desde la primera hora, no descarga y compra la energía de la semana siguiente en una hora barata,
+> no en la primera que aparece. **[PENDIENTE: efecto en el leaderboard con el envío 2.]**
+>
 > Y un hallazgo para UPC Sostenible: de diez de la noche a seis de la mañana el contador no se lee, y el dataset
 > repite el último valor. El consumo nocturno real es un 19 % menor de lo que dicen los datos: el campus gasta
 > en realidad unos 25 megavatios hora al día, no 27.
@@ -144,6 +148,7 @@ Quitar los dos bloques ✂ y, además:
 | Doble de sucia y triple de cara a las 21 h; conflicto de madrugada | `analysis/patrones.md` |
 | 6,09 / 6,12 / 99,6 %; 99,97 % en el train; 6,01 con ruido del 20 %; 4 s | `results/p1_ablaciones.md` |
 | Plantilla oficial 0,03 (con 7 infracciones) | `python scripts/calibrate_sim.py` |
+| Semana sin datos de contador: +0,06 en un episodio simulado con noviembre a cero | `results/p1_auditoria.md`, sección 3 |
 | Avería de 14 h; en los otros 10 meses el agente iguala al óptimo; consumo nocturno un 19 % menor | `analysis/calidad_datos.md` |
 | Batería = casi el 8 % del consumo diario (7,6 %); consumo real de 24,7 MWh al día | `analysis/techo.md`, `analysis/informe_p2_para_p1.md` |
 | La solar equivale a un 2 % de lo que se compra a la red (2,4 %) | tabla horaria oficial (`battery.data.load`) |
