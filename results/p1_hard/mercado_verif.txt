@@ -215,3 +215,11 @@ val  (18:37): mercado sin memoria (v4) 20.551 -> CANDIDATO 20.661 (+0.109) | 0 i
 calendario del test (18:42): v4 18.586 -> candidato 18.736 (+0.151) | sin semilla +0.120 | gana 7 meses, pierde 2 (por 0,002 o menos), de 10
 calendario del test con noviembre a 0 (18:42): v4 18.766 -> candidato 18.880 (+0.114) | sin semilla +0.094
 (con la v6, julio ya no cuenta como final del test: en estos dos episodios, que acaban el 31/07, los cuatro agentes acaban con 2.379 kWh sin usar)
+
+==============================================================================================================
+12. Placebo: ¿cuánto se mueve el score por puro ruido? El previsor de antes (v4) con su regresión ajustada sin 2 días al azar de cada mes
+==============================================================================================================
+val: v4 20.551 | 8 placebos: diferencias [0.01, -0.004, 0.016, 0.001, -0.003, 0.017, 0.025, 0.003] | media +0.008, desviación típica 0.010, máx |dif| 0.025
+dev: v4 19.719 | 8 placebos: diferencias [-0.0, 0.005, 0.007, -0.009, 0.003, -0.023, -0.002, -0.004] | media -0.003, desviación típica 0.010, máx |dif| 0.023
+(el candidato gana +0,109 en val y +0,203 en dev: de 4 a 8 veces el mayor movimiento de un placebo)
+Ventana 2-8 (la única en que pierde, -0,104): -0,077 son de agosto, donde el candidato acaba el episodio con 853 kWh más sin usar que v4 (4.346 frente a 3.493).
