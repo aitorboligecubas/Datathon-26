@@ -50,6 +50,7 @@ validación rápida que no gasta cupo. El ZIP se genera con `python scripts/buil
 
 | H8 | sin enviar | `3b146a8` | v13: la v12 con el perfil de precio y CO₂ interpolado entre meses según el día | 21,06 | | | | | Gana donde la ventana se aleja del centro del mes (días 1–7: +0,11; validación: +0,14), que es la situación del test |
 | H9 | Dom 15/11, mañana | `98b7037` | v14: la v13 con los perfiles de sábado y domingo suavizados con los meses vecinos | **21,07** | **24,06** | 22,86 % (13.772,5 kg) | 26,88 % (25.525,83 €) | 0 | En casa gana a la v10 en 6 ventanas de 6 (+0,10 a +0,29); en la web −0,09. Ver "Ronda final" |
+| H10 | Dom 15/11, 9:5x | (sin commit: la v10 con `Z_SOLAR = 0,8`) | v10b: la v10 con el margen de la solar en 0,8 desviaciones (prueba) | 20,74 | **24,13** | 22,87 % (13.777,8 kg) | 27,08 % (25.720,79 €) | 0 | Enviada con el nombre `SanHackobos_v7`. En casa −0,03 de media en seis ventanas (pierde en las seis); en la web −0,02, con el mismo signo en CO₂ y en coste: el banco acierta. No se selecciona |
 
 Las horas son las que muestra la web, que van en UTC: una hora menos que la hora local. La v11 (margen 0,7 de
 septiembre a febrero, rama `mejora-score-hard-v11`) no se integra: en el banco pierde frente a la v10 en las tres
@@ -209,3 +210,22 @@ Medido en casa con el calendario real del episodio (`scripts/p1_lab/hard_publico
 - **Qué hacemos: nada distinto.** No se copia: empeora el resultado real del campus, se hunde en la mitad privada y no
   se puede defender ante el jurado. Tampoco se apunta el truco a la mitad privada: habría que sondear qué mitad es
   cuál y, si se falla, cuesta 6–7 puntos. La selección sigue siendo la v14 y la v10. Se avisa a la organización.
+
+## Aviso de la organización (domingo por la mañana) y qué se declara
+
+La organización avisó de que algunos equipos habían creado varios nombres para tener más envíos, y fijó las reglas:
+
+1. El jurado revisa **un solo equipo** (un nombre del ranking) por equipo real. Al elegir el reto en la web de la
+   datathon hay que escribir el nombre que se quiere evaluar; lo demás queda fuera.
+2. **Cuenta el ranking privado**, no el público: "optimizar el público solo lleva a sobreajustar".
+3. **Solo el modo difícil cuenta para los premios.** En el estándar muchos equipos han llegado al máximo.
+
+Qué hacemos:
+
+- **Nombre que se declara: el que tiene en su historial la v10 y la v14** (`SanHackobos`). Los nombres `SanHackobos_v7`,
+  `_v8` y `_v9` solo tienen envíos antiguos y la prueba v10b.
+- **Entregas marcadas para el jurado: la v14 y la v10.** Si solo se pudiera una, la v14: gana a la v10 en las seis
+  ventanas del banco con el calendario real (+0,14 de media) y su nota pública, que es media simulación, mide poco.
+- La prueba v10b (margen 0,8) salió como decía el banco: es un punto más a favor de fiarse del banco y no del público.
+- El ZIP de la v14 que hay que tener subido (`entregas/HARD_v14_SUBIR_ESTE.zip`) se comprobó de nuevo contra el código
+  de la rama: 400 horas, acciones idénticas, 0 infracciones.

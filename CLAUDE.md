@@ -245,7 +245,9 @@ episodio completo, salen por encima (+0,10 y +0,20 de media en seis ventanas; +0
 calendario real del test, con el salto de un mes entre semanas, y ganan en las seis). Hay dos lecturas y no se puede
 descartar ninguna: que el banco acierte y la web solo enseñe la mitad de las horas (la diferencia v14 − v10 baila
 ±0,65 puntos según qué horas sean públicas), o que en el test las versiones prudentes sean de verdad peores.
-Por eso **se seleccionan a mano para el jurado la v14 y la v10**: cada una cubre una de las dos lecturas. No se
+Por eso **se seleccionan a mano para el jurado la v14 y la v10**: cada una cubre una de las dos lecturas. La organización
+avisó el domingo de que **solo evalúa un nombre de equipo, en el ranking privado, y que solo el modo difícil cuenta
+para los premios**: se declara el nombre que tiene la v10 y la v14 (`SanHackobos`). No se
 persiguen décimas del público con variantes, y no se imita a los líderes subiendo el peso del coste: en el episodio
 completo pierde (+0,99 de coste, −0,54 de CO₂, −0,08 de score). El análisis completo está en `docs/envios.md`.
 
