@@ -120,3 +120,14 @@ una mejora en la parte de precio (más euros con el mismo CO2), no ese truco.
 | LightGBM para la desviación de precio y CO2 (`mejora_mercado_nl.py`, dejando un mes fuera) | peor que la regresión lineal en todas las antelaciones: CO2 a 12 h R2 0,343 frente a 0,384; precio a 12 h 0,073 frente a 0,120 |
 
 El hueco del mercado es casi todo CO2, y con lo que da el entorno no se prevé mejor.
+
+## Resultado de la v12 + vaciado a fin de febrero en el público: 23,41 (CO2 22,14 %, euros 26,37 %)
+
+Dos envíos llevan la mezcla del perfil de mercado de la v12 y los dos se hunden (v13: 23,66; v12+truco: 23,41)
+frente a la v10 (24,15). La mezcla, que ganaba en el banco, pierde en los datos reales del público: se retira y NO se
+selecciona ninguna versión con ella para el jurado. Con el margen medido en el banco, el vaciado a fin de febrero
+tampoco ayudó en el público (no se puede separar del todo: los dos envíos comparten la mezcla).
+
+Techo con todo el futuro conocido (consumo, solar, precio y CO2) en la mitad pública de nuestros episodios con el
+calendario del test: 1,13-1,14 veces la nota de la v10. Aplicado a 24,15 da ~27,3-27,5. El 27,98 de Ommetje está en
+ese techo o por encima: con la información que da el entorno no se puede llegar ahí.
