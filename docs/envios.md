@@ -299,3 +299,13 @@ No dio tiempo a repetir el ataque de robustez completo: por eso se marca solo si
 infracciones. ZIP: `entregas/HARD_FINAL2_fin_de_agosto.zip`.
 
 **Qué se marca: FINAL2 y v10.** Si FINAL2 saliera por debajo de 24,06, la FINAL y la v10.
+
+**La v10 con el mismo arreglo** (`entregas/HARD_v10_con_fin_de_agosto.zip`): el commit `34a0f5f` con el parche
+`results/p1_hard/v10_fin_de_agosto.patch` (las mismas 4 líneas). Con la semana 25–31/08, 0 acciones distintas frente a
+la v10; con la semana 16–23/08, pasa de dejar 4.192 kWh a 356 kWh: +0,122 puntos. 40 tests en verde, validador oficial
+y diferencia 0,0 en las 1.680 horas anteriores a agosto. Es opcional: sustituye a la v10 solo si en la web saca 24,15
+o más con 0 infracciones.
+
+**Ataque de robustez con el código de FINAL2:** calendario, 0 infracciones en todos los casos y la misma nota que la
+FINAL con el test que acaba el 31/08 (18,821); formato, 69 casos y 0 excepciones (las infracciones son las de los
+casos en que la observación trae la carga de la batería falseada, que ya existían).
