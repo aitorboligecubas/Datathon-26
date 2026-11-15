@@ -1,4 +1,4 @@
-# Las dos entregas del modo difícil marcadas para el jurado (equipo `SanHackobos`)
+# ENTREGA DEFINITIVA: las dos entregas del modo difícil marcadas para el jurado (equipo `SanHackobos`)
 
 | Fichero | Qué es | Código | Público en la web | Cómo reconocerla en la web |
 |---|---|---|---|---|
