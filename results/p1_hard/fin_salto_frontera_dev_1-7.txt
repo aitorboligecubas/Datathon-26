@@ -1,0 +1,34 @@
+
+=== dev: 11 semanas, 1848 h. Óptimo 21.418
+v10: nota 20.159 | hueco total 1.259 = últimas 24 h antes del salto 0.346 + primeras 24 h tras el salto 0.825 + arranque/final del episodio 0.281 + resto (horas 24-143) -0.193 | por hora: frontera 2.44 mpt/h, resto -0.15 mpt/h
+v12: nota 20.250 | hueco total 1.167 = últimas 24 h antes del salto 0.344 + primeras 24 h tras el salto 0.821 + arranque/final del episodio 0.286 + resto (horas 24-143) -0.283 | por hora: frontera 2.43 mpt/h, resto -0.21 mpt/h
+v14: nota 20.288 | hueco total 1.129 = últimas 24 h antes del salto 0.227 + primeras 24 h tras el salto 0.853 + arranque/final del episodio 0.198 + resto (horas 24-143) -0.149 | por hora: frontera 2.25 mpt/h, resto -0.11 mpt/h
+           salto  hueco_ult24  hueco_pri24  hueco_48h  soc_fin_optimo ventana
+2025-09->2025-10       -0.002        0.165      0.163        6000.000     dev
+2025-10->2025-12        0.019        0.127      0.146           0.000     dev
+2025-12->2026-01        0.051        0.009      0.060           0.000     dev
+2026-01->2026-02        0.032        0.001      0.032           0.000     dev
+2026-02->2026-03        0.006        0.008      0.014        6000.000     dev
+2026-03->2026-04        0.002        0.021      0.023        6000.000     dev
+2026-04->2026-05        0.006        0.064      0.070        2650.951     dev
+2026-05->2026-06        0.004        0.096      0.099        6000.000     dev
+2026-06->2026-07        0.059        0.008      0.066        6000.000     dev
+2026-07->2026-08        0.051        0.355      0.406        2650.164     dev
+hueco v14 por día de la semana (0..6), suma de todas las semanas: [ 0.88  -0.512 -0.014  0.129  0.168  0.079  0.399]
+
+=== 1-7: 11 semanas, 1844 h. Óptimo 22.442
+v10: nota 20.987 | hueco total 1.455 = últimas 24 h antes del salto -0.258 + primeras 24 h tras el salto 0.680 + arranque/final del episodio 0.183 + resto (horas 24-143) 0.850 | por hora: frontera 0.88 mpt/h, resto 0.65 mpt/h
+v12: nota 21.099 | hueco total 1.343 = últimas 24 h antes del salto -0.265 + primeras 24 h tras el salto 0.639 + arranque/final del episodio 0.185 + resto (horas 24-143) 0.785 | por hora: frontera 0.78 mpt/h, resto 0.60 mpt/h
+v14: nota 21.235 | hueco total 1.208 = últimas 24 h antes del salto -0.239 + primeras 24 h tras el salto 0.747 + arranque/final del episodio 0.211 + resto (horas 24-143) 0.489 | por hora: frontera 1.06 mpt/h, resto 0.37 mpt/h
+           salto  hueco_ult24  hueco_pri24  hueco_48h  soc_fin_optimo ventana
+2025-09->2025-10       -0.095        0.147      0.052        3688.150     1-7
+2025-10->2025-12        0.130       -0.001      0.128           0.000     1-7
+2025-12->2026-01       -0.319        0.354      0.035        6000.000     1-7
+2026-01->2026-02        0.060        0.042      0.101           0.000     1-7
+2026-02->2026-03       -0.024        0.012     -0.012        6000.000     1-7
+2026-03->2026-04        0.061       -0.030      0.032           0.000     1-7
+2026-04->2026-05       -0.383        0.368     -0.015        6000.000     1-7
+2026-05->2026-06        0.015        0.011      0.026         558.335     1-7
+2026-06->2026-07        0.313       -0.069      0.244        3007.059     1-7
+2026-07->2026-08        0.003       -0.087     -0.084        6000.000     1-7
+hueco v14 por día de la semana (0..6), suma de todas las semanas: [ 0.787  0.339 -0.129  0.253  0.123 -0.096 -0.069]

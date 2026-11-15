@@ -1,0 +1,6 @@
+columnas de meteo: ['irradiancia_wm2', 'temp_ambient_c', 'temp_panel_c', 'vent_ms']
+  antelación  0 h | RMSE fuera de muestra sin meteo   57.1 kW, con meteo   56.8 kW (-0.5 %) | de 6 a 22 h:   67.5 ->   67.1 kW (-0.6 %) | n = 2608 / 1533
+  antelación  1 h | RMSE fuera de muestra sin meteo   80.2 kW, con meteo   79.3 kW (-1.2 %) | de 6 a 22 h:   93.7 ->   92.4 kW (-1.4 %) | n = 2617 / 1522
+  antelación  3 h | RMSE fuera de muestra sin meteo  108.4 kW, con meteo  105.8 kW (-2.4 %) | de 6 a 22 h:  123.1 ->  119.5 kW (-2.9 %) | n = 2637 / 1502
+  antelación  6 h | RMSE fuera de muestra sin meteo  125.5 kW, con meteo  121.6 kW (-3.1 %) | de 6 a 22 h:  142.2 ->  137.4 kW (-3.4 %) | n = 2667 / 1472
+  antelación 12 h | RMSE fuera de muestra sin meteo  125.4 kW, con meteo  123.3 kW (-1.7 %) | de 6 a 22 h:  142.9 ->  139.9 kW (-2.1 %) | n = 2727 / 1412

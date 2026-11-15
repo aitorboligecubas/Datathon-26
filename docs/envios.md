@@ -199,11 +199,16 @@ Medido en casa con el calendario real del episodio (`scripts/p1_lab/hard_publico
 | v10 que llena la batería en las 5 últimas horas de cada semana | **25,34** / 14,29 / 20,21 | **23,11** / 13,98 / 18,73 | **23,78** / 15,21 / 19,69 |
 | v10 que llena la batería en las 5 últimas horas de la 1.ª mitad | 15,26 / **22,56** / 18,69 | 13,13 / **23,66** / 18,18 | 13,17 / **26,23** / 19,40 |
 
-- **Conocer todo el futuro** sube una mitad entre un 1 % y un 13 % sobre la v10. La entrega de 27,98 está un 16 %
-  por encima.
+- **Conocer todo el futuro** sube una mitad seguida entre un 1 % y un 13 % sobre la v10 (hasta un 15,7 % si la mitad
+  empieza a otra hora; nunca el 16 %: 0 de 30 máscaras seguidas). La entrega de 27,98 está un 16 % por encima.
+  Con horas públicas al azar el óptimo perfecto sí llegaría al 16 % en el 5 % de las máscaras, pero ninguna versión
+  nuestra pasa del 13,5 % en 1.260 máscaras y un agente a medio camino del óptimo no llega en ninguna.
 - **Llenar la batería justo antes de una mitad** sube esa mitad entre un 13 % y un 23 % (+2,8 a +4,4 puntos): el
   coste de la carga cae en horas de la otra mitad, que pierde entre 4,4 y 7,5 puntos. En el episodio completo
   pierde entre 0,6 y 2,1 puntos: no ahorra más CO₂ ni más euros, los cambia de sitio.
+- **Cerrar cada semana vacía** deja la misma firma en la otra dirección y puede ser una decisión inocente (tratar
+  cada semana como un episodio): sube la 2.ª mitad +1,4 a +3,9 puntos, baja la 1.ª entre 1,7 y 4,5 y pierde 0,2–0,6
+  en el episodio completo. El coste de recargar cae al principio de la semana siguiente.
 - **Lectura:** la firma de esa entrega (+4,1 puntos de CO₂ y +3,1 de coste a la vez) es la de mover el coste de la
   carga a la mitad que el público no ve. No se puede demostrar desde fuera; la otra explicación posible es que
   conozca datos del test. Si es lo primero, en el ranking privado, que es el que mira el jurado, baja lo que aquí sube.
@@ -229,3 +234,17 @@ Qué hacemos:
 - La prueba v10b (margen 0,8) salió como decía el banco: es un punto más a favor de fiarse del banco y no del público.
 - El ZIP de la v14 que hay que tener subido (`entregas/HARD_v14_SUBIR_ESTE.zip`) se comprobó de nuevo contra el código
   de la rama: 400 horas, acciones idénticas, 0 infracciones.
+
+**Repaso independiente (tres revisores, `scripts/p1_lab/hard_fin_*.py`, `results/p1_hard/fin_*`):**
+
+- **Simulador y reglas:** ninguna asimetría explotable. Cada acción rara (NaN, infinito, un valor justo por encima del
+  límite) es una infracción o no hace nada; la ida y vuelta devuelve 0,9 exacto; el excedente no da nada. El óptimo del
+  banco es el techo exacto del episodio completo. Lo único que permite pasar de él es la máscara de `evaluate_results`.
+- **Tamaño del salto:** +3,8 puntos solo encaja con una mitad seguida y un comportamiento en el salto de semana (llegar
+  llena o acabar vacía). Explotar una máscara por días o por horas daría mucho más (30–100 puntos).
+- **Frontera entre semanas:** lo legítimo que hay ahí son 0,03–0,31 puntos del episodio completo y solo con todo el
+  futuro conocido. La regla causal probada (valor de la carga al cruzar el salto) no cambia ni una decisión (+0,000).
+- **Pronóstico comprobable:** si es un comportamiento de borde, en la otra mitad esa entrega quedará entre 4 y 8 puntos
+  por debajo de un agente normal. Si el público fuera al azar por horas, nada de esto la explicaría y solo quedarían la
+  suerte (menos del 2 %) o conocer datos del test. Ante la organización y el jurado se dice en condicional: "firma
+  compatible con mover coste en el salto de semana", sin acusar.
