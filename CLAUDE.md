@@ -230,19 +230,23 @@ servidor reiniciara la batería cada semana, el agente lo detecta y cierra cada 
 | Versión 6 (previsor de precio y CO₂ con memoria) | 20,66 | 23,70 |
 | Versión 10 (previsor ampliado de consumo y solar, semilla y margen 1,0) | 20,79 | **24,15** |
 | Versión 12 (la 10 con el plan que cuenta con la incertidumbre) | 20,92 | 24,11 |
-| **Versión 14 (la 12 con el perfil de precio y CO₂ interpolado entre meses y los fines de semana suavizados)** | **21,07** | sin enviar |
+| **Versión 14 (la 12 con el perfil de precio y CO₂ interpolado entre meses y los fines de semana suavizados)** | **21,07** | 24,06 |
 | La versión 12 con el precio y el CO₂ reales a 24 h | 21,65 | |
 | Óptimo con todo el futuro conocido (techo) | 22,40 | |
 
-**Dónde estamos (domingo de madrugada): segundos de 41 equipos con la v10 (24,15); el líder tiene 24,25.**
+**Dónde estamos (domingo por la mañana): terceros en el público con la v10 (24,15). SSA Gourmet tiene 24,36 y
+Fanboy & Chum Chum 24,25; su ventaja es solo de coste.**
 
 **Cómo leer la web.** La nota de casa y la de la web no son comparables en valor (el conjunto público tiene una
 referencia más baja). Y las diferencias pequeñas de la web no ordenan las versiones: según las preguntas frecuentes
 y el código oficial, el público es el 50 % de cada semana del test, calculado con una máscara de horas sobre una
-única simulación. En nuestro banco, la diferencia entre la v12 y la v10 va de −0,20 a +0,46 según qué horas sean
-públicas, con +0,13 en el episodio completo. Lo que una versión pierde en una mitad lo gana en la otra.
-Por eso **se seleccionan para el jurado las dos mejores por nota del episodio completo (v14 y v12), marcándolas a
-mano**, y no se persiguen décimas del público con variantes. El análisis completo está en `docs/envios.md`.
+única simulación. En la web, la v12 y la v14 salen por debajo de la v10 (−0,04 y −0,09); en el banco, sobre el
+episodio completo, salen por encima (+0,10 y +0,20 de media en seis ventanas). Hay dos lecturas y no se puede
+descartar ninguna: que el banco acierte y la web solo enseñe la mitad de las horas (la diferencia v14 − v10 baila
+±0,65 puntos según qué horas sean públicas), o que en el test las versiones prudentes sean de verdad peores.
+Por eso **se seleccionan a mano para el jurado la v14 y la v10**: cada una cubre una de las dos lecturas. No se
+persiguen décimas del público con variantes, y no se imita a los líderes subiendo el peso del coste: en el episodio
+completo pierde (+0,99 de coste, −0,54 de CO₂, −0,08 de score). El análisis completo está en `docs/envios.md`.
 
 Antes de cada envío del modo difícil se pasa el **ataque de robustez** (`scripts/p1_lab/hard_ataque_*.py`):
 observaciones deformadas, averías del contador, calendario del test, cambio de hora, el `agent.py` empaquetado

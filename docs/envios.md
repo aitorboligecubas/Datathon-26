@@ -49,7 +49,7 @@ validación rápida que no gasta cupo. El ZIP se genera con `python scripts/buil
 | H7 | Dom 15/11, madrugada | `9b75248` | v12: la v10 con el plan que cuenta con la incertidumbre del consumo neto (sin margen fijo) | **20,92** | **24,11** | 22,93 % (13.815,8 kg) | 26,86 % (25.511,18 €) | 0 | En casa gana a la v10 en 6 ventanas de 6 (+0,04 a +0,13); en la web −0,04. Ver "Cómo leer el ranking público" |
 
 | H8 | sin enviar | `3b146a8` | v13: la v12 con el perfil de precio y CO₂ interpolado entre meses según el día | 21,06 | | | | | Gana donde la ventana se aleja del centro del mes (días 1–7: +0,11; validación: +0,14), que es la situación del test |
-| H9 | **sin enviar: es la que hay que subir** | `98b7037` | v14: la v13 con los perfiles de sábado y domingo suavizados con los meses vecinos | **21,07** | | | | | Gana o empata a la v13 en 6 ventanas de 6 (media +0,05). Fichero: `entregas/HARD_v14_SUBIR_ESTE.zip` |
+| H9 | Dom 15/11, mañana | `98b7037` | v14: la v13 con los perfiles de sábado y domingo suavizados con los meses vecinos | **21,07** | **24,06** | 22,86 % (13.772,5 kg) | 26,88 % (25.525,83 €) | 0 | En casa gana a la v10 en 6 ventanas de 6 (+0,10 a +0,29); en la web −0,09. Ver "Ronda final" |
 
 Las horas son las que muestra la web, que van en UTC: una hora menos que la hora local. La v11 (margen 0,7 de
 septiembre a febrero, rama `mejora-score-hard-v11`) no se integra: en el banco pierde frente a la v10 en las tres
@@ -85,7 +85,7 @@ suavizados. En el mismo banco: días 8–14 20,045; días 1–7 21,042; validaci
   diferencia entre la v12 y la v10 en nuestro banco va de −0,20 (horas pares) a +0,46 (horas impares), con +0,13
   en el episodio entero (`scripts/p1_lab/hard_publico_mitades.py`): la v12 compra menos en las horas de carga y
   pierde un poco en las de descarga, y el resultado depende de qué horas caigan en cada mitad.
-- **Selección para el jurado: las dos mejores por nota del episodio completo, que hoy son la v14 y la v12.** Hay que
+- **Selección para el jurado (corregida en la ronda final, ver abajo): v14 y v10.** Antes se proponía v14 y v12. Hay que
   marcarlas a mano en "Selecció Oficial per al Jurat": por defecto el sistema coge las dos mejores del público.
   La v10 (mejor nota pública, 24,15) es la alternativa prudente si se prefiere no depender de este análisis.
   Cuánto fiarse de cada una: la v12 mejora a la v10 en 29 de 33 semanas-mes del banco (media +0,13, muy firme);
@@ -107,4 +107,30 @@ Cómo se relacionan la nota de casa y la de la web (mismo agente):
 | v8 (H4) | 20,83 | 24,06 |
 | v10 (H6) | 20,79 | 24,15 |
 | v12 (H7) | 20,92 | 24,11 |
-| v14 (H9) | 21,07 | sin enviar |
+| v14 (H9) | 21,07 | 24,06 |
+
+## Ronda final (domingo por la mañana): por qué la v14 saca 24,06 y qué seleccionar
+
+Situación: SSA Gourmet 24,36 (CO₂ 22,94 %, coste 27,69 %), Fanboy & Chum Chum 24,25, nosotros 24,15 con la v10. En la
+web, todas las versiones posteriores a la v10 salen por debajo de ella (v12 −0,04; v14 −0,09); en el banco, sobre el
+episodio completo, salen por encima (v12 +0,10; v14 +0,20 de media en seis ventanas). Dos investigadores
+independientes y las medidas propias (`results/p1_hard/r3_calibracion_notas.md` y `r3_coste_notas.md`):
+
+- **Hay dos lecturas y no se puede descartar ninguna.** M (máscara, ~60 %): el banco acierta y la web solo enseña la
+  mitad de las horas. R (real, ~40 %): en el test las versiones prudentes son de verdad peores. Si la máscara pública
+  es por horas, lo de la web es un sorteo normal del banco (pasa el 10–24 % de las veces y la web queda a menos de una
+  desviación en todas las versiones); si fuera por días enteros o medias semanas, el banco estaría equivocado.
+- **La nota pública de la v14 no mide casi nada:** su diferencia con la v10 baila ±0,65 puntos según qué horas caigan
+  en el público (la de la v12, ±0,17). La v10 gana en las horas de descarga (6–12 h y 19–22 h) porque descarga más;
+  las prudentes lo recuperan en las horas de carga (23–5 h y 14–17 h).
+- **Ningún fallo del servidor lo explica:** el presupuesto de tiempo solo se agotaría con un servidor más de 4 veces
+  más lento (y costaría puntos enteros), quitar la semilla cuesta 0,014 y cambiar el algoritmo del LP, ±0,001.
+- **La ventaja de los líderes es solo de coste (+0,67 puntos porcentuales) y no se puede copiar de forma legítima.**
+  Nuestro reparto CO₂/coste ya está en el óptimo: subir el peso del coste un 50 % da +0,99 de coste, −0,54 de CO₂ y
+  −0,08 de score. Conocer el precio real solo daría +0,11. Ser más agresivo al descargar da céntimos de coste y quita
+  CO₂. Lo único que reproduce su firma es más peso al coste visto en la mitad pública (13 % de las máscaras al azar).
+- **Privado esperado frente a la v10:** si M, v12 +0,15 a +0,23 y v14 +0,36 a +0,44; si R, v12 −0,04 y v14 −0,09.
+- **Selección para el jurado: v14 y v10, marcadas a mano.** Valor esperado de la mejor de las dos frente a la v10
+  sola: v14 y v10 +0,32; v14 y v12 +0,31; v10 y v12 (la que coge la web por defecto) +0,15. La v10 cubre el fallo
+  que v12 y v14 tendrían en común si R fuera cierta.
+
