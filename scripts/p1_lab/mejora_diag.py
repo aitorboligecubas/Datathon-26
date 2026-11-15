@@ -193,3 +193,33 @@ def perfect_now(prior, solar_prior, exclude):
 
 def perfect_future(prior, solar_prior, exclude):
     return _mix(prior, solar_prior, False, True)
+
+
+class HalfTrueMarket:
+    """Previsión real de una variable y verdad de la otra (para separar el valor del precio y del CO2)."""
+
+    def __init__(self, real, df, true_name):
+        self.real, self.true, self.true_name = real, _TrueMarket(df), true_name
+
+    def forecast(self, obs, times, weather=None):
+        p, c = self.real.forecast(obs, times, weather)
+        tp, tc = self.true.forecast(obs, times, weather)
+        return (tp, c) if self.true_name == "price" else (p, tc)
+
+
+def perfect_price(prior, solar_prior, exclude):
+    a = hard_agent(prior, solar_prior)
+    a.policy.market = HalfTrueMarket(a.policy.market, table(), "price")
+    return a
+
+
+def perfect_co2(prior, solar_prior, exclude):
+    a = hard_agent(prior, solar_prior)
+    a.policy.market = HalfTrueMarket(a.policy.market, table(), "co2")
+    return a
+
+
+def perfect_market(prior, solar_prior, exclude):
+    a = hard_agent(prior, solar_prior)
+    a.policy.market = _TrueMarket(table())
+    return a

@@ -109,3 +109,14 @@ subidas anteriores (1,4 -> 1,0) no autorizaban a extrapolar.
 Huella del truco de vaciar la batería en la hora 1.008 (para leer el ranking): en el público CO2 +0,23 a +0,26 y
 euros +0,18 a +0,36. El salto de SSA Gourmet (24,04 -> 24,36: CO2 +0,04, euros +0,97) no tiene esa huella: parece
 una mejora en la parte de precio (más euros con el mismo CO2), no ese truco.
+
+## Tercera ronda: dónde está el hueco del mercado y modelo no lineal
+
+| Prueba (banco, 4 ventanas, sobre la v12) | Resultado |
+|---|---|
+| CO2 real a 24 h, precio previsto (`mejora_cands_mkt.py`) | +0,392 |
+| Precio real a 24 h, CO2 previsto | +0,089 |
+| Ambos reales | +0,373 |
+| LightGBM para la desviación de precio y CO2 (`mejora_mercado_nl.py`, dejando un mes fuera) | peor que la regresión lineal en todas las antelaciones: CO2 a 12 h R2 0,343 frente a 0,384; precio a 12 h 0,073 frente a 0,120 |
+
+El hueco del mercado es casi todo CO2, y con lo que da el entorno no se prevé mejor.
