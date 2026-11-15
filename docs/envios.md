@@ -55,6 +55,13 @@ Las horas son las que muestra la web, que van en UTC: una hora menos que la hora
 septiembre a febrero, rama `mejora-score-hard-v11`) no se integra: en el banco pierde frente a la v10 en las tres
 ventanas (validación 20,75 frente a 20,79) y se apoya en suponer qué meses son públicos.
 
+**Ojo con los nombres: hay dos "v12" distintas.** La v12 de esta tabla (H7, 24,11 en la web) es la del plan que
+cuenta con la incertidumbre (`9b75248`, rama `p1-optimizador`). La rama `mejora-score-hard-v12` de la otra sesión
+(sábado 23:48 UTC) es otra cosa: la v10 con el perfil de mercado mezclado al 50 % con el del mes vecino. Es la misma
+idea que la v13, a la que llegaron por su cuenta, y no lleva ni el plan con incertidumbre ni los fines de semana
+suavizados. En el mismo banco: días 8–14 20,045; días 1–7 21,042; validación 20,860. La v14 la supera en las tres
+(20,302; 21,263; 21,073), así que no hace falta fusionarla.
+
 ## Cómo leer el ranking público (análisis del domingo de madrugada)
 
 - **El servidor simula como nuestro banco.** El desplegable del modo difícil usa el `CampusBatteryEnv` oficial con
