@@ -9,8 +9,12 @@ premios). Todo lo demás que hay en el repo y en sus ramas son versiones anterio
 | Qué es | MPC con previsión propia de precio, CO₂, consumo y solar; el plan cuenta con la incertidumbre del consumo neto; perfiles de precio y CO₂ interpolados entre meses | La misma base, con margen de seguridad fijo (1,0) en lugar del plan con incertidumbre y sin interpolar los perfiles |
 | Código | **Este árbol**: `src/battery/hard.py`, `hard_market.py`, `hard_solar.py` y `models/hard_*.json` (commit `2ba3b8f`) | Commit `34a0f5f` más `results/p1_hard/v10_fin_de_agosto.patch` (4 líneas) |
 | Público en la web | 24,06 (CO₂ 22,86 %, coste 26,88 %), 0 infracciones | 24,15 (CO₂ 22,92 %, coste 27,02 %), 0 infracciones |
-| Enviada | Domingo 15/11, ~10:47 UTC | Domingo 15/11, ~10:52 UTC |
+| Enviada (hora de la web, UTC) | Domingo 15/11, 10:48:09 | Domingo 15/11, 10:49:23 |
 | Papel | La mejor en el banco con el calendario real del test | Cobertura: la mejor nota pública y un diseño distinto |
+
+**Confirmado en la web** (historial de `SanHackobos`, 9 envíos): "Selecció Mode Difícil confirmada per l'equip (2/2):
+2026-11-15 10:49:23, 2026-11-15 10:48:09". Son estas dos. Los ZIP de `entrega/` son copias byte a byte de los ficheros
+subidos (194.490 y 185.918 bytes).
 
 ## Por qué estas dos
 
