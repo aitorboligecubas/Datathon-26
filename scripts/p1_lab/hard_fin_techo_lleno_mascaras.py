@@ -122,7 +122,7 @@ for modo in which:
     totals, log = B.simulate_hard(Borde(v10(), modo), df)
     imp = log.import_kw.to_numpy(float)
     s_co2, s_eur = (base_imp - imp) * co2, (base_imp - imp) * eur
-    pickle.dump({"co2": s_co2, "eur": s_eur, "soc": log.soc_kwh.to_numpy(float)}, open(OUT / f"fin_techo_borde_{modo}_{win}.pkl", "wb"))
+    pickle.dump({"co2": s_co2, "eur": s_eur, "soc": log.soc_kwh.to_numpy(float)}, open(REPO / "results" / "hourly" / f"fin_techo_borde_{modo}_{win}.pkl", "wb"))
     f = nota(s_co2, s_eur, ALL)
     print(f"\n{win} v10 + {modo} (5 últimas horas de cada semana): infr {totals['infractions']} | episodio completo {f[0]:.3f} "
           f"(CO2 {f[1]:.2f} coste {f[2]:.2f}) frente a v10 {f_v10[0]:.3f}: {f[0] - f_v10[0]:+.3f}", flush=True)

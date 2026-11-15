@@ -4,7 +4,7 @@ LP del episodio completo con todo el futuro conocido (el mismo problema que el �
 cada salto con la carga con la que lo cruza el agente actual (v14, calendario real). La diferencia (a) - (b) es el valor
 máximo de "llegar con la carga buena" a todas las fronteras, con todo lo demás perfecto. Es una cota, no un candidato.
 
-    python scripts/p1_lab/hard_fin_salto_lp.py val dev 1-7      # necesita results/p1_hard/fin_salto_sim_<ventana>.pkl
+    python scripts/p1_lab/hard_fin_salto_lp.py val dev 1-7      # necesita results/hourly/fin_salto_sim_<ventana>.pkl
 """
 import math
 import pickle
@@ -43,7 +43,7 @@ def solve(net, w, fixed=None, soc_end_free=True):
 
 
 for win in sys.argv[1:]:
-    d = pickle.load(open(REPO / "results" / "p1_hard" / f"fin_salto_sim_{win}.pkl", "rb"))
+    d = pickle.load(open(REPO / "results" / "hourly" / f"fin_salto_sim_{win}.pkl", "rb"))
     df, res = d["df"], d["res"]
     n = len(df)
     ts = pd.DatetimeIndex(df.timestamp)

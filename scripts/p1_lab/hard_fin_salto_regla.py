@@ -117,6 +117,6 @@ if __name__ == "__main__":
             print(win, name, round(sc["score_raw"], 3), "soc fin semana:", np.round(log.soc_kwh.to_numpy()[ends]).astype(int).tolist(), flush=True)
         R = pd.DataFrame(rows)
         R["d_score"] = R.score - R.score.iloc[0]
-        R.to_csv(REPO / "results" / "p1_hard" / f"fin_salto_regla_{win}.csv", index=False)
-        pickle.dump(logs, open(REPO / "results" / "p1_hard" / f"fin_salto_regla_{win}.pkl", "wb"))
+        R.to_csv(REPO / "results" / "hourly" / f"fin_salto_regla_{win}.csv", index=False)
+        pickle.dump(logs, open(REPO / "results" / "hourly" / f"fin_salto_regla_{win}.pkl", "wb"))
         print(R.round(3).to_string(index=False), flush=True)
