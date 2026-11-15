@@ -1,0 +1,123 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: linear-gradient(180deg, #f3f6fb 0%, #eceff5 100%);
+  background-attachment: fixed;
+  color: #0b0b0b;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  letter-spacing: -0.006em;
+}
+
+/* Barra lateral fosca: scrollbar discret */
+.sidebar-dark::-webkit-scrollbar {
+  width: 8px;
+}
+.sidebar-dark::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+}
+
+/* Recharts: rejillas y ejes recesivos (hairline, como pide dataviz) */
+.recharts-cartesian-grid line {
+  stroke: #eceef3;
+}
+.recharts-cartesian-axis-line,
+.recharts-cartesian-axis-tick-line {
+  stroke: #d7dbe3;
+}
+.recharts-text {
+  fill: #8a93a3;
+  font-size: 12px;
+}
+.recharts-tooltip-wrapper:focus,
+.recharts-surface:focus {
+  outline: none;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Transicions i micro-interaccions (dashboard més viu) */
+@keyframes viewIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-view {
+  animation: viewIn 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-pop {
+  animation: popIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-view,
+  .animate-pop {
+    animation: none;
+  }
+  .grow-bar {
+    transition: none !important;
+  }
+}
+
+/* Barres que creixen en muntar-se */
+.grow-bar {
+  transition: width 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Trama diagonal per a les barres de progrés (estil SaaS de referència) */
+.stripes {
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(255, 255, 255, 0.22) 0,
+    rgba(255, 255, 255, 0.22) 6px,
+    transparent 6px,
+    transparent 12px
+  );
+}
+
+/* MapLibre: tipografia i controls coherents amb el dashboard */
+.maplibregl-map {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+.maplibregl-ctrl-attrib {
+  font-size: 10px;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
