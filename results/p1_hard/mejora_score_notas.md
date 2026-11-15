@@ -90,3 +90,13 @@ La ganancia crece con la distancia al centro del mes, como predice el mecanismo;
 lejos. Los episodios de estrés ponen en los días 25-31 datos de días anteriores: ahí la mezcla está mal por
 construcción y mide cuánto se pierde si la tendencia de final de mes no es la que suponemos. 0,5 conserva el 70 %
 de la ganancia con un peor caso cuatro veces más suave. Simulador oficial: 19,01 (v10: 19,02), 0 infracciones.
+
+## v13: margen de invierno para la mitad pública (rama `mejora-score-hard-v13`)
+
+En el público, SSA Gourmet saca 24,36 con el MISMO CO2 que nuestra v10 (22,94 % frente a 22,92 %) y +0,67 de ahorro
+en euros (27,69 % frente a 27,02 %). En nuestros envíos, bajar el margen de 1,4 a 1,0 dio dos veces +0,20 en euros y
+-0,02 en CO2; extrapolado a margen 0 sale ~22,9 % / ~27,6 %, casi su resultado. El banco dice lo contrario (en
+invierno, z=0,7: -0,065; z=0,4: -0,175; z=0: -0,390, perdiendo CO2 Y euros), pero el banco ya se equivocó de signo dos
+veces con el margen en esos meses. La v13 baja el margen solo de septiembre a febrero (verano igual que la v12: en el
+banco el privado cambia -0,005 a -0,014 por la carga que pasa de febrero a marzo). Se sondea con el público en
+escalera: 0,7 -> 0,4 -> 0. El commit deja 0,7; los ZIP de 0,4 y 0 salen cambiando `Z_SOLAR_BY_MONTH`.

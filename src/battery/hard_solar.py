@@ -241,7 +241,7 @@ Z_PLAN_SOLAR = Z_SOLAR
 # v11: margen por mes. En las semanas de septiembre a febrero (la mitad pública del test) el ranking público, con los
 # datos reales, ha premiado dos veces seguidas un margen más bajo (1,4 -> 1,0: +0,04 y +0,05). De marzo a agosto
 # (la mitad privada) se deja el de la v10. Un mes que no esté aquí usa Z_SOLAR.
-Z_SOLAR_BY_MONTH = {}      # v12: apagado (margen 1,0 todo el año, como la v10). La v11 lo ponía a 0,7 de sep a feb.
+Z_SOLAR_BY_MONTH = {9: 0.7, 10: 0.7, 11: 0.7, 12: 0.7, 1: 0.7, 2: 0.7}   # v13: margen de invierno (mitad pública); verano como la v12
 
 
 class SolarCand:
