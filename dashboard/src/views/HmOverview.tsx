@@ -26,7 +26,7 @@ export default function HmOverview() {
         <div className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <div className="text-[12px] font-semibold uppercase tracking-wide text-orange">L'agent</div>
-            <h3 className="mt-1 text-xl font-bold text-ink">Redueix emissions aprofitant la solar, sola</h3>
+            <h3 className="mt-1 text-xl font-bold text-ink">Aprofita l'excedent solar per reduir emissions, de forma autònoma</h3>
             <p className="mt-1 max-w-xl text-[14px] leading-snug text-ink-secondary">
               Amb 6 MWh i molta més solar, l'agent preveu i decideix cada hora: emmagatzema l'excedent solar del migdia i
               el fa servir als pics. Funciona sol i no ha comès <b>cap acció impossible</b>.
