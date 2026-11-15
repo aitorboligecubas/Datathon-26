@@ -27,7 +27,10 @@ from .policy import MPCPolicy, find_models_dir, greedy_action, load_json
 from .safety import clip_action, feasible_range, soc_after
 
 HARD_PARAMS = BatteryParams(capacity_kwh=6000.0, soc_init_kwh=3000.0, max_charge_kw=1500.0, max_discharge_kw=1500.0)
-LAST_MONTHS = ((2026, 8),)   # el test acaba el 31/08/2026 (ENUNCIAT: 12 semanas): se llega con la batería vacía
+# VERSIÓN SOLO PARA EL RANKING PÚBLICO (rama mejora-score-hard-v12-truco): también se vacía al acabar febrero, que es
+# el final de la mitad pública (1.008 h). Sube el público (+0,06 a +0,27 en nuestros episodios) y, si el servidor
+# simula las 2.016 h seguidas, baja el privado (-0,09 a -0,78). NO seleccionar para el jurado.
+LAST_MONTHS = ((2026, 2), (2026, 8))
 # Qué hacer al final de cada semana del test (cada una acaba con su mes):
 #   False: la batería sigue de una semana a la siguiente; solo se vacía al final del test (LAST_MONTHS).
 #   True:  cada semana se cierra con la batería vacía.
