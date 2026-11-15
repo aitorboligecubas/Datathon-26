@@ -55,3 +55,25 @@ La lectura del contador ya lleva descontada la solar real: en las horas de sol, 
 1 kW (pendiente −1,0 a mediodía; −1,12 en diferencias horarias, correlación −0,46). El "consumo" del dataset es el
 consumo menos la solar, así que en el modo difícil el consumo neto es consumo real − 13 × solar, no − 12. Los márgenes
 del agente están calibrados sobre el consumo neto medido, así que no hay que corregir nada.
+
+## Qué versión es la mejor: comprobación independiente (domingo, 11:05 h)
+
+Las versiones enviadas, medidas con el calendario real del episodio (`scripts/p1_lab/hard_calendario_versiones.py`)
+en tres ventanas que no se habían usado para decidir nada. 0 infracciones en todas.
+
+| Ventana | v10 | v10b (margen 0,8) | v12 | v14 | v14 − v10 |
+|---|---|---|---|---|---|
+| Días 5–11 | 20,901 | 20,865 | 21,032 | **21,074** | +0,173 |
+| Días 10–16 | 19,415 | 19,392 | 19,464 | **19,505** | +0,090 |
+| Días 17–23 | 18,821 | 18,782 | 18,927 | **18,929** | +0,108 |
+
+Con las seis ventanas de P1 (`docs/envios.md`), la v14 gana a la v10 en 9 de 9 (+0,13 de media) y la v12 gana a la
+v10 en 9 de 9 (+0,10). La v14 gana o empata con la v12 en 8 de 9 (+0,03 de media): entre esas dos la diferencia es
+pequeña. La v10b pierde frente a la v10 en las tres (−0,03), que es lo que salió en la web (−0,02).
+
+En el público el orden es el contrario (v10 24,15; v12 24,11; v14 24,06), pero el público es la mitad de las horas de
+cada semana y la organización ha dicho que cuenta el privado. La v15 decide igual que la v14 salvo que la irradiancia
+sea de la hora actual.
+
+**Conclusión: la mejor versión es la v14 (la v15 es la misma con una opción más). Para el jurado, la v14 (o la v15) y la
+v10 como cobertura, con el nombre `SanHackobos`.**
