@@ -1,0 +1,4 @@
+SCORE 15-21 | agente actual | 18.682 | dif +0.000 | infr 0 | ms/paso 4.72
+SCORE 15-21 | make_dn | 18.724 | dif +0.042 | infr 0 | ms/paso 4.83
+SCORE 12-18 | agente actual | 19.003 | dif +0.000 | infr 0 | ms/paso 4.86
+SCORE 12-18 | make_dn | 18.999 | dif -0.004 | infr 0 | ms/paso 4.92

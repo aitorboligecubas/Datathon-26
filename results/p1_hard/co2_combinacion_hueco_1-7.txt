@@ -1,0 +1,5 @@
+SCORE 1-7 | agente actual | 21.263 | dif +0.000 | infr 0 | ms/paso 5.73
+SCORE 1-7 | diag_real_3_5 | 21.421 | dif +0.158 | infr 0 | ms/paso 5.54
+SCORE 1-7 | diag_real_3_8 | 21.442 | dif +0.179 | infr 0 | ms/paso 4.82
+SCORE 1-7 | diag_real_12_23 | 21.290 | dif +0.027 | infr 0 | ms/paso 4.96
+SCORE 1-7 | diag_real_3_23 | 21.474 | dif +0.211 | infr 0 | ms/paso 5.09

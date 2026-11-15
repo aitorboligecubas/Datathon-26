@@ -1,0 +1,3 @@
+SCORE 10-16 | agente actual | 19.505 | dif +0.000 | infr 0 | ms/paso 4.53
+SCORE 10-16 | make_delta | 19.530 | dif +0.025 | infr 0 | ms/paso 4.69
+SCORE 10-16 | make_d12 | 19.498 | dif -0.007 | infr 0 | ms/paso 4.66

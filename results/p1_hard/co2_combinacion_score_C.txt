@@ -1,0 +1,12 @@
+SCORE 1-7 | agente actual | 21.263 | dif +0.000 | infr 0 | ms/paso 4.62
+SCORE 1-7 | make_wls | 21.251 | dif -0.012 | infr 0 | ms/paso 4.82
+SCORE 1-7 | make_wls1 | 21.266 | dif +0.003 | infr 0 | ms/paso 4.83
+SCORE 1-7 | make_smooth | 21.252 | dif -0.012 | infr 0 | ms/paso 4.98
+SCORE 3-9 | agente actual | 21.068 | dif +0.000 | infr 0 | ms/paso 5.26
+SCORE 3-9 | make_wls | 21.084 | dif +0.016 | infr 0 | ms/paso 4.71
+SCORE 3-9 | make_wls1 | 21.092 | dif +0.023 | infr 0 | ms/paso 4.84
+SCORE 3-9 | make_smooth | 21.069 | dif +0.001 | infr 0 | ms/paso 5.14
+SCORE 12-18 | agente actual | 19.003 | dif +0.000 | infr 0 | ms/paso 4.79
+SCORE 12-18 | make_wls | 19.008 | dif +0.004 | infr 0 | ms/paso 5.46
+SCORE 12-18 | make_wls1 | 19.016 | dif +0.012 | infr 0 | ms/paso 4.54
+SCORE 12-18 | make_smooth | 19.012 | dif +0.008 | infr 0 | ms/paso 4.77

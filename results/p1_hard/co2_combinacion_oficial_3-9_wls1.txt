@@ -1,0 +1,4 @@
+3-9: 1844 h | referencia 72.5 kg/h y 123.4 EUR/h | excedente solar sin batería 64907 kWh (9.3 % de las horas)
+       agente  score  co2_pct  coste_pct  infr  vertido_kwh  vert_descarga  vert_solar  ms_paso  s_2016h
+agente actual 21.068   19.931     23.723     0     2748.612       2408.148     340.464    5.532   11.169
+    CANDIDATO 21.092   19.971     23.706     0     2725.014       2387.667     337.347    5.417   10.988
