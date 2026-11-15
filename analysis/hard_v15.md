@@ -77,3 +77,21 @@ sea de la hora actual.
 
 **Conclusión: la mejor versión es la v14 (la v15 es la misma con una opción más). Para el jurado, la v14 (o la v15) y la
 v10 como cobertura, con el nombre `SanHackobos`.**
+
+## ¿Cuál aguanta mejor datos distintos? Prueba de generalización (domingo, 11:15 h)
+
+`python scripts/p2_hard_generaliza.py <escenario>`. Los modelos se ajustan sin la ventana (últimas 168 h de cada mes) y
+se evalúan en esa ventana deformada. 0 infracciones en las 18 simulaciones.
+
+| Datos de evaluación | v10 | v12 | v14 | Óptimo | v14 / óptimo |
+|---|---|---|---|---|---|
+| Sin deformar | 20,785 | 20,917 | **21,073** | 22,404 | 94,1 % |
+| Otro año (fechas +364 días: ni la memoria del train ni los festivos casan) | 20,765 | 20,903 | **21,042** | 22,404 | 93,9 % |
+| Precio ×1,5 y CO₂ ×0,7 | 19,945 | 20,124 | **20,217** | 22,404 | 90,2 % |
+| Solar a la mitad | 17,370 | 17,398 | **17,530** | 18,705 | 93,7 % |
+| Consumo ×1,3 | 15,490 | 15,557 | **15,647** | 16,585 | 94,3 % |
+| Todo a la vez | 13,288 | 13,317 | **13,320** | 14,741 | 90,4 % |
+
+La v14 es la mejor en los seis escenarios y el orden v14 ≥ v12 ≥ v10 no cambia en ninguno. Las tres pierden lo mismo
+cuando cambian los niveles de precio y CO₂ (unos 4 puntos del óptimo): es la parte aprendida del train. Con todo
+deformado a la vez las tres casi empatan (13,29 a 13,32).
