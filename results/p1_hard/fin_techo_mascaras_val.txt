@@ -1,0 +1,13 @@
+val: episodio completo v10 20.770 (CO2 19.57 coste 23.56) | óptimo 22.404 (CO2 21.51 coste 24.49) infr 0 | cociente 1.0787
+
+A) nota(óptimo con todo el futuro)/nota(v10) en las horas de la máscara
+  mitad contigua               n=  2 cociente min 1.057 med 1.076 max 1.095 | >=1,16:   0 | v10 en la máscara 18.72-22.51 | CO2 x1.084-1.109 coste x1.012-1.065
+  mitad contigua desplazada    n=  8 cociente min 1.022 med 1.100 max 1.157 | >=1,16:   0 | v10 en la máscara 17.80-23.62 | CO2 x1.026-1.197 coste x1.013-1.079
+  horas alternas               n=  2 cociente min 1.018 med 1.085 max 1.153 | >=1,16:   0 | v10 en la máscara 18.73-22.80 | CO2 x1.035-1.177 coste x0.985-1.106
+  bloques de 3 h               n=  2 cociente min 0.987 med 1.048 max 1.109 | >=1,16:   0 | v10 en la máscara 11.05-29.34 | CO2 x1.014-1.123 coste x0.948-1.079
+  bloques de 6 h               n=  2 cociente min 0.920 med 0.971 max 1.022 | >=1,16:   0 | v10 en la máscara -27.94-54.33 | CO2 x0.898-1.025 coste x0.963-1.015
+  bloques de 12 h              n=  2 cociente min 0.906 med 1.083 max 1.260 | >=1,16:   1 | v10 en la máscara 18.09-23.81 | CO2 x0.902-1.266 coste x0.915-1.247
+  días alternos                n=  2 cociente min 0.967 med 1.067 max 1.167 | >=1,16:   1 | v10 en la máscara 20.31-21.36 | CO2 x0.978-1.189 coste x0.947-1.122
+  azar por horas               n=200 cociente min 0.878 med 1.076 max 1.228 | >=1,16:  15 | v10 en la máscara 15.72-25.88 | CO2 x0.887-1.282 coste x0.861-1.146
+  azar por días enteros        n=200 cociente min 0.947 med 1.077 max 1.240 | >=1,16:  17 | v10 en la máscara 16.41-24.80 | CO2 x0.953-1.276 coste x0.935-1.183
+  TOTAL 420 máscaras, llegan a 1,16: 34
