@@ -181,3 +181,31 @@ Qué dice:
 **Conclusión: la selección para el jurado no cambia (v14 y v10, a mano).** No hay ningún fallo ni ninguna ventaja
 escondida en nuestro código. La ventaja de los líderes es de coste, visible solo en la mitad pública, y no se ha
 podido reproducir con nada que mejore el episodio completo.
+
+## Una entrega con 27,98 en el público (domingo, 10:37 h): cómo leerla
+
+A las 9:37 UTC apareció en el modo difícil una entrega de otro equipo con 27,98 (CO₂ 27,05 %, coste 30,15 %), un
+16 % por encima de nuestra v10 (24,15) y 3,6 puntos por encima del segundo. Un salto así no sale de prever mejor:
+el óptimo que conoce todo el futuro está un 6–8 % por encima de la v10 en el episodio completo.
+
+Medido en casa con el calendario real del episodio (`scripts/p1_lab/hard_publico_llegar_lleno.py`). La web puntúa el
+50 % de cada semana; aquí se parte cada semana en sus dos mitades (84 h cada una):
+
+| Agente | Últimas 168 h: 1.ª mitad / 2.ª mitad / todo | Días 8–14: 1.ª / 2.ª / todo | Días 1–7: 1.ª / 2.ª / todo |
+|---|---|---|---|
+| v10 | 22,50 / 18,73 / 20,77 | 20,06 / 20,27 / 20,16 | 19,38 / 22,74 / 20,99 |
+| Óptimo con todo el futuro conocido | 24,64 / 19,79 / 22,40 | 21,63 / 21,19 / 21,42 | 21,96 / 22,97 / 22,44 |
+| v10 que llena la batería en las 5 últimas horas de cada semana | **25,34** / 14,29 / 20,21 | **23,11** / 13,98 / 18,73 | **23,78** / 15,21 / 19,69 |
+| v10 que llena la batería en las 5 últimas horas de la 1.ª mitad | 15,26 / **22,56** / 18,69 | 13,13 / **23,66** / 18,18 | 13,17 / **26,23** / 19,40 |
+
+- **Conocer todo el futuro** sube una mitad entre un 1 % y un 13 % sobre la v10. La entrega de 27,98 está un 16 %
+  por encima.
+- **Llenar la batería justo antes de una mitad** sube esa mitad entre un 13 % y un 23 % (+2,8 a +4,4 puntos): el
+  coste de la carga cae en horas de la otra mitad, que pierde entre 4,4 y 7,5 puntos. En el episodio completo
+  pierde entre 0,6 y 2,1 puntos: no ahorra más CO₂ ni más euros, los cambia de sitio.
+- **Lectura:** la firma de esa entrega (+4,1 puntos de CO₂ y +3,1 de coste a la vez) es la de mover el coste de la
+  carga a la mitad que el público no ve. No se puede demostrar desde fuera; la otra explicación posible es que
+  conozca datos del test. Si es lo primero, en el ranking privado, que es el que mira el jurado, baja lo que aquí sube.
+- **Qué hacemos: nada distinto.** No se copia: empeora el resultado real del campus, se hunde en la mitad privada y no
+  se puede defender ante el jurado. Tampoco se apunta el truco a la mitad privada: habría que sondear qué mitad es
+  cuál y, si se falla, cuesta 6–7 puntos. La selección sigue siendo la v14 y la v10. Se avisa a la organización.
