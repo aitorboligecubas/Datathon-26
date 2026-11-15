@@ -45,3 +45,35 @@ def test_meter_failure_means_no_load_now():
     assert min(f.load_how) > 900                      # el perfil no ha aprendido el 0
     f.update(Obs(12, 2, 1000.0, np.full(24, 0.1), np.full(24, 0.1), 1050.0, 20.0))
     assert f.forecast(ok, 24)[0][0] > 900             # al volver la lectura, previsión normal
+
+
+def test_hard_irradiance_alignment_detector():
+    """v15 (modo difícil): el previsor de solar averigua solo si la irradiancia de la observación es de la hora
+    anterior (lo documentado: no cambia nada) o de la hora actual (entonces la usa para la solar de esta hora)."""
+    import json
+    import math
+    from pathlib import Path
+
+    from battery.forecaster import Forecaster
+    from battery.hard_solar import SolarCand
+
+    tables = json.loads((Path(__file__).resolve().parents[1] / "models" / "hard_solar.json").read_text())["cand"]
+    irr = [max(0.0, 900.0 * math.sin(math.pi * (h % 24 - 6) / 13.0)) * (0.6 + 0.4 * ((h // 24) % 3) / 2.0)
+           if 6 <= h % 24 <= 19 else 0.0 for h in range(24 * 6)]
+    pv = [1.7 * v for v in irr]                                   # solar (x12) proporcional a la irradiancia
+
+    def run(shift: int) -> SolarCand:
+        nl = SolarCand(tables, Forecaster(None))
+        for t in range(1, len(irr)):
+            nl.weather = {"irradiancia_wm2": irr[t - 1 + shift]}  # shift 0: de la hora anterior; 1: de la actual
+            nl.irr_learn(True, pv[t - 1])                         # la solar que llega es siempre la de la hora anterior
+        return nl
+
+    assert not run(0).irr_now                                     # lo documentado: el agente decide como la v14
+    now = run(1)
+    assert now.irr_now and abs(now.irr_fit[1] / now.irr_fit[0] - 1.7) < 1e-6
+    junk = SolarCand(tables, Forecaster(None))
+    for v in (None, "x", float("nan"), -5.0, [1], 1e12):
+        junk.weather = {"irradiancia_wm2": v}
+        junk.irr_learn(True, 500.0)
+    assert not junk.irr_now

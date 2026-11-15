@@ -36,6 +36,8 @@ METEO_COLS = {"Atersa - IRRADIANCIA (W/m2)": "irradiancia_wm2",
               "Atersa - TEMPERATURA PANEL (SENSOR 1) (ºC)": "temp_panel_c",
               "Atersa - VELOCIDAD VIENTO (SENSOR 1) (m/s)": "vent_ms"}
 MODELS = REPO / "models"
+METEO_MODE = __import__("os").environ.get("HARD_METEO_NOW", "")
+METEO_NOW = METEO_MODE in ("1", "2")
 
 
 def hard_table() -> pd.DataFrame:
@@ -263,7 +265,10 @@ def simulate_hard(agent, df: pd.DataFrame, known: int = KNOWN_HOURS, p=HARD_PARA
         prev = t - 1 if t > 0 else t
         recent = {"ultim_consum_kw": float(load_[prev]), "ultima_solar_kw": float(pv[prev])}
         for c, v in met.items():
-            recent[c] = float(v[prev])
+            # HARD_METEO_NOW=1: prueba de qué pasaría si el servidor diese la meteo de la hora actual (v15)
+            recent[c] = float(v[t] if METEO_NOW else v[prev])
+        if METEO_MODE == "2":      # techo de diagnóstico: la 'irradiancia' es la solar exacta de esta hora
+            recent["irradiancia_wm2"] = float(pv[t])
         obs = {"timestamp": ts[t], "hour": int(ts[t].hour), "day_of_week": int(ts[t].dayofweek), "soc_kwh": float(soc),
                "soc_pct": float(soc / p.capacity_kwh), "soc_percent": float(soc / p.capacity_kwh * 100),
                "preu_actual": float(price[t]), "co2_actual": float(co2[t]),

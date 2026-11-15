@@ -234,6 +234,17 @@ def neighbour_month(month: int, day: float, centers) -> tuple:
 # con los datos reales del test (sep-feb), y en el banco los meses de verano (la mitad privada) casi no notan el
 # cambio (-0,004 de media en 4 ventanas). En el banco completo 1,4 gana por unas centésimas.
 Z_SOLAR = 1.0
+# ---- ¿La irradiancia que trae la observación es de la hora anterior o de la hora ACTUAL? (v15)
+# La organización dice "meteo de la hora anterior". El agente lo comprueba sobre la marcha: si la irradiancia de una
+# observación explica mucho mejor la solar que llega en la observación SIGUIENTE que la que llega con ella, es de la
+# hora actual, y entonces la solar de esta hora se conoce casi exacta (kW = coeficiente x W/m2). Si no, no cambia nada.
+IRR_MIN_N = 12              # horas de sol vistas antes de decidir
+IRR_R2 = 0.97               # ajuste mínimo de "solar = coeficiente x irradiancia de la observación anterior"
+IRR_RATIO = 0.25            # su error cuadrático tiene que ser menos de la cuarta parte que el de la otra lectura
+IRR_DECAY = 0.98            # olvido del coeficiente (cambia con la estación y la temperatura)
+IRR_MIN_KW = 20.0           # por debajo de esto (solar, ya x12) y de IRR_MIN_WM2 es de noche: no se cuenta
+IRR_MIN_WM2 = 20.0
+IRR_SD_MIN = 25.0           # kW: error mínimo que se le supone a la solar calculada con la irradiancia
 # Margen con el que el PLAN de las horas siguientes (no la acción de esta hora) cuenta con la solar. Se deja igual
 # que el de la acción (1,4). Rama mejora-score-hard: 2,0 ganaba en validación (+0,031) pero en 9 ventanas solo
 # +0,001 de media sobre la semilla y -0,027 en el episodio con el calendario del test: no se cambia.
@@ -309,6 +320,13 @@ class SolarCand:
         except Exception:
             self.ok = False
         self.weather = {}
+        self.irr_last = float("nan")            # irradiancia que traía la observación anterior
+        self.irr_a = [0.0, 0.0, 0.0, 0]         # "la meteo es de la hora anterior": Sxx, Sxy, Syy, n
+        self.irr_b = [0.0, 0.0, 0.0, 0]         # "la meteo es de la hora actual": ídem con la irradiancia anterior
+        self.irr_fit = [0.0, 0.0, 0.0, 0.0]     # sumas con olvido para el coeficiente kW por W/m2 y su error
+        self.irr_now = False                    # True: la irradiancia de la observación es de la hora actual
+        self.irr_used = 0                       # horas decididas con la solar calculada con la irradiancia
+        self.pv_seen_max = 0.0                  # mayor solar vista (los inversores saturan)
         self.new_block()
         self.net_lo0 = float("nan")     # consumo neto de esta hora menos el margen (lo usa adjust_action)
         self.net_lo0_charge = float("nan")
@@ -418,6 +436,10 @@ class SolarCand:
             self.new_block()
             self.load_prev = keep
         self.last_value = value
+        try:
+            self.irr_learn(seguido, pv)
+        except Exception:
+            self.irr_now = False
         if math.isfinite(w_now):
             self.w_hist.append(w_now)
             if len(self.w_hist) > 60:
@@ -444,6 +466,46 @@ class SolarCand:
         if day_now != self.cur_day:     # cambia el día: la media de hoy pasa a ser "la de ayer"
             self.prev_day_mean = self.day_sum / self.day_n if self.day_n > 0 else float("nan")
             self.cur_day, self.day_sum, self.day_n, self.last_dev = day_now, 0.0, 0, float("nan")
+
+    def irradiance(self) -> float:
+        """Irradiancia (W/m2) de la observación de esta hora; NaN si no viene o no es válida."""
+        try:
+            v = float(self.weather.get("irradiancia_wm2"))
+        except Exception:
+            return float("nan")
+        return v if (math.isfinite(v) and v >= 0.0) else float("nan")
+
+    def irr_learn(self, seguido: bool, pv: float) -> None:
+        """Compara las dos lecturas posibles de la irradiancia con la solar que acaba de llegar (la de la hora
+        anterior): A, la irradiancia de esta misma observación; B, la de la observación anterior."""
+        irr, last = self.irradiance(), self.irr_last
+        self.irr_last = irr
+        if not (seguido and math.isfinite(pv) and pv >= 0.0):
+            return
+        if not (pv > IRR_MIN_KW or (math.isfinite(irr) and irr > IRR_MIN_WM2)
+                or (math.isfinite(last) and last > IRR_MIN_WM2)):
+            return                      # de noche no hay nada que comparar
+        if pv > self.pv_seen_max:
+            self.pv_seen_max = pv
+        for sums, x in ((self.irr_a, irr), (self.irr_b, last)):
+            if math.isfinite(x):
+                sums[0] += x * x
+                sums[1] += x * pv
+                sums[2] += pv * pv
+                sums[3] += 1
+        if math.isfinite(last):
+            f = self.irr_fit
+            f[0] = IRR_DECAY * f[0] + last * last
+            f[1] = IRR_DECAY * f[1] + last * pv
+            f[2] = IRR_DECAY * f[2] + pv * pv
+            f[3] = IRR_DECAY * f[3] + 1.0
+        a, b = self.irr_a, self.irr_b
+        now = False
+        if a[3] >= IRR_MIN_N and b[3] >= IRR_MIN_N and a[0] > 0 and b[0] > 0 and b[2] > 0:
+            sse_a = a[2] - a[1] * a[1] / a[0]
+            sse_b = b[2] - b[1] * b[1] / b[0]
+            now = b[1] * b[1] / (b[0] * b[2]) >= IRR_R2 and sse_b < IRR_RATIO * sse_a
+        self.irr_now = now
 
     def forecast(self, obs, times: list) -> tuple:
         H = max(1, len(times))
@@ -473,6 +535,7 @@ class SolarCand:
         day_mean = self.day_sum / self.day_n if self.day_n > 0 else float("nan")
         load, pv, margin = np.empty(H), np.empty(H), np.empty(H)
         pv_margin0 = 0.0                 # la parte del margen de esta hora que viene de la solar
+        load_margin0, clear0 = 0.0, 0.0
         for k, t in enumerate(times):
             h = t.hour
             seguido = t.value - v0 == k * HOUR_NS
@@ -534,10 +597,27 @@ class SolarCand:
                 m_load, m_pv = lo_rel * prof, up * clear
                 margin[k] = math.sqrt(m_load * m_load + m_pv * m_pv)
                 if k == 0:
-                    pv_margin0 = m_pv
+                    pv_margin0, load_margin0, clear0 = m_pv, m_load, clear
             else:
                 margin[k] = self.net_sd[h]
             load[k], pv[k] = load_k, pv_k
+        if self.irr_now and self.quant and clear0 > 0 and pv_margin0 > 0:
+            # La irradiancia de la observación es de ESTA hora: la solar de esta hora sale de ella, con su error.
+            try:
+                irr, f = self.irradiance(), self.irr_fit
+                if math.isfinite(irr) and f[0] > 0 and f[3] >= 6.0:
+                    pv_now = irr * f[1] / f[0]
+                    if self.pv_seen_max > 0:
+                        pv_now = min(pv_now, self.pv_seen_max)
+                    sd = math.sqrt(max(f[2] - f[1] * f[1] / f[0], 0.0) / f[3])
+                    m_pv = min(max(sd, IRR_SD_MIN), pv_margin0)         # nunca más margen que sin la irradiancia
+                    if math.isfinite(pv_now) and math.isfinite(m_pv):
+                        pv[0] = max(pv_now, 0.0)
+                        margin[0] = math.sqrt(load_margin0 * load_margin0 + m_pv * m_pv)
+                        pv_margin0 = m_pv
+                        self.irr_used += 1
+            except Exception:
+                pass
         if self.meter_down:              # contador caído (lectura 0 exacta): si sigue, descargar es tirar energía
             load[0] = 0.0
             if self.pv_alive:            # ...pero si la solar sigue viva, lo que produzca es excedente que guardar
