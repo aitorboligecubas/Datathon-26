@@ -100,3 +100,12 @@ invierno, z=0,7: -0,065; z=0,4: -0,175; z=0: -0,390, perdiendo CO2 Y euros), per
 veces con el margen en esos meses. La v13 baja el margen solo de septiembre a febrero (verano igual que la v12: en el
 banco el privado cambia -0,005 a -0,014 por la carga que pasa de febrero a marzo). Se sondea con el público en
 escalera: 0,7 -> 0,4 -> 0. El commit deja 0,7; los ZIP de 0,4 y 0 salen cambiando `Z_SOLAR_BY_MONTH`.
+
+**Resultado en el público (domingo, ~01:00): v13 con margen 0,4 en invierno = 23,66** (CO2 22,37 %, euros 26,69 %),
+-0,49 frente a la v10 (24,15). La hipótesis era falsa: el óptimo del margen está en ~1,0 y por debajo se vierte
+energía, como decía el banco. Las variantes 0,7 y 0 NO se envían. Lección: el banco acertó el signo aquí; las dos
+subidas anteriores (1,4 -> 1,0) no autorizaban a extrapolar.
+
+Huella del truco de vaciar la batería en la hora 1.008 (para leer el ranking): en el público CO2 +0,23 a +0,26 y
+euros +0,18 a +0,36. El salto de SSA Gourmet (24,04 -> 24,36: CO2 +0,04, euros +0,97) no tiene esa huella: parece
+una mejora en la parte de precio (más euros con el mismo CO2), no ese truco.
