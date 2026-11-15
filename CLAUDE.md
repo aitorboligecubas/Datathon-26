@@ -241,7 +241,8 @@ Fanboy & Chum Chum 24,25; su ventaja es solo de coste.**
 referencia más baja). Y las diferencias pequeñas de la web no ordenan las versiones: según las preguntas frecuentes
 y el código oficial, el público es el 50 % de cada semana del test, calculado con una máscara de horas sobre una
 única simulación. En la web, la v12 y la v14 salen por debajo de la v10 (−0,04 y −0,09); en el banco, sobre el
-episodio completo, salen por encima (+0,10 y +0,20 de media en seis ventanas). Hay dos lecturas y no se puede
+episodio completo, salen por encima (+0,10 y +0,20 de media en seis ventanas; +0,10 y +0,14 si el banco sigue el
+calendario real del test, con el salto de un mes entre semanas, y ganan en las seis). Hay dos lecturas y no se puede
 descartar ninguna: que el banco acierte y la web solo enseñe la mitad de las horas (la diferencia v14 − v10 baila
 ±0,65 puntos según qué horas sean públicas), o que en el test las versiones prudentes sean de verdad peores.
 Por eso **se seleccionan a mano para el jurado la v14 y la v10**: cada una cubre una de las dos lecturas. No se

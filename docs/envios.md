@@ -134,3 +134,50 @@ independientes y las medidas propias (`results/p1_hard/r3_calibracion_notas.md` 
   sola: v14 y v10 +0,32; v14 y v12 +0,31; v10 y v12 (la que coge la web por defecto) +0,15. La v10 cubre el fallo
   que v12 y v14 tendrían en común si R fuera cierta.
 
+## Última revisión (domingo, 10:30 h): tres revisores línea a línea y el banco con el calendario real
+
+Tres revisores independientes, a máximo esfuerzo, repasaron el agente entero buscando qué nos falta respecto a los
+líderes (scripts `scripts/p1_lab/hard_rev_*.py`, resultados `results/p1_hard/rev_*`):
+
+- **Lógica (línea a línea):** ningún fallo. Ajustar las tablas con validación cruzada no mejora (`rev_logica_crossfit_*`).
+- **Calendario y fechas:** ningún fallo. El cambio de hora de octubre y marzo cuesta 0,009 y el parche que lo evita
+  recupera 0,0004: no se toca (`rev_calendario_hora.csv`).
+- **Dónde se pierden los puntos (`rev_perdidas_descomp.txt`):** de los 1,33 puntos que separan a la v14 del óptimo
+  en la validación, 0,32 son un artefacto del banco (el episodio de casa no acaba el 31/08 y el agente no vacía la
+  batería; en el test sí), 0,27 es descarga que se vierte porque el consumo neto salió menor de lo previsto, 0,03 es
+  solar no guardada y el resto, no conocer el precio y el CO₂ más allá de 3 horas.
+
+**Lo que sí encontraron: el banco normal no ejercita el salto entre semanas.** En el test, tras la última hora de
+una semana viene otra semana un mes después. En el banco el agente cree que la semana sigue, así que nunca se había
+medido cómo planifica al cruzar el salto. Medido con el calendario real del episodio
+(`scripts/p1_lab/hard_calendario_versiones.py`, `results/p1_hard/calendario_versiones_*.csv`), 0 infracciones en todo:
+
+| Ventana | v10 | v10 con margen 0,8 | v9 (margen 1,4) | v12 | v14 | v14 + puente |
+|---|---|---|---|---|---|---|
+| Últimas 168 h (validación) | 20,770 | 20,722 | 20,817 | **20,891** | 20,874 | 20,897 |
+| Días 8–14 | 20,159 | 20,125 | 20,177 | 20,250 | **20,288** | 20,294 |
+| Días 1–7 | 20,987 | 20,967 | 20,992 | 21,099 | **21,235** | 21,235 |
+| Días 3–9 | 20,881 | 20,853 | 20,884 | 20,997 | **21,046** | 21,049 |
+| Días 12–18 | 18,997 | 18,981 | 18,988 | 19,037 | **19,071** | 19,099 |
+| Días 15–21 | 18,587 | 18,557 | 18,611 | 18,677 | **18,686** | 18,713 |
+| **Media frente a la v10** | | −0,029 | +0,015 | **+0,095** | **+0,137** | +0,151 |
+
+Qué dice:
+
+- **La v12 y la v14 ganan a la v10 en las seis ventanas** también con el calendario real (+0,10 y +0,14 de media).
+- **La ventaja de la v14 sobre la v12 es menor de lo que decía el banco normal:** +0,04 de media (antes +0,09), y en
+  la ventana que más se parece al test (las últimas 168 h) desaparece (−0,02). Motivo: en el banco normal el agente
+  cree que mañana es el día siguiente del mismo mes, y el perfil interpolado de la v14 se parecía por casualidad a lo
+  que venía de verdad (la semana del mes siguiente). Con el calendario real esa ventaja artificial no existe.
+- **Bajar el margen de la solar a 0,8 pierde en las seis** (−0,03 de media): la prueba `HARD_v10b_margen08` no
+  tiene apoyo en el banco. Subirlo a 1,4 (v9) no cambia nada (+0,015).
+- **El "puente"** (prever las horas de después del salto con la semilla de la semana siguiente, en vez de solo con el
+  perfil) da +0,015 de media y no pierde en ninguna ventana. Es coherente, pero vale menos que el ruido de una ventana:
+  queda medido y documentado, no integrado a una hora del cierre.
+- **Las máscaras de "50 % de cada semana" siguen sin explicar la web** (`scripts/p1_lab/hard_calendario_mascaras.py`):
+  en tres ventanas, ninguna de 13 máscaras sencillas reproduce las siete notas públicas (la mejor queda a 0,15 puntos, más que
+  las diferencias que se quieren explicar), y según la máscara la diferencia v14 − v10 va de −0,53 a +1,15.
+
+**Conclusión: la selección para el jurado no cambia (v14 y v10, a mano).** No hay ningún fallo ni ninguna ventaja
+escondida en nuestro código. La ventaja de los líderes es de coste, visible solo en la mitad pública, y no se ha
+podido reproducir con nada que mejore el episodio completo.
