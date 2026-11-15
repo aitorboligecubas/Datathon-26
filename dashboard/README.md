@@ -1,5 +1,14 @@
 # Dashboard de decisió · Bateria del Campus Nord
 
+## 🔗 Dashboard en viu (per obrir directament)
+
+**👉 https://dist-two-rho-53.vercel.app**
+
+No cal instal·lar res: obre l'enllaç al navegador. GitHub només conté el codi font;
+el dashboard funcionant està desplegat a Vercel (estàtic, públic).
+
+---
+
 Aplicació web (React + Vite + Tailwind + TanStack Query) per al **Premi Tukey**
 (side challenge del Datathon FME 2026). Respon, amb les dades i el simulador del
 repte de la bateria, les preguntes de decisió: **val la pena la bateria, com
