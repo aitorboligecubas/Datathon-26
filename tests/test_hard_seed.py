@@ -79,3 +79,23 @@ def test_optimizer_extras_default_to_the_old_plan():
     assert np.allclose(base, same)
     capped = plan(3000.0, load, pv, price, co2, 8.0, 2.0, 0.0, HARD_PARAMS, discharge_cap=np.full(24, 100.0))
     assert capped.min() >= -100.0 - 1e-6
+
+
+def test_cap_discharge_defers_to_the_forecast_after_a_solar_surplus():
+    """Revisión de la decisión: tras una hora con excedente solar (lectura neta < 0), el tope del modo estándar
+    bloqueaba toda descarga. Con la previsión de esta hora manda adjust_action; sin ella, el tope de siempre."""
+    from battery.hard import HardPolicy
+    from battery.obs import Obs
+
+    pol = HardPolicy()
+    obs = Obs(hour=17, weekday=0, soc_kwh=5000.0, price=np.array([0.1]), co2=np.array([0.1]),
+              load_prev_kw=900.0, pv_prev_kw=1000.0, timestamp=pd.Timestamp("2026-08-31 17:00"))
+    assert getattr(pol.netload, "uncap", False)
+    pol.netload.fresh = False
+    assert pol.cap_discharge(-600.0, obs) == 0.0          # sin previsión: lo comprado la hora anterior (nada)
+    pol.netload.fresh = True
+    assert pol.cap_discharge(-600.0, obs) == -600.0       # con previsión: el margen lo pone adjust_action
+    assert pol.cap_discharge(800.0, obs) == 800.0         # la carga no se toca
+    a = pol.act(_hard_obs("2026-08-31 16:00", 5000.0, load_prev=900.0, pv_prev=1000.0))
+    a = pol.act(_hard_obs("2026-08-31 17:00", 5000.0, load_prev=900.0, pv_prev=1000.0))
+    assert math.isfinite(a) and -1500.0 <= a <= 1500.0

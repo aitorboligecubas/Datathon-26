@@ -187,6 +187,17 @@ class HardPolicy(MPCPolicy):
             self.n_fallbacks += 1
             return greedy_action(obs, load[0], pv[0], self.p)
 
+    def cap_discharge(self, action_kw: float, obs: Obs) -> float:
+        """Con la previsión de esta hora (SolarCand: `fresh` y `uncap`), el tope de la descarga lo pone
+        adjust_action con el consumo neto previsto menos el margen. El tope del modo estándar (lo comprado la hora
+        anterior) fallaba aquí en dos casos: tras una hora con excedente solar (lectura neta <= 0) bloqueaba toda
+        descarga aunque ya no hubiera sol, y cuando actuaba, uncap lo subía hasta el límite previsto aunque el plan
+        quisiera menos. Sin esa previsión (formato raro, contador caído, previsor de respaldo) se usa el de siempre."""
+        nl = getattr(self, "netload", None)
+        if getattr(nl, "fresh", False) and getattr(nl, "uncap", False):
+            return action_kw
+        return super().cap_discharge(action_kw, obs)
+
     def restarted(self, obs: Obs) -> bool:
         """True si el reloj vuelve atrás: el entorno empieza otra simulación con este mismo agente (por ejemplo,
         el test después de una prueba rápida). Se olvida lo deducido de la simulación anterior."""
