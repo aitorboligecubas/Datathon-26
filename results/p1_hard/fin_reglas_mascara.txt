@@ -1,0 +1,62 @@
+== Ventana val: 1848 h, 11 semanas. Episodio entero ==
+  v10     score  20.77 | CO2  19.57 % | coste  23.56 %
+  v14     score  20.87 | CO2  19.69 % | coste  23.65 %
+  óptimo  score  22.40 | CO2  21.51 % | coste  24.49 %
+  objetivo (27,98 frente a la v10 en la web): score x1.159, CO2 x1.180, coste x1.116
+== 1. Óptimo con todo el futuro / v10 en la mitad pública, por familia de máscara ==
+  bloques de 1 h                   n=   2 | óptimo/v10: mín x1.018 med x1.085 máx x1.153 | CO2 máx x1.177 | coste máx x1.106 | llegan a x1.159: 0 (con las tres cifras: 0) | v14/v10: x0.955 a x1.066
+  bloques de 2 h                   n=   2 | óptimo/v10: mín x1.058 med x1.078 máx x1.097 | CO2 máx x1.112 | coste máx x1.066 | llegan a x1.159: 0 (con las tres cifras: 0) | v14/v10: x0.977 a x1.030
+  bloques de 3 h                   n=   2 | óptimo/v10: mín x1.022 med x1.060 máx x1.098 | CO2 máx x1.117 | coste máx x1.057 | llegan a x1.159: 0 (con las tres cifras: 0) | v14/v10: x0.964 a x1.126
+  bloques de 4 h                   n=   2 | óptimo/v10: mín x0.980 med x1.153 máx x1.326 | CO2 máx x1.373 | coste máx x1.249 | llegan a x1.159: 1 (con las tres cifras: 1) | v14/v10: x0.973 a x1.085
+  bloques de 6 h                   n=   2 | óptimo/v10: mín x0.926 med x0.973 máx x1.020 | CO2 máx x1.023 | coste máx x1.013 | llegan a x1.159: 0 (con las tres cifras: 0) | v14/v10: x0.985 a x0.997
+  bloques de 12 h                  n=   2 | óptimo/v10: mín x0.924 med x1.098 máx x1.272 | CO2 máx x1.279 | coste máx x1.257 | llegan a x1.159: 1 (con las tres cifras: 1) | v14/v10: x1.001 a x1.009
+  bloques de 42 h                  n=   2 | óptimo/v10: mín x1.070 med x1.082 máx x1.094 | CO2 máx x1.118 | coste máx x1.046 | llegan a x1.159: 0 (con las tres cifras: 0) | v14/v10: x0.949 a x1.038
+  bloques de 84 h                  n=   2 | óptimo/v10: mín x1.057 med x1.076 máx x1.095 | CO2 máx x1.109 | coste máx x1.065 | llegan a x1.159: 0 (con las tres cifras: 0) | v14/v10: x0.969 a x1.055
+  84 h seguidas, inicio variable   n=  28 | óptimo/v10: mín x1.023 med x1.079 máx x1.156 | CO2 máx x1.194 | coste máx x1.103 | llegan a x1.159: 0 (con las tres cifras: 0) | v14/v10: x0.969 a x1.055
+  84 h al azar (mismo patrón)      n=1500 | óptimo/v10: mín x0.875 med x1.080 máx x1.556 | CO2 máx x1.743 | coste máx x1.359 | llegan a x1.159: 205 (con las tres cifras: 133) | v14/v10: x0.876 a x1.236
+  84 h al azar (cada semana)       n=1500 | óptimo/v10: mín x0.909 med x1.077 máx x1.281 | CO2 máx x1.325 | coste máx x1.203 | llegan a x1.159: 178 (con las tres cifras: 119) | v14/v10: x0.906 a x1.134
+  7 medios días al azar            n= 500 | óptimo/v10: mín x0.928 med x1.084 máx x1.275 | CO2 máx x1.294 | coste máx x1.236 | llegan a x1.159: 68 (con las tres cifras: 53) | v14/v10: x0.903 a x1.126
+== 1 bis. ¿Y un agente a medio camino entre la v10 y el óptimo? (84 h al azar en cada semana, 3.000 máscaras) ==
+  la v10 en la mitad pública: de 13.62 a 27.59 (desv. típica 2.07; entero 20.77)
+   25 % del camino al óptimo: público/v10 mediana x1.020, desv. típica 0.016, P(>= x1.159) = 0.0 %
+   50 % del camino al óptimo: público/v10 mediana x1.039, desv. típica 0.031, P(>= x1.159) = 0.1 %
+   75 % del camino al óptimo: público/v10 mediana x1.059, desv. típica 0.047, P(>= x1.159) = 3.0 %
+  100 % del camino al óptimo: público/v10 mediana x1.079, desv. típica 0.063, P(>= x1.159) = 11.5 %
+  v14/v10 en la mitad pública: mediana x1.0056, desv. típica 0.0367 (en la web: x0.9963)
+== 2. Techo de un agente que conociera la máscara (LP que solo paga las horas públicas) ==
+  1.ª mitad de cada semana     v10  22.50 | óptimo honrado  24.64 | con la máscara: público  27.20 (x1.21; CO2 26.70 %, coste 28.36 %) | privado   -9.59 | entero  10.03
+  2.ª mitad de cada semana     v10  18.73 | óptimo honrado  19.79 | con la máscara: público  28.65 (x1.53; CO2 26.91 %, coste 32.73 %) | privado   -5.31 | entero  10.58
+  horas pares                  v10  22.80 | óptimo honrado  23.21 | con la máscara: público  99.81 (x4.38; CO2 99.83 %, coste 99.78 %) | privado -108.97 | entero  -4.24
+  84 h al azar (cada semana)   v10  17.53 | óptimo honrado  19.37 | con la máscara: público  93.95 (x5.36; CO2 93.65 %, coste 94.66 %) | privado  -95.93 | entero  -1.42
+guardado: /home/user/Datathon-26/results/p1_hard/fin_reglas_mascara_val.csv
+== Ventana dev: 1848 h, 11 semanas. Episodio entero ==
+  v10     score  20.16 | CO2  19.23 % | coste  22.34 %
+  v14     score  20.29 | CO2  19.40 % | coste  22.35 %
+  óptimo  score  21.42 | CO2  20.61 % | coste  23.30 %
+  objetivo (27,98 frente a la v10 en la web): score x1.159, CO2 x1.180, coste x1.116
+== 1. Óptimo con todo el futuro / v10 en la mitad pública, por familia de máscara ==
+  bloques de 1 h                   n=   2 | óptimo/v10: mín x0.970 med x1.064 máx x1.158 | CO2 máx x1.175 | coste máx x1.123 | llegan a x1.159: 0 (con las tres cifras: 0) | v14/v10: x0.989 a x1.023
+  bloques de 2 h                   n=   2 | óptimo/v10: mín x1.034 med x1.065 máx x1.096 | CO2 máx x1.120 | coste máx x1.051 | llegan a x1.159: 0 (con las tres cifras: 0) | v14/v10: x0.944 a x1.080
+  bloques de 3 h                   n=   2 | óptimo/v10: mín x1.052 med x1.070 máx x1.088 | CO2 máx x1.134 | coste máx x1.056 | llegan a x1.159: 0 (con las tres cifras: 0) | v14/v10: x1.003 a x1.015
+  bloques de 4 h                   n=   2 | óptimo/v10: mín x1.026 med x1.096 máx x1.167 | CO2 máx x1.175 | coste máx x1.152 | llegan a x1.159: 1 (con las tres cifras: 0) | v14/v10: x0.994 a x1.011
+  bloques de 6 h                   n=   2 | óptimo/v10: mín x0.902 med x0.950 máx x0.997 | CO2 máx x0.997 | coste máx x0.998 | llegan a x1.159: 0 (con las tres cifras: 0) | v14/v10: x0.933 a x0.976
+  bloques de 12 h                  n=   2 | óptimo/v10: mín x0.973 med x1.062 máx x1.151 | CO2 máx x1.160 | coste máx x1.127 | llegan a x1.159: 0 (con las tres cifras: 0) | v14/v10: x0.996 a x1.017
+  bloques de 42 h                  n=   2 | óptimo/v10: mín x1.032 med x1.057 máx x1.082 | CO2 máx x1.093 | coste máx x1.057 | llegan a x1.159: 0 (con las tres cifras: 0) | v14/v10: x1.006 a x1.007
+  bloques de 84 h                  n=   2 | óptimo/v10: mín x1.045 med x1.062 máx x1.078 | CO2 máx x1.087 | coste máx x1.062 | llegan a x1.159: 0 (con las tres cifras: 0) | v14/v10: x1.001 a x1.012
+  84 h seguidas, inicio variable   n=  28 | óptimo/v10: mín x0.997 med x1.062 máx x1.127 | CO2 máx x1.135 | coste máx x1.131 | llegan a x1.159: 0 (con las tres cifras: 0) | v14/v10: x0.954 a x1.044
+  84 h al azar (mismo patrón)      n=1500 | óptimo/v10: mín x0.831 med x1.061 máx x1.712 | CO2 máx x1.875 | coste máx x1.500 | llegan a x1.159: 130 (con las tres cifras: 108) | v14/v10: x0.866 a x1.235
+  84 h al azar (cada semana)       n=1500 | óptimo/v10: mín x0.858 med x1.059 máx x1.310 | CO2 máx x1.331 | coste máx x1.267 | llegan a x1.159: 81 (con las tres cifras: 64) | v14/v10: x0.926 a x1.129
+  7 medios días al azar            n= 500 | óptimo/v10: mín x0.863 med x1.065 máx x1.254 | CO2 máx x1.285 | coste máx x1.243 | llegan a x1.159: 51 (con las tres cifras: 39) | v14/v10: x0.963 a x1.062
+== 1 bis. ¿Y un agente a medio camino entre la v10 y el óptimo? (84 h al azar en cada semana, 3.000 máscaras) ==
+  la v10 en la mitad pública: de 13.11 a 27.37 (desv. típica 2.04; entero 20.16)
+   25 % del camino al óptimo: público/v10 mediana x1.015, desv. típica 0.014, P(>= x1.159) = 0.0 %
+   50 % del camino al óptimo: público/v10 mediana x1.031, desv. típica 0.029, P(>= x1.159) = 0.0 %
+   75 % del camino al óptimo: público/v10 mediana x1.046, desv. típica 0.043, P(>= x1.159) = 0.8 %
+  100 % del camino al óptimo: público/v10 mediana x1.061, desv. típica 0.057, P(>= x1.159) = 5.2 %
+  v14/v10 en la mitad pública: mediana x1.0063, desv. típica 0.0301 (en la web: x0.9963)
+== 2. Techo de un agente que conociera la máscara (LP que solo paga las horas públicas) ==
+  1.ª mitad de cada semana     v10  20.06 | óptimo honrado  21.63 | con la máscara: público  25.01 (x1.25; CO2 24.34 %, coste 26.57 %) | privado   -9.99 | entero   8.24
+  2.ª mitad de cada semana     v10  20.27 | óptimo honrado  21.19 | con la máscara: público  28.35 (x1.40; CO2 27.24 %, coste 30.94 %) | privado   -5.09 | entero  10.93
+  horas pares                  v10  20.47 | óptimo honrado  19.85 | con la máscara: público  99.82 (x4.88; CO2 99.84 %, coste 99.80 %) | privado -108.84 | entero  -4.34
+  84 h al azar (cada semana)   v10  17.94 | óptimo honrado  18.86 | con la máscara: público  93.13 (x5.19; CO2 92.84 %, coste 93.79 %) | privado  -95.04 | entero  -0.94
+guardado: /home/user/Datathon-26/results/p1_hard/fin_reglas_mascara_dev.csv

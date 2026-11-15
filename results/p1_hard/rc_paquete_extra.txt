@@ -1,0 +1,10 @@
+1) AST: prohibidos ninguno | open(): [(439, ['r (por defecto)'])] | 'X | None' en anotaciones: se compila en este Python 3.13.18
+   líneas 2072, bytes 335800, clase BatteryAgent definida: True | asignación BatteryAgent: ['BatteryAgent = HardBatteryAgent']
+2) sin cap_max_kwh ni power_max_kw: score 20.110 (con todo 20.110) | infracciones 0 | máx |dif. acción| 0.00e+00
+2) sin la meteo: score 20.110 (con todo 20.110) | infracciones 0 | máx |dif. acción| 0.00e+00
+2) sin hour ni day_of_week: score 20.110 (con todo 20.110) | infracciones 0 | máx |dif. acción| 0.00e+00
+2) sin soc_pct ni soc_percent: score 20.110 (con todo 20.110) | infracciones 0 | máx |dif. acción| 0.00e+00
+2) sin preu_actual ni co2_actual: score 20.110 (con todo 20.110) | infracciones 0 | máx |dif. acción| 0.00e+00
+2) timestamp como cadena todo el episodio: score 20.110 | infracciones 0 | máx |dif. acción| 0.00e+00
+3) jul+ago (336 h, acaba 2026-08-31 23:00:00): score 27.580 | infracciones 0 | SOC en la última observación 925.4 kWh, última acción -877.9 kW | len de las listas en las 3 últimas horas [3, 2, 1]
+   últimas 8 h (hora, SOC, acción): [(16, 4577, 1332), (17, 5841, -336), (18, 5487, -660), (19, 4791, -881), (20, 3862, -935), (21, 2876, -925), (22, 1901, -926), (23, 925, -878)]

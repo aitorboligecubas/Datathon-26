@@ -1,0 +1,6 @@
+SCORE 15-21 | agente actual | 18.682 | dif +0.000 | infr 0 | ms/paso 4.39
+SCORE 15-21 | make_delta | 18.684 | dif +0.002 | infr 0 | ms/paso 4.64
+SCORE 15-21 | make_delta35 | 18.682 | dif -0.000 | infr 0 | ms/paso 4.76
+SCORE 12-18 | agente actual | 19.003 | dif +0.000 | infr 0 | ms/paso 4.44
+SCORE 12-18 | make_delta | 19.043 | dif +0.040 | infr 0 | ms/paso 4.68
+SCORE 12-18 | make_delta35 | 19.021 | dif +0.018 | infr 0 | ms/paso 5.20

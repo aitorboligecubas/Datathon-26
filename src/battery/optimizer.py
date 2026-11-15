@@ -46,12 +46,17 @@ def _lp_structure(H: int, eta_c: float, eta_d: float):
 
 
 def plan(soc_kwh: float, load_kw, pv_kw, price, co2, w_co2: float, w_cost: float,
-         terminal_value: float = 0.0, p: BatteryParams = DEFAULT_PARAMS) -> np.ndarray:
+         terminal_value: float = 0.0, p: BatteryParams = DEFAULT_PARAMS,
+         cycle_cost: float = 0.0, export_cost: float = 0.0, discharge_cap=None) -> np.ndarray:
     """Plan óptimo de acciones (kW, + carga) para las H horas del horizonte.
 
     Todas las series tienen longitud H y empiezan en la hora actual.
     `terminal_value`: valor (en unidades del objetivo) de cada kWh que quede en la
     batería al final del horizonte. Lanza RuntimeError si el LP no se resuelve.
+    `cycle_cost` / `export_cost`: coste diminuto por kWh cargado o descargado / vertido. Solo deshace empates:
+    cuando la batería se va a llenar igualmente con el excedente solar, descargar "contra nada" le sale gratis
+    al LP, y con la previsión errónea eso es verter energía de verdad. Con 0 (por defecto) el LP es el de siempre.
+    `discharge_cap`: tope de descarga por hora (kW, longitud H) además de la potencia máxima, o None.
     """
     load = np.asarray(load_kw, dtype=float)
     H = load.shape[0]
@@ -62,14 +67,21 @@ def plan(soc_kwh: float, load_kw, pv_kw, price, co2, w_co2: float, w_cost: float
     cost_s = np.zeros(H)
     cost_s[-1] = -terminal_value
     c = np.concatenate([
-        np.zeros(2 * H),
+        np.full(2 * H, float(cycle_cost)),
         w_co2 * co2 + w_cost * price,
-        np.full(H, -w_cost * p.export_price_eur_kwh),
+        np.full(H, -w_cost * p.export_price_eur_kwh + float(export_cost)),
         cost_s,
     ])
     b_dyn = np.zeros(H)
     b_dyn[0] = soc_kwh
-    bounds = ([(0.0, p.max_charge_kw)] * H + [(0.0, p.max_discharge_kw)] * H
+    if discharge_cap is None:
+        d_bounds = [(0.0, p.max_discharge_kw)] * H
+    else:
+        cap = np.asarray(discharge_cap, dtype=float)
+        pmax = np.inf if p.max_discharge_kw is None else float(p.max_discharge_kw)
+        d_bounds = [(0.0, (min(pmax, max(float(v), 0.0)) if np.isfinite(v) else pmax)) for v in cap]
+        d_bounds = [(lo, None if not np.isfinite(hi) else hi) for lo, hi in d_bounds]
+    bounds = ([(0.0, p.max_charge_kw)] * H + d_bounds
               + [(0.0, None)] * (2 * H) + [(0.0, p.capacity_kwh)] * H)
     A_eq = _lp_structure(H, float(p.eta_charge), float(p.eta_discharge))
     b_eq = np.concatenate([net, b_dyn])

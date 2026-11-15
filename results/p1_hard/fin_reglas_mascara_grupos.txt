@@ -1,0 +1,27 @@
+== Ventana 1-7: 1844 h, 11 semanas | entero: v10 20.99, óptimo 22.44 ==
+  mitad seguida, inicio variable (28)   50 % del camino al óptimo: público/v10 de x1.004 a x1.075 (mediana x1.035); llegan a x1.159: 0.0 %
+  mitad seguida, inicio variable (28)   75 % del camino al óptimo: público/v10 de x1.006 a x1.113 (mediana x1.052); llegan a x1.159: 0.0 %
+  mitad seguida, inicio variable (28)  100 % del camino al óptimo: público/v10 de x1.008 a x1.151 (mediana x1.069); llegan a x1.159: 0.0 %
+  mitad seguida, inicio variable (28)  la v10 en esa mitad: de 16.16 a 25.64 (desv. típica 2.58)
+  mitad de las horas al azar (3.000)    50 % del camino al óptimo: público/v10 de x0.955 a x1.141 (mediana x1.034); llegan a x1.159: 0.0 %
+  mitad de las horas al azar (3.000)    75 % del camino al óptimo: público/v10 de x0.932 a x1.211 (mediana x1.050); llegan a x1.159: 1.1 %
+  mitad de las horas al azar (3.000)   100 % del camino al óptimo: público/v10 de x0.909 a x1.281 (mediana x1.067); llegan a x1.159: 6.2 %
+  mitad de las horas al azar (3.000)   la v10 en esa mitad: de 12.81 a 28.01 (desv. típica 2.05)
+== Ventana val: 1848 h, 11 semanas | entero: v10 20.77, óptimo 22.40 ==
+  mitad seguida, inicio variable (28)   50 % del camino al óptimo: público/v10 de x1.012 a x1.078 (mediana x1.039); llegan a x1.159: 0.0 %
+  mitad seguida, inicio variable (28)   75 % del camino al óptimo: público/v10 de x1.017 a x1.117 (mediana x1.059); llegan a x1.159: 0.0 %
+  mitad seguida, inicio variable (28)  100 % del camino al óptimo: público/v10 de x1.023 a x1.156 (mediana x1.079); llegan a x1.159: 0.0 %
+  mitad seguida, inicio variable (28)  la v10 en esa mitad: de 16.99 a 24.35 (desv. típica 2.17)
+  mitad de las horas al azar (3.000)    50 % del camino al óptimo: público/v10 de x0.939 a x1.161 (mediana x1.040); llegan a x1.159: 0.0 %
+  mitad de las horas al azar (3.000)    75 % del camino al óptimo: público/v10 de x0.909 a x1.242 (mediana x1.060); llegan a x1.159: 2.6 %
+  mitad de las horas al azar (3.000)   100 % del camino al óptimo: público/v10 de x0.878 a x1.322 (mediana x1.080); llegan a x1.159: 12.0 %
+  mitad de las horas al azar (3.000)   la v10 en esa mitad: de 13.28 a 29.17 (desv. típica 2.01)
+== Ventana dev: 1848 h, 11 semanas | entero: v10 20.16, óptimo 21.42 ==
+  mitad seguida, inicio variable (28)   50 % del camino al óptimo: público/v10 de x0.999 a x1.064 (mediana x1.031); llegan a x1.159: 0.0 %
+  mitad seguida, inicio variable (28)   75 % del camino al óptimo: público/v10 de x0.998 a x1.095 (mediana x1.046); llegan a x1.159: 0.0 %
+  mitad seguida, inicio variable (28)  100 % del camino al óptimo: público/v10 de x0.997 a x1.127 (mediana x1.062); llegan a x1.159: 0.0 %
+  mitad seguida, inicio variable (28)  la v10 en esa mitad: de 16.07 a 24.15 (desv. típica 2.00)
+  mitad de las horas al azar (3.000)    50 % del camino al óptimo: público/v10 de x0.944 a x1.169 (mediana x1.030); llegan a x1.159: 0.0 %
+  mitad de las horas al azar (3.000)    75 % del camino al óptimo: público/v10 de x0.916 a x1.254 (mediana x1.045); llegan a x1.159: 1.2 %
+  mitad de las horas al azar (3.000)   100 % del camino al óptimo: público/v10 de x0.888 a x1.338 (mediana x1.061); llegan a x1.159: 6.0 %
+  mitad de las horas al azar (3.000)   la v10 en esa mitad: de 12.54 a 26.70 (desv. típica 2.04)

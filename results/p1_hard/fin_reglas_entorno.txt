@@ -1,0 +1,42 @@
+== A. Acciones raras (batería a 3.000 de 6.000 kWh, consumo 1.000 kW, sin solar) ==
+  0.0                    soc 3000.000 -> 3000.000000 | red 1000.000000 | vertido 0.000000 | infracciones 0
+  -0.0                   soc 3000.000 -> 3000.000000 | red 1000.000000 | vertido 0.000000 | infracciones 0
+  NaN                    soc 3000.000 -> 3000.000000 | red 1000.000000 | vertido 0.000000 | infracciones 1
+  +inf                   soc 3000.000 -> 4423.024947 | red 2500.000000 | vertido 0.000000 | infracciones 1
+  -inf                   soc 3000.000 -> 1418.861170 | red 0.000000 | vertido 500.000000 | infracciones 1
+  1500 exacto            soc 3000.000 -> 4423.024947 | red 2500.000000 | vertido 0.000000 | infracciones 0
+  1500 + 1 ulp           soc 3000.000 -> 4423.024947 | red 2500.000000 | vertido 0.000000 | infracciones 1
+  -1500 exacto           soc 3000.000 -> 1418.861170 | red 0.000000 | vertido 500.000000 | infracciones 0
+  -1500 - 1 ulp          soc 3000.000 -> 1418.861170 | red 0.000000 | vertido 500.000000 | infracciones 1
+  array([200.])          EXCEPCIÓN TypeError: only 0-dimensional arrays can be converted to Python scalars
+  [200.0] lista          EXCEPCIÓN TypeError: float() argument must be a string or a real number, not 'list'
+  '200' cadena           soc 3000.000 -> 3189.736660 | red 1200.000000 | vertido 0.000000 | infracciones 0
+  True                   soc 3000.000 -> 3000.948683 | red 1001.000000 | vertido 0.000000 | infracciones 0
+  np.float32(200.1)      soc 3000.000 -> 3189.831534 | red 1200.100006 | vertido 0.000000 | infracciones 0
+  1e-300                 soc 3000.000 -> 3000.000000 | red 1000.000000 | vertido 0.000000 | infracciones 0
+  -1e-300                soc 3000.000 -> 3000.000000 | red 1000.000000 | vertido 0.000000 | infracciones 0
+  5e-324 (subnormal)     soc 3000.000 -> 3000.000000 | red 1000.000000 | vertido 0.000000 | infracciones 0
+== A2. Justo en el límite de capacidad ==
+  cargar hasta lleno exacto      soc 5000.000 -> 6000.000000 | red 2054.092553 | vertido 0.000000 | infracciones 0
+  cargar lleno + 1 ulp           soc 5000.000 -> 6000.000000 | red 2054.092553 | vertido 0.000000 | infracciones 1
+  cargar 1e-9 con batería llena  soc 6000.000 -> 6000.000000 | red 1000.000000 | vertido 0.000000 | infracciones 1
+  cargar 5e-324 con bat. llena   soc 6000.000 -> 6000.000000 | red 1000.000000 | vertido 0.000000 | infracciones 1
+  descargar hasta vacío exacto   soc 800.000 -> 0.000000 | red 241.053362 | vertido 0.000000 | infracciones 0
+  descargar vacío - 1 ulp        soc 800.000 -> 0.000000 | red 241.053362 | vertido 0.000000 | infracciones 1
+  descargar -1e-9 con bat. vacía soc 0.000 -> 0.000000 | red 1000.000000 | vertido 0.000000 | infracciones 1
+  20.000 llenados/vaciados exactos: 0 infracciones; exceso máx. 0.00e+00, defecto mín. 0.00e+00 kWh
+== B. Ida y vuelta medida en la red ==
+  compro 1.000 kWh de más -> guardo 948.6833 -> devuelvo 900.0000 kWh (rendimiento 0.900000), batería final 0.00e+00, infracciones 0
+== C. Excedente ==
+  cargar 1.000 con 1.500 kW de sobrante solar: soc 3000.000 -> 3948.683298 | red 0.000000 | vertido 500.000000 | infracciones 0
+  descargar 1.500 con 600 kW de consumo:        soc 3000.000 -> 1418.861170 | red 0.000000 | vertido 900.000000 | infracciones 0
+  descargar 500 con sobrante solar:             soc 3000.000 -> 2472.953723 | red 0.000000 | vertido 2000.000000 | infracciones 0
+== D. Máscara: la carga se paga en una mitad y se usa en la otra ==
+  batería tras cargar: 5692.1 kWh; episodio entero: 0.00 | mitad de la carga: 0.00 (se trunca a 0) | mitad de la descarga: 67.50
+  1 infracción en la hora 0: entero 1 | máscara sin la hora 0: 0 | máscara con la hora 0: 1
+== E. Observación en t = 0 y en el cruce de semanas ==
+  t=0: 'ultim_consum_kw' = 100.0 (el consumo de la PROPIA hora 0 es 100.0)
+  2025-09-30 21:00:00  precios[:3] = [0.1, 0.2, 0.3]  último consumo = 100.0
+  2025-09-30 22:00:00  precios[:3] = [0.2, 0.3, 0.4]  último consumo = 100.0
+  2025-09-30 23:00:00  precios[:3] = [0.3, 0.4, 0.5]  último consumo = 101.0
+  2025-10-25 00:00:00  precios[:3] = [0.4, 0.5, 0.6]  último consumo = 102.0

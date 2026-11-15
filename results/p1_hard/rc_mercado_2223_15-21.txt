@@ -1,0 +1,6 @@
+ajuste 2 s, horas 1725
+15-21 v14 tal cual               score 18.6861 co2 17.560 coste 21.315 infr 0 (11 s) n_fix=0
+15-21 v14 + 22-23h solo perfil   score 18.6863 co2 17.560 coste 21.315 infr 0 (11 s) n_fix=2
+horas con otra accion: 2
+  2026-02-21 22:00:00  tal cual -751 kW | arreglo -760 kW
+  2026-03-15 01:00:00  tal cual 38 kW | arreglo 48 kW

@@ -1,0 +1,8 @@
+SCORE 15-21 | agente actual | 18.682 | dif +0.000 | infr 0 | ms/paso 5.11
+SCORE 15-21 | make | 18.504 | dif -0.178 | infr 0 | ms/paso 4.74
+SCORE 15-21 | make_third | 18.582 | dif -0.100 | infr 0 | ms/paso 4.97
+SCORE 15-21 | make_cal | 18.682 | dif +0.000 | infr 0 | ms/paso 4.74
+SCORE dev | agente actual | 20.302 | dif +0.000 | infr 0 | ms/paso 4.58
+SCORE dev | make | 20.125 | dif -0.177 | infr 0 | ms/paso 5.02
+SCORE dev | make_third | 20.211 | dif -0.090 | infr 0 | ms/paso 5.80
+SCORE dev | make_cal | 20.310 | dif +0.008 | infr 0 | ms/paso 6.34

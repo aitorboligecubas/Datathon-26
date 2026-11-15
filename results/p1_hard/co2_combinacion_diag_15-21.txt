@@ -1,0 +1,27 @@
+== 15-21: 33139 previsiones (hora, antelación)
+Error del CO2 (RMSE del logaritmo, en %) por antelación
+                     3-5   6-11  12-17  18-23  todas
+reg (v14)          11.12  18.01  20.32  21.23  18.79
+knn                17.30  20.70  22.65  23.67  21.65
+knn+precio         18.14  21.11  22.84  24.09  22.04
+knn delta          11.51  18.69  21.82  22.69  19.92
+nivel 24 h         19.17  20.69  22.00  23.16  21.54
+ayer               23.05  23.19  23.14  23.29  23.18
+reg+knn            12.90  18.68  21.09  22.15  19.66
+reg+knn+precio     13.22  18.80  21.13  22.32  19.79
+reg+knn delta      11.05  17.84  20.43  21.18  18.76
+media de 4         14.94  18.36  19.72  20.30  18.83
+2/3 reg + 1/3 knn  11.92  18.29  20.73  21.77  19.23
+Correlación de los errores (antelaciones 6-23)
+            reg (v14)   knn  knn+precio  knn delta  nivel 24 h  ayer
+reg (v14)        1.00  0.91        0.91       0.88        0.77  0.68
+knn              0.91  1.00        0.99       0.78        0.74  0.61
+knn+precio       0.91  0.99        1.00       0.76        0.73  0.60
+knn delta        0.88  0.78        0.76       1.00        0.72  0.58
+nivel 24 h       0.77  0.74        0.73       0.72        1.00  0.80
+ayer             0.68  0.61        0.60       0.58        0.80  1.00
+Calibración: pendiente de z real frente a z previsto (1 = en su punto; < 1 = se pasa de confiada)
+             3-5   6-11  12-17  18-23
+reg (v14)  1.022  1.110  1.259  1.389
+knn        1.483  1.510  1.638  1.810
+reg+knn    1.299  1.403  1.575  1.752

@@ -1,0 +1,7 @@
+val v14 20.874 soc fin semana: [2191, 0, 1974, 5898, 1121, 1572, 5244, 6000, 2413, 6000]
+val TECHO: consumo y solar reales tras el salto 20.844 soc fin semana: [2190, 0, 1974, 5648, 1121, 1572, 5244, 6000, 2428, 6000]
+val TECHO: mercado + consumo y solar reales tras el salto 20.869 soc fin semana: [2190, 0, 2595, 5648, 1079, 2157, 5244, 6000, 2408, 6000]
+ventana                                                agente  score    co2  coste  infr  soc_fin_semana_media  n_horas_verdad  n_scen  d_score
+    val                                                   v14 20.874 19.685 23.649     0              3241.218               0    1848    0.000
+    val           TECHO: consumo y solar reales tras el salto 20.844 19.657 23.614     0              3217.725            3015    1848   -0.030
+    val TECHO: mercado + consumo y solar reales tras el salto 20.869 19.726 23.536     0              3332.124            3015    1848   -0.005

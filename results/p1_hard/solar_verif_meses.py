@@ -100,8 +100,15 @@ def run(split: str, make, piezas: bool):
     soc_a = pd.Series(logs["partida (v6)"].soc_kwh.to_numpy(float), index=ts).groupby(month).last()
     soc_b = pd.Series(logs["CANDIDATO"].soc_kwh.to_numpy(float), index=ts).groupby(month).last()
     pm["carga_fin_partida"], pm["carga_fin_cand"] = soc_a, soc_b
+    # Lo que un agente deja de más en la batería al acabar un mes lo ha pagado ese mes y lo cobra el siguiente.
+    # "dif_ajustada" lo devuelve al mes que lo pagó, valorado al peso medio de compra (con el rendimiento de descarga).
+    v_kwh = float((0.7 * co2 / base["co2_kg"] + 0.3 * price / base["cost_eur"]).mean()) * 100 * 0.9487
+    extra = (soc_b - soc_a)
+    pm["dif_ajustada"] = pm.dif + v_kwh * (extra - extra.shift(1).fillna(0.0))
     print("\nPor meses (parte del score; la suma es el score):")
     print(pm.round(4).to_string())
+    print(f"meses que gana con la diferencia ajustada por la carga de fin de mes: {int((pm.dif_ajustada > 0).sum())} de {len(pm)} "
+          f"(suma {pm.dif_ajustada.sum():+.4f})")
     n_win = int((pm.dif > 0).sum())
     se = pm.dif.std(ddof=1) / np.sqrt(len(pm))
     print(f"meses que gana el candidato: {n_win} de {len(pm)} | suma {pm.dif.sum():+.4f} | media por mes {pm.dif.mean():+.4f} "
@@ -135,12 +142,50 @@ def run(split: str, make, piezas: bool):
     return out, pm, d
 
 
+def placebo(split: str, make, n: int) -> None:
+    """¿Cuánto se mueve el score del candidato por puro ruido? Se vuelve a ajustar quitando, además del split,
+    2 días al azar de cada mes: el previsor es el mismo y las tablas, casi iguales. Lo que cambie el score
+    es el ruido de las decisiones, y contra eso hay que leer la ganancia."""
+    G = make.__globals__
+    full = bench.hard_table()
+    df = bench.split_frame(full, split)
+    exclude = set(df.timestamp)
+    fit_df = full[~full.timestamp.isin(exclude)]
+    prior = bench.fit_market(exclude, fit_df)
+    solar_prior = bench.fit_solar(fit_df)
+    base = baseline_totals(df)
+
+    def run_with(table):
+        a = bench.hard_agent(prior, solar_prior)
+        a.policy.netload = G["SolarCand"](G["fit_prior"](table), a.policy.forecaster)
+        totals, _ = bench.simulate_hard(a, df)
+        return score(totals, base)["score_raw"]
+
+    ref = run_with(fit_df)
+    rng = np.random.default_rng(2026)
+    days = fit_df.timestamp.dt.normalize()
+    difs = []
+    for _ in range(n):
+        drop = []
+        for _, g in days.groupby(fit_df.timestamp.dt.to_period("M")):
+            drop += list(rng.choice(g.unique(), 2, replace=False))
+        difs.append(run_with(fit_df[~days.isin(drop)]) - ref)
+    difs = np.array(difs)
+    print(f"placebo {split}: candidato {ref:.4f} | {n} reajustes sin 2 días al azar por mes: diferencias {np.round(difs, 4).tolist()} | "
+          f"desviación típica {difs.std(ddof=1):.4f}, máx |dif| {np.abs(difs).max():.4f}")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--piezas", action="store_true")
     ap.add_argument("--splits", default="dev,val")
+    ap.add_argument("--placebo", type=int, default=0, help="solo el placebo, con este número de reajustes por split")
     args = ap.parse_args()
     make = bench.load_factory(CAND)
+    if args.placebo:
+        for split in args.splits.split(","):
+            placebo(split, make, args.placebo)
+        return 0
     res = {}
     for split in args.splits.split(","):
         res[split] = run(split, make, args.piezas)

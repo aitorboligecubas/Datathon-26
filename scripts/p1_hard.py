@@ -63,25 +63,74 @@ def market_types(index) -> np.ndarray:
     return np.where(hol, 2, t)
 
 
-def fit_market(exclude=None, refs_df: pd.DataFrame = None) -> dict:
-    """Perfil de precio y CO2 por mes, tipo de día (laborable, sábado, domingo) y hora."""
+PROFILE_GEO = False      # (laboratorio) perfil con media geométrica en vez de aritmética; probado y descartado si sigue en False
+
+
+def market_centers(index) -> list:
+    """Día medio de los datos de cada mes (battery.hard_market.month_blend interpola el perfil entre meses con él)."""
+    s = pd.Series(index.day.to_numpy(float)).groupby(index.month.to_numpy()).mean()
+    return [float(s.get(mo, 15.0)) for mo in range(1, 13)]
+
+
+def blend_lookup(prof, mo0, day, typ, hr, centers) -> np.ndarray:
+    """prof[mes 0-11][tipo][hora] de cada fila, interpolado entre meses igual que battery.hard_market.month_blend.
+    Con centers = None, el perfil del mes tal cual."""
+    prof = np.asarray(prof, dtype=float)
+    own = prof[mo0, typ, hr]
+    if centers is None:
+        return own
+    from battery.hard_market import MARKET_MONTH_DAYS
+    cen = np.asarray(centers, dtype=float)
+    c = cen[mo0]
+    after = day >= c
+    other = np.where(after, (mo0 + 1) % 12, (mo0 - 1) % 12)
+    co = cen[other]
+    w = np.clip(np.where(after, (day - c) / (MARKET_MONTH_DAYS - c + co), (c - day) / (c + MARKET_MONTH_DAYS - co)), 0.0, 1.0)
+    return (1.0 - w) * own + w * prof[other, typ, hr]
+
+
+def smooth_weekend(prof, on: bool = True) -> np.ndarray:
+    """Perfil [mes][tipo][hora] con los de sábado y domingo suavizados. Cada mes solo tiene 3 o 4 sábados y otros
+    tantos domingos, así que su perfil es ruidoso. Se sustituye por el de los laborables del mes multiplicado por la
+    razón fin de semana / laborable promediada con los dos meses vecinos (unos 10 días en vez de 3)."""
+    a = np.asarray(prof, dtype=float)
+    if not on:
+        return a
+    out = a.copy()
+    for t in (1, 2):
+        ratio = a[:, t, :] / np.clip(a[:, 0, :], 1e-9, None)
+        pooled = (np.roll(ratio, 1, axis=0) + ratio + np.roll(ratio, -1, axis=0)) / 3.0
+        out[:, t, :] = a[:, 0, :] * pooled
+    return out
+
+
+def fit_market(exclude=None, refs_df: pd.DataFrame = None, blend: bool = True, weekend: bool = True) -> dict:
+    """Perfil de precio y CO2 por mes, tipo de día (laborable, sábado, domingo) y hora. Con `blend`, el perfil se
+    interpola entre meses según el día (clave "day_center") y las regresiones se ajustan con ese perfil."""
     m = market_frame()
     if exclude is not None:
         m = m[~m.index.isin(exclude)]
     out = {}
+    if blend:
+        out["day_center"] = market_centers(m.index)
     typ = market_types(m.index)
     for name in ("price", "co2"):
-        g = m.groupby([m.index.month, typ, m.index.hour])[name].mean()
-        by_h = m.groupby([m.index.month, m.index.hour])[name].mean()
+        if PROFILE_GEO:     # (laboratorio) media geométrica: el centro natural de z = log(real / perfil)
+            logv = np.log(np.clip(m[name], 1e-6, None))
+            g = np.exp(logv.groupby([m.index.month, typ, m.index.hour]).mean())
+            by_h = np.exp(logv.groupby([m.index.month, m.index.hour]).mean())
+        else:
+            g = m.groupby([m.index.month, typ, m.index.hour])[name].mean()
+            by_h = m.groupby([m.index.month, m.index.hour])[name].mean()
         arr = np.full((12, 3, 24), np.nan)
         for mo in range(1, 13):
             for t in range(3):
                 for h in range(24):
                     v = g.get((mo, t, h), np.nan)
                     arr[mo - 1, t, h] = v if np.isfinite(v) else by_h.get((mo, h), np.nan)
-        out[name] = arr.tolist()
+        out[name] = smooth_weekend(arr, weekend).tolist()
     out["reg"] = fit_market_regression(m, out)
-    out["cand"] = fit_market_memory(exclude)
+    out["cand"] = fit_market_memory(exclude, blend, weekend)
     if refs_df is not None:
         b = baseline_totals(refs_df)
         out["co2_ref_kg_per_h"] = b["co2_kg"] / len(refs_df)
@@ -89,14 +138,14 @@ def fit_market(exclude=None, refs_df: pd.DataFrame = None) -> dict:
     return out
 
 
-def fit_market_memory(exclude=None) -> dict:
+def fit_market_memory(exclude=None, blend: bool = True, weekend: bool = True) -> dict:
     """Tablas del previsor con memoria del train (13 pistas y los últimos 7 días de cada mes como "semilla").
     El ajuste está en scripts/p1_lab/hard_market_cand.py (fit_cand), que es donde se diseñó."""
     lab = str(REPO / "scripts" / "p1_lab")
     if lab not in sys.path:
         sys.path.insert(0, lab)
     from hard_market_cand import fit_cand
-    return fit_cand(exclude)
+    return fit_cand(exclude, {"blend": blend, "weekend": weekend})
 
 
 def fit_market_regression(m: pd.DataFrame, prof: dict) -> dict:
@@ -107,7 +156,8 @@ def fit_market_regression(m: pd.DataFrame, prof: dict) -> dict:
     typ = market_types(m.index)
     reg = {}
     for name in ("price", "co2"):
-        p = np.asarray(prof[name])[m.index.month - 1, typ, m.index.hour]
+        p = blend_lookup(prof[name], m.index.month.to_numpy() - 1, m.index.day.to_numpy(float), typ,
+                         m.index.hour.to_numpy(), prof.get("day_center"))
         z = pd.Series(np.log(np.clip(m[name].to_numpy(), 1e-6, None) / np.clip(p, 1e-6, None)), index=m.index)
         full_idx = pd.date_range(m.index.min(), m.index.max(), freq="h")
         z = z.reindex(full_idx)                                   # los huecos (otras semanas, horas excluidas) quedan en NaN
@@ -156,8 +206,37 @@ def fit_solar(table: pd.DataFrame) -> dict:
     load_hat = p_now * (1 + ((t.load_kw.shift(1) / p_prev).clip(0.3, 3.0) - 1) * 0.9)
     err = ((t.load_kw - t.pv_kw) - (load_hat - pv_hat))[ok]
     sd = err.groupby(h[ok]).std().reindex(range(24)).fillna(err.std()).clip(lower=15.0)
+    cand = fit_solar_tables(table)
     return {"pv_clear": clear.tolist(), "pv_mean": mean.tolist(), "net_sd": [float(v) for v in sd],
-            "cand": fit_solar_tables(table)}
+            "cand": cand, "seed": netload_seed_segments(table), "scen": fit_solar_scen(table, cand)}
+
+
+def fit_solar_scen(table: pd.DataFrame, cand_tables: dict) -> dict:
+    """Cuantiles del error del consumo neto de la hora actual (plan con incertidumbre, v12). El ajuste está en
+    scripts/p1_lab/hard_plan_cand.py (fit_scen): pasa el previsor por las horas de `table` como en el test."""
+    lab = str(REPO / "scripts" / "p1_lab")
+    if lab not in sys.path:
+        sys.path.insert(0, lab)
+    from hard_plan_cand import fit_scen
+    return fit_scen(table, cand_tables)
+
+
+def netload_seed_segments(table: pd.DataFrame, hours: int = 48) -> list:
+    """Semilla de consumo y solar (battery.hard.netload_seed_dict): las últimas `hours` horas de cada tramo seguido
+    del train. En el test, cada semana empieza justo después del final del tramo de su mes."""
+    t = table.sort_values("timestamp").reset_index(drop=True)
+    ts = pd.DatetimeIndex(t.timestamp)
+    ok = np.isfinite(t.load_kw.to_numpy(float)) & np.isfinite(t.pv_kw.to_numpy(float))
+    nxt_gap = np.r_[(ts[1:] - ts[:-1]) != pd.Timedelta(hours=1), True]
+    segs = []
+    for e in np.flatnonzero(nxt_gap & ok):
+        s = e
+        while s > 0 and ok[s - 1] and not nxt_gap[s - 1] and e - s + 1 < hours:
+            s -= 1
+        segs.append({"start": ts[s].strftime("%Y-%m-%d %H:%M"),
+                     "load": [round(float(v), 3) for v in t.load_kw.to_numpy(float)[s:e + 1]],
+                     "pv": [round(float(v), 3) for v in t.pv_kw.to_numpy(float)[s:e + 1]]})
+    return segs
 
 
 def fit_solar_tables(table: pd.DataFrame) -> dict:
@@ -228,6 +307,7 @@ def hard_agent(prior: dict, solar: dict = None, **cfg):
     pol.w_co2, pol.w_cost = score_weights(prior["co2_ref_kg_per_h"], prior["cost_ref_eur_per_h"])
     pol.forecaster = Forecaster(load_json(find_models_dir(), FORECASTER_FILE))
     pol.netload = make_netload(solar, pol.forecaster, **{k: v for k, v in cfg.items() if k in ("z_discharge", "z_charge")})
+    pol.set_netload_seed(solar)
     for k, v in cfg.items():
         if k not in ("yesterday_weight", "z_discharge", "z_charge"):
             setattr(pol, k, v)
@@ -281,6 +361,9 @@ def split_frame(full: pd.DataFrame, split: str) -> pd.DataFrame:
         return d.reset_index(drop=True)
     if split == "train":
         return train_split(full).reset_index(drop=True)
+    if "-" in split:        # "A-B": los días A a B de cada mes (otra ventana para diseñar, p. ej. "1-7")
+        a, b = (int(x) for x in split.split("-"))
+        return full[(full.timestamp.dt.day >= a) & (full.timestamp.dt.day <= b)].reset_index(drop=True)
     return full.reset_index(drop=True)
 
 
@@ -294,17 +377,21 @@ def load_factory(spec: str):
     return getattr(mod, func)
 
 
-def evaluate(split: str = "val", market: str = "", solar: str = "", only: str = "") -> pd.DataFrame:
+def evaluate(split: str = "val", market: str = "", solar: str = "", only: str = "", agent: str = "",
+             save_hourly: bool = False) -> pd.DataFrame:
     """Comparativa en `split`. Todo lo que se aprende (perfiles, modelos) se ajusta SIN las horas del split.
 
     market: 'ruta.py:func' con func(exclude: set de pd.Timestamp, prior: dict) -> objeto con
             .forecast(obs, times, weather) (contrato de battery.hard_market.MarketForecaster).
     solar:  'ruta.py:func' con func(exclude, base_forecaster) -> objeto con .update(obs, weather),
             .forecast(obs, times) y .adjust_action(action_kw, obs, p) (contrato de battery.hard_solar).
+    agent:  'ruta.py:func' con func(prior, solar_prior, exclude) -> agente completo con .act(obs). `prior` y
+            `solar_prior` son las tablas de mercado y de consumo/solar ajustadas SIN las horas del split
+            (las mismas que recibe hard_agent). Sirve para candidatos que cambian la política o el plan.
     """
     full = hard_table()
     df = split_frame(full, split)
-    exclude = set(df.timestamp) if split in ("val", "dev") else None
+    exclude = set(df.timestamp) if (split in ("val", "dev") or "-" in split) else None
     fit_df = full[~full.timestamp.isin(exclude)] if exclude else full
     prior = fit_market(exclude, fit_df)
     solar_prior = fit_solar(fit_df)
@@ -324,12 +411,17 @@ def evaluate(split: str = "val", market: str = "", solar: str = "", only: str = 
         "plan de 3 h (sin prever)": lambda: hard_agent(prior, solar_prior, horizon=3),
         "mercado sin memoria (v4)": lambda: hard_agent({k: v for k, v in prior.items() if k != "cand"}, solar_prior),
         "solar sencilla (v6)": lambda: hard_agent(prior, {k: v for k, v in solar_prior.items() if k != "cand"}),
+        "plan con margen fijo (v10)": lambda: hard_agent(fit_market(exclude, fit_df, blend=False, weekend=False), solar_prior, use_scenarios=False),
+        "perfil del mes sin interpolar (v12)": lambda: hard_agent(fit_market(exclude, fit_df, blend=False, weekend=False), solar_prior),
+        "fines de semana sin suavizar (v13)": lambda: hard_agent(fit_market(exclude, fit_df, weekend=False), solar_prior),
         "agente actual": lambda: hard_agent(prior, solar_prior),
         "precio y CO2 reales a 24 h": lambda: perfect_market_agent(prior, df, solar_prior),
         "óptimo (todo el futuro)": lambda: OracleAgent(df, *w, p=HARD_PARAMS),
     }
     if market or solar:
         agents["CANDIDATO"] = candidate
+    if agent:
+        agents["CANDIDATO"] = lambda: load_factory(agent)(prior, solar_prior, exclude or set())
     if only:
         agents = {k: v for k, v in agents.items() if k in only.split(",")}
     rows = []
@@ -339,6 +431,12 @@ def evaluate(split: str = "val", market: str = "", solar: str = "", only: str = 
         init_s = time.perf_counter() - t0
         totals, log = simulate_hard(ag, df)
         sc = score(totals, base)
+        if save_hourly:     # detalle hora a hora, para las gráficas (results/hourly/ no se sube al repo)
+            out_dir = REPO / "results" / "hourly"
+            out_dir.mkdir(parents=True, exist_ok=True)
+            slug = "".join(ch if ch.isalnum() else "_" for ch in name.lower()).strip("_")
+            log.assign(price_eur_kwh=df.price_eur_kwh.to_numpy(), co2_kg_kwh=df.co2_kg_kwh.to_numpy()).to_csv(
+                out_dir / f"hard_{split}_{slug}.csv", index=False)
         ex = log[log.export_kw > 1e-6]
         rows.append({"agente": name, "score": sc["score_raw"], "co2_pct": sc["d_co2_pct"], "coste_pct": sc["d_cost_pct"],
                      "infr": sc["infractions"], "vertido_kwh": totals["export_kwh"],
@@ -355,12 +453,14 @@ def evaluate(split: str = "val", market: str = "", solar: str = "", only: str = 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--split", default="val", choices=["val", "dev", "train", "todo"])
+    ap.add_argument("--split", default="val", help="val (reservada), dev (días 8-14), train, todo, o 'A-B' (días A a B de cada mes)")
     ap.add_argument("--market", default="", help="candidato de previsión de precio y CO2: ruta.py:func")
     ap.add_argument("--solar", default="", help="candidato de previsión de consumo y solar: ruta.py:func")
+    ap.add_argument("--agent", default="", help="candidato de agente completo: ruta.py:func(prior, solar_prior, exclude)")
     ap.add_argument("--only", default="", help="agentes a ejecutar, separados por comas")
     ap.add_argument("--out", default="", help="CSV donde guardar la tabla")
     ap.add_argument("--fit", action="store_true", help="guardar models/hard_market.json con todo el train")
+    ap.add_argument("--save-hourly", action="store_true", help="guardar el detalle hora a hora de cada agente en results/hourly/")
     args = ap.parse_args()
     if args.fit:
         full = hard_table()
@@ -369,7 +469,7 @@ def main() -> int:
         (MODELS / "hard_solar.json").write_text(json.dumps(fit_solar(full)), encoding="utf-8")
         print("guardados models/hard_market.json y models/hard_solar.json")
         return 0
-    out = evaluate(args.split, args.market, args.solar, args.only)
+    out = evaluate(args.split, args.market, args.solar, args.only, args.agent, args.save_hourly)
     if args.out:
         Path(args.out).parent.mkdir(parents=True, exist_ok=True)
         out.to_csv(args.out, index=False)

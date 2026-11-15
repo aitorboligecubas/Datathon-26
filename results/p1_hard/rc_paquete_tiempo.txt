@@ -1,0 +1,2 @@
+1008 h (sep, dic, feb, abr, jun, ago): score 21.120 | infracciones 0 | ms/paso por semana [4.6, 4.62, 4.35, 5.3, 4.5, 4.26] | total 4.6 s | proyección a 2.016 pasos 9.3 s | máx 26.1 ms | pasos de más de 20 ms: 1
+acciones fuera de [-1500, 1500]: 0 | no finitas: 0 | SOC mín/máx observado 0.0 / 6000.0

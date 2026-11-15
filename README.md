@@ -1,5 +1,8 @@
 # Datathon FME 2026 · Reto UPC Sostenible: control de la batería del campus
 
+> **ENTREGA DEFINITIVA (modo difícil, equipo `SanHackobos`):** las dos entregas marcadas para el jurado están en
+> [`entrega/`](entrega/) y se explican en [`ENTREGA_DEFINITIVA.md`](ENTREGA_DEFINITIVA.md).
+
 Agente que decide, hora a hora, cuánto carga o descarga la batería de 2.000 kWh del campus para reducir
 el CO₂ (70 %) y el coste (30 %) de la electricidad comprada a la red.
 

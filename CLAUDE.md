@@ -200,6 +200,8 @@ Dos trampas nuevas, que la organización avisa:
    train, y una regresión que predice cuánto se desviará cada hora de ese perfil. Usa 13 pistas: las 3 horas
    conocidas, las últimas 6 y 24 horas, ayer y anteayer a la misma hora y el nivel del día. Cada semana del test
    arranca con la "memoria" de los 7 días del train que la preceden. Los festivos nacionales cuentan como domingo.
+   El perfil se interpola con el del mes vecino según el día (el test son los días 25–31 y el train los días 1–24)
+   y los de sábado y domingo se suavizan con los meses vecinos, porque cada mes solo tiene 3 o 4 de cada.
 2. **Previsión de solar y consumo** (`hard_solar.py`).
    - El consumo: el perfil de la semana, corregido con una regresión (por hora del día y antelación) sobre cuánto
      se desviaba el consumo la hora anterior y ayer. De 23 a 5 h el contador del train está congelado, así que el
@@ -208,28 +210,48 @@ Dos trampas nuevas, que la organización avisa:
      despejado va en hora solar y se interpola entre meses, porque el test son los días 25–31 y el train los
      días 1–24.
    - Los festivos del campus (la Mercè, Navidad, Sant Joan) cuentan como domingo.
-3. **Margen de seguridad.** La previsión de esta hora se equivoca (la solar, unos 140 kW de día). Como descargar
-   de más es tirar energía y cargar de menos es perder excedente gratis, se descarga un poco menos de lo previsto
-   y se carga un poco más: 1,4 veces el error típico medido, por hora y por nivel de claridad. El plan ya cuenta
-   con ese margen.
+3. **El plan cuenta con la incertidumbre** (versión 12). El consumo neto de cada hora no se conoce: solo su
+   previsión y cuánto suele fallar (la solar, unos 140 kW de día). Descargar de más es tirar energía y cargar de
+   menos es perder excedente gratis. En vez de un margen fijo, el LP lleva 11 cuantiles del error medido: el primer
+   kW que se descarga se aprovecha casi seguro y el último casi nunca. Así decide solo cuánto apurar: mucho cuando
+   lo guardado vale poco (la batería se va a rellenar con excedente solar) y poco cuando vale casi como esta hora.
+4. **Memoria al empezar cada semana** (versión 9). Cada semana del test empieza justo donde acaba el train de su
+   mes, así que el previsor de consumo y solar arranca con las últimas 48 h del train. Se comprueba en la segunda
+   hora (de noche el contador está congelado) y, si no casa, se olvida.
 
 El final del test ya no se ve en la previsión (solo trae 3 horas): se sabe por calendario (31/08/2026). Si el
 servidor reiniciara la batería cada semana, el agente lo detecta y cierra cada semana vacía.
 
-| Agente (validación reservada, hard mode) | Score |
-|---|---|
-| No usar la batería | 0,00 |
-| Planificar solo con las 3 horas conocidas | 15,5 |
-| Versión 2 (primer envío) | 20,37 |
-| Versión 6 (previsor de precio y CO₂ con memoria) | 20,66 |
-| **Nuestro agente (versión 8)** | **20,83** |
-| El mismo agente con el precio y el CO₂ reales a 24 h | 21,56 |
-| Óptimo con todo el futuro conocido (techo) | 22,40 |
+| Agente (validación reservada, hard mode) | Score en casa | Score en la web |
+|---|---|---|
+| No usar la batería | 0,00 | |
+| Planificar solo con las 3 horas conocidas | 15,5 | |
+| Versión 2 (primer envío) | 20,37 | 23,35 |
+| Versión 6 (previsor de precio y CO₂ con memoria) | 20,66 | 23,70 |
+| Versión 10 (previsor ampliado de consumo y solar, semilla y margen 1,0) | 20,79 | **24,15** |
+| Versión 12 (la 10 con el plan que cuenta con la incertidumbre) | 20,92 | 24,11 |
+| **Versión 14 (la 12 con el perfil de precio y CO₂ interpolado entre meses y los fines de semana suavizados)** | **21,07** | 24,06 |
+| La versión 12 con el precio y el CO₂ reales a 24 h | 21,65 | |
+| Óptimo con todo el futuro conocido (techo) | 22,40 | |
 
-**Ojo: la nota de casa y la de la web no son comparables.** La versión 2 tenía 20,37 en nuestra validación y
-sacó 23,35 en la web. La versión 6 tenía 20,66 y sacó **23,70: primeros de 32 equipos el sábado por la tarde**
-(el segundo tenía 23,50). El conjunto público es otro grupo de semanas, más favorable. Envíos y versiones:
-`docs/envios.md`.
+**Dónde estamos (domingo por la mañana): terceros en el público con la v10 (24,15). SSA Gourmet tiene 24,36 y
+Fanboy & Chum Chum 24,25; su ventaja es solo de coste.**
+
+**Cómo leer la web.** La nota de casa y la de la web no son comparables en valor (el conjunto público tiene una
+referencia más baja). Y las diferencias pequeñas de la web no ordenan las versiones: según las preguntas frecuentes
+y el código oficial, el público es el 50 % de cada semana del test, calculado con una máscara de horas sobre una
+única simulación. En la web, la v12 y la v14 salen por debajo de la v10 (−0,04 y −0,09); en el banco, sobre el
+episodio completo, salen por encima (+0,10 y +0,20 de media en seis ventanas; +0,10 y +0,14 si el banco sigue el
+calendario real del test, con el salto de un mes entre semanas, y ganan en las seis). Hay dos lecturas y no se puede
+descartar ninguna: que el banco acierte y la web solo enseñe la mitad de las horas (la diferencia v14 − v10 baila
+±0,65 puntos según qué horas sean públicas), o que en el test las versiones prudentes sean de verdad peores.
+Por eso **se seleccionan a mano para el jurado la v14 y la v10**: cada una cubre una de las dos lecturas. La organización
+avisó el domingo de que **solo evalúa un nombre de equipo, en el ranking privado, y que solo el modo difícil cuenta
+para los premios**: se declara el nombre que tiene la v10 y la v14 (`SanHackobos`). A última hora se subieron las dos con
+un arreglo del final del test (**FINAL2** y la v10 arreglada): en agosto, la última semana dura 168 h desde su primera
+hora, porque el train de agosto acaba el 16/08 y la semana puede ser 16–23/08 y no 25–31/08. Son las dos marcadas. No se
+persiguen décimas del público con variantes, y no se imita a los líderes subiendo el peso del coste: en el episodio
+completo pierde (+0,99 de coste, −0,54 de CO₂, −0,08 de score). El análisis completo está en `docs/envios.md`.
 
 Antes de cada envío del modo difícil se pasa el **ataque de robustez** (`scripts/p1_lab/hard_ataque_*.py`):
 observaciones deformadas, averías del contador, calendario del test, cambio de hora, el `agent.py` empaquetado
@@ -238,6 +260,7 @@ frente al código y el simulador oficial. Lo que se exige: 0 infracciones y 0 ex
 ```bash
 python scripts/p1_hard.py --split dev       # comparativa del hard mode en los días 8-14 de cada mes (para diseñar)
 python scripts/p1_hard.py                   # en las últimas 168 h de cada mes (RESERVADA: solo para verificar)
+python scripts/p1_hard.py --split dev --save-hourly   # además, el detalle hora a hora en results/hourly/ (para gráficas)
 python scripts/p1_hard.py --fit             # regenera models/hard_market.json y models/hard_solar.json
 python scripts/build_submission.py --hard   # ZIP del hard mode en dist/hard/ (el estándar no cambia)
 ```

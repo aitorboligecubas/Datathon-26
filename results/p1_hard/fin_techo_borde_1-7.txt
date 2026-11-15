@@ -1,0 +1,64 @@
+
+1-7 v10 + llena (5 últimas horas de cada semana): infr 0 | episodio completo 19.582 (CO2 18.74 coste 21.53) frente a v10 20.987: -1.406
+                  familia        mascara     v10     var   coc  coc_co2  coc_eur  d_masc  d_otra
+           mitad contigua   1.ª (h 0-83)  19.740  24.137 1.223    1.254    1.161   4.398  -7.764
+           mitad contigua 2.ª (h 84-167)  22.353  14.589 0.653    0.634    0.691  -7.764   4.398
+mitad contigua desplazada   empieza h 24  19.985  19.985 1.000    1.000    1.000   0.000  -2.948
+mitad contigua desplazada   empieza h 42  24.001  24.001 1.000    1.000    1.000   0.000  -2.984
+mitad contigua desplazada   empieza h 48  21.045  21.045 1.000    1.000    1.000   0.000  -2.816
+mitad contigua desplazada   empieza h 72  20.838  20.838 1.000    1.000    1.000   0.000  -2.726
+mitad contigua desplazada   empieza h 96  22.854  19.885 0.870    0.887    0.833  -2.969   0.078
+mitad contigua desplazada  empieza h 120  21.325  18.449 0.865    0.885    0.822  -2.876   0.000
+mitad contigua desplazada  empieza h 126  17.604  14.620 0.830    0.854    0.780  -2.984   0.000
+mitad contigua desplazada  empieza h 144  19.776  17.051 0.862    0.882    0.820  -2.725   0.000
+           horas alternas          pares  20.699  20.218 0.977    0.985    0.961  -0.481  -2.340
+           horas alternas        impares  21.276  18.936 0.890    0.897    0.875  -2.340  -0.481
+           bloques de 3 h          pares  27.732  26.778 0.966    0.976    0.943  -0.954  -1.917
+           bloques de 3 h        impares  13.331  11.415 0.856    0.849    0.868  -1.917  -0.954
+           bloques de 6 h          pares -30.329 -25.959 0.856    0.842    0.884   4.370  -5.368
+           bloques de 6 h        impares  55.907  50.540 0.904    0.903    0.907  -5.368   4.370
+          bloques de 12 h          pares  19.456  23.697 1.218    1.228    1.194   4.241  -7.859
+          bloques de 12 h        impares  22.476  14.617 0.650    0.599    0.741  -7.859   4.241
+            días alternos          pares  21.480  19.034 0.886    0.900    0.859  -2.446   0.000
+            días alternos        impares  20.313  20.313 1.000    1.000    1.000   0.000  -2.446
+  mitad contigua               n=  2 cociente 0.653-1.223 (med 0.938) | >=1,16:   1 | en la máscara -7.76 a +4.40 | en la otra -7.76 a +4.40
+  mitad contigua desplazada    n=  8 cociente 0.830-1.000 (med 0.935) | >=1,16:   0 | en la máscara -2.98 a +0.00 | en la otra -2.98 a +0.08
+  horas alternas               n=  2 cociente 0.890-0.977 (med 0.933) | >=1,16:   0 | en la máscara -2.34 a -0.48 | en la otra -2.34 a -0.48
+  bloques de 3 h               n=  2 cociente 0.856-0.966 (med 0.911) | >=1,16:   0 | en la máscara -1.92 a -0.95 | en la otra -1.92 a -0.95
+  bloques de 6 h               n=  2 cociente 0.856-0.904 (med 0.880) | >=1,16:   0 | en la máscara -5.37 a +4.37 | en la otra -5.37 a +4.37
+  bloques de 12 h              n=  2 cociente 0.650-1.218 (med 0.934) | >=1,16:   1 | en la máscara -7.86 a +4.24 | en la otra -7.86 a +4.24
+  días alternos                n=  2 cociente 0.886-1.000 (med 0.943) | >=1,16:   0 | en la máscara -2.45 a +0.00 | en la otra -2.45 a +0.00
+  azar por horas               n=200 cociente 0.849-1.031 (med 0.931) | >=1,16:   0 | en la máscara -3.36 a +0.63 | en la otra -3.46 a +0.61
+  azar por días enteros        n=200 cociente 0.698-1.147 (med 0.920) | >=1,16:   0 | en la máscara -6.00 a +3.26 | en la otra -6.05 a +2.94
+
+1-7 v10 + vacia (5 últimas horas de cada semana): infr 0 | episodio completo 20.790 (CO2 19.66 coste 23.44) frente a v10 20.987: -0.197
+                  familia        mascara     v10     var   coc  coc_co2  coc_eur  d_masc  d_otra
+           mitad contigua   1.ª (h 0-83)  19.740  18.051 0.914    0.908    0.927  -1.689   1.432
+           mitad contigua 2.ª (h 84-167)  22.353  23.786 1.064    1.062    1.069   1.432  -1.689
+mitad contigua desplazada   empieza h 24  19.985  19.985 1.000    1.000    1.000   0.000  -0.415
+mitad contigua desplazada   empieza h 42  24.001  24.001 1.000    1.000    1.000   0.000  -0.413
+mitad contigua desplazada   empieza h 48  21.045  21.045 1.000    1.000    1.000   0.000  -0.394
+mitad contigua desplazada   empieza h 72  20.838  20.838 1.000    1.000    1.000   0.000  -0.382
+mitad contigua desplazada   empieza h 96  22.854  22.452 0.982    0.974    1.000  -0.402   0.000
+mitad contigua desplazada  empieza h 120  21.325  20.930 0.982    0.973    1.000  -0.394   0.000
+mitad contigua desplazada  empieza h 126  17.604  17.190 0.977    0.965    1.000  -0.413   0.000
+mitad contigua desplazada  empieza h 144  19.776  19.404 0.981    0.972    1.000  -0.372   0.000
+           horas alternas          pares  20.699  20.419 0.986    0.982    0.995  -0.280  -0.114
+           horas alternas        impares  21.276  21.163 0.995    0.990    1.005  -0.114  -0.280
+           bloques de 3 h          pares  27.732  27.312 0.985    0.981    0.993  -0.420   0.055
+           bloques de 3 h        impares  13.331  13.387 1.004    0.997    1.016   0.055  -0.420
+           bloques de 6 h          pares -30.329 -31.849 1.050    1.052    1.047  -1.520   0.696
+           bloques de 6 h        impares  55.907  56.603 1.012    1.011    1.016   0.696  -1.520
+          bloques de 12 h          pares  19.456  17.787 0.914    0.916    0.909  -1.669   1.453
+          bloques de 12 h        impares  22.476  23.929 1.065    1.068    1.059   1.453  -1.669
+            días alternos          pares  21.480  21.140 0.984    0.976    1.000  -0.340   0.000
+            días alternos        impares  20.313  20.313 1.000    1.000    1.000   0.000  -0.340
+  mitad contigua               n=  2 cociente 0.914-1.064 (med 0.989) | >=1,16:   0 | en la máscara -1.69 a +1.43 | en la otra -1.69 a +1.43
+  mitad contigua desplazada    n=  8 cociente 0.977-1.000 (med 0.991) | >=1,16:   0 | en la máscara -0.41 a +0.00 | en la otra -0.41 a +0.00
+  horas alternas               n=  2 cociente 0.986-0.995 (med 0.991) | >=1,16:   0 | en la máscara -0.28 a -0.11 | en la otra -0.28 a -0.11
+  bloques de 3 h               n=  2 cociente 0.985-1.004 (med 0.995) | >=1,16:   0 | en la máscara -0.42 a +0.06 | en la otra -0.42 a +0.06
+  bloques de 6 h               n=  2 cociente 1.012-1.050 (med 1.031) | >=1,16:   0 | en la máscara -1.52 a +0.70 | en la otra -1.52 a +0.70
+  bloques de 12 h              n=  2 cociente 0.914-1.065 (med 0.989) | >=1,16:   0 | en la máscara -1.67 a +1.45 | en la otra -1.67 a +1.45
+  días alternos                n=  2 cociente 0.984-1.000 (med 0.992) | >=1,16:   0 | en la máscara -0.34 a +0.00 | en la otra -0.34 a +0.00
+  azar por horas               n=200 cociente 0.937-1.042 (med 0.992) | >=1,16:   0 | en la máscara -1.49 a +0.74 | en la otra -1.13 a +1.09
+  azar por días enteros        n=200 cociente 0.914-1.076 (med 0.990) | >=1,16:   0 | en la máscara -1.84 a +1.60 | en la otra -2.06 a +1.46

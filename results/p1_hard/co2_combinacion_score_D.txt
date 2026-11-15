@@ -1,0 +1,8 @@
+SCORE 15-21 | agente actual | 18.682 | dif +0.000 | infr 0 | ms/paso 4.77
+SCORE 15-21 | make_wls | 18.682 | dif +0.000 | infr 0 | ms/paso 4.86
+SCORE 15-21 | make_wls1 | 18.694 | dif +0.012 | infr 0 | ms/paso 4.96
+SCORE 15-21 | make_smooth | 18.693 | dif +0.011 | infr 0 | ms/paso 5.13
+SCORE dev | agente actual | 20.302 | dif +0.000 | infr 0 | ms/paso 4.52
+SCORE dev | make_wls | 20.301 | dif -0.001 | infr 0 | ms/paso 4.68
+SCORE dev | make_wls1 | 20.301 | dif -0.001 | infr 0 | ms/paso 4.32
+SCORE dev | make_smooth | 20.280 | dif -0.022 | infr 0 | ms/paso 5.05

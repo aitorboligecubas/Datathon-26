@@ -1,0 +1,3 @@
+semilla (inicio, horas): 2026-07-23 00:00+48, 2026-08-02 08:00+48, 2026-08-14 23:00+48
+esperado 25-31/08: sin arreglo soc_final=35.5 infr=0 | con arreglo soc_final=35.5 infr=0 | acciones distintas=0 | ganancia del arreglo=0.000 puntos
+alternativo 16/08 23h-23/08 22h: sin arreglo soc_final=4022.3 infr=0 | con arreglo soc_final=0.0 infr=0 | acciones distintas=13 | ganancia del arreglo=0.124 puntos

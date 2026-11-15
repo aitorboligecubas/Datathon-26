@@ -1,0 +1,45 @@
+val: episodio completo v10 20.770 (CO2 19.57 coste 23.56) | óptimo 22.404 (CO2 21.51 coste 24.49) infr 0 | cociente 1.0787
+
+A) nota(óptimo con todo el futuro)/nota(v10) en las horas de la máscara
+  mitad contigua               n=  2 cociente min 1.057 med 1.076 max 1.095 | >=1,16:   0 | v10 en la máscara 18.72-22.51 | CO2 x1.084-1.109 coste x1.012-1.065
+  mitad contigua desplazada    n=  8 cociente min 1.022 med 1.100 max 1.157 | >=1,16:   0 | v10 en la máscara 17.80-23.62 | CO2 x1.026-1.197 coste x1.013-1.079
+  horas alternas               n=  2 cociente min 1.018 med 1.085 max 1.153 | >=1,16:   0 | v10 en la máscara 18.73-22.80 | CO2 x1.035-1.177 coste x0.985-1.106
+  bloques de 3 h               n=  2 cociente min 0.987 med 1.048 max 1.109 | >=1,16:   0 | v10 en la máscara 11.05-29.34 | CO2 x1.014-1.123 coste x0.948-1.079
+  bloques de 6 h               n=  2 cociente min 0.920 med 0.971 max 1.022 | >=1,16:   0 | v10 en la máscara -27.94-54.33 | CO2 x0.898-1.025 coste x0.963-1.015
+  bloques de 12 h              n=  2 cociente min 0.906 med 1.083 max 1.260 | >=1,16:   1 | v10 en la máscara 18.09-23.81 | CO2 x0.902-1.266 coste x0.915-1.247
+  días alternos                n=  2 cociente min 0.967 med 1.067 max 1.167 | >=1,16:   1 | v10 en la máscara 20.31-21.36 | CO2 x0.978-1.189 coste x0.947-1.122
+  azar por horas               n=200 cociente min 0.878 med 1.076 max 1.228 | >=1,16:  15 | v10 en la máscara 15.72-25.88 | CO2 x0.887-1.282 coste x0.861-1.146
+  azar por días enteros        n=200 cociente min 0.947 med 1.077 max 1.240 | >=1,16:  17 | v10 en la máscara 16.41-24.80 | CO2 x0.953-1.276 coste x0.935-1.183
+  TOTAL 420 máscaras, llegan a 1,16: 34
+
+B) óptimo que solo mira la máscara (332 máscaras resueltas en 60 s)
+                  familia        mascara  v10_masc  res_masc    coc  coc_co2  coc_eur  v10_otra  res_otra   d_otra  res_todo  d_todo
+           mitad contigua   1.ª (h 0-83)    22.506    27.200  1.209    1.227    1.169    18.720   -39.156  -57.876    -3.737 -24.507
+           mitad contigua 2.ª (h 84-167)    18.720    28.650  1.530    1.586    1.435    22.506   -40.879  -63.385    -8.419 -29.189
+mitad contigua desplazada   empieza h 24    19.396    27.494  1.417    1.477    1.303    22.217   -37.302  -59.520    -4.061 -24.831
+mitad contigua desplazada   empieza h 42    23.619    28.065  1.188    1.214    1.138    17.801   -39.862  -57.663    -5.223 -25.993
+mitad contigua desplazada   empieza h 48    19.791    27.681  1.399    1.444    1.310    21.725   -41.130  -62.856    -7.193 -27.963
+mitad contigua desplazada   empieza h 72    19.548    27.408  1.402    1.465    1.288    21.912   -41.525  -63.438    -7.981 -28.751
+mitad contigua desplazada   empieza h 96    20.831    28.365  1.362    1.416    1.257    20.709   -42.534  -63.243    -7.107 -27.877
+mitad contigua desplazada  empieza h 120    20.728    28.434  1.372    1.419    1.278    20.799   -40.070  -60.869    -5.353 -26.123
+mitad contigua desplazada  empieza h 126    17.801    28.343  1.592    1.662    1.456    23.619   -39.055  -62.675    -6.015 -26.785
+mitad contigua desplazada  empieza h 144    19.485    28.272  1.451    1.501    1.346    22.094   -42.277  -64.371    -5.520 -26.290
+           horas alternas          pares    22.797    99.812  4.378    4.643    3.865    18.730  -114.398 -133.127    -6.941 -27.711
+           horas alternas        impares    18.730    99.860  5.332    5.663    4.691    22.797  -113.700 -136.497    -7.270 -28.040
+           bloques de 3 h          pares    29.344    99.654  3.396    3.468    3.239    11.055  -124.006 -135.060    -5.159 -25.929
+           bloques de 3 h        impares    11.055    99.921  9.039   10.821    6.529    29.344  -107.394 -136.737   -10.244 -31.014
+           bloques de 6 h          pares   -27.942    90.978 -3.256   -3.402   -2.962    54.328   -92.728 -147.056   -17.655 -38.425
+           bloques de 6 h        impares    54.328    90.361  1.663    1.677    1.632   -27.942  -114.172  -86.231     6.806 -13.964
+          bloques de 12 h          pares    18.090    56.729  3.136    3.144    3.117    23.808   -80.913 -104.721    -4.184 -24.954
+          bloques de 12 h        impares    23.808    70.826  2.975    3.217    2.549    18.090   -66.734  -84.824    -5.556 -26.326
+            días alternos          pares    20.313    43.272  2.130    2.212    1.962    21.357   -62.600  -83.957    -2.290 -23.060
+            días alternos        impares    21.357    47.989  2.247    2.421    1.934    20.313   -54.884  -75.197   -10.608 -31.378
+  mitad contigua               n=  2 cociente 1.209-1.530 (med 1.370) | >=1,16:   2 | otra mitad -63.39 a -57.88 | episodio completo frente a v10 -29.19 a -24.51
+  mitad contigua desplazada    n=  8 cociente 1.188-1.592 (med 1.400) | >=1,16:   8 | otra mitad -64.37 a -57.66 | episodio completo frente a v10 -28.75 a -24.83
+  horas alternas               n=  2 cociente 4.378-5.332 (med 4.855) | >=1,16:   2 | otra mitad -136.50 a -133.13 | episodio completo frente a v10 -28.04 a -27.71
+  bloques de 3 h               n=  2 cociente 3.396-9.039 (med 6.217) | >=1,16:   2 | otra mitad -136.74 a -135.06 | episodio completo frente a v10 -31.01 a -25.93
+  bloques de 6 h               n=  2 cociente -3.256-1.663 (med -0.796) | >=1,16:   1 | otra mitad -147.06 a -86.23 | episodio completo frente a v10 -38.43 a -13.96
+  bloques de 12 h              n=  2 cociente 2.975-3.136 (med 3.055) | >=1,16:   2 | otra mitad -104.72 a -84.82 | episodio completo frente a v10 -26.33 a -24.95
+  días alternos                n=  2 cociente 2.130-2.247 (med 2.189) | >=1,16:   2 | otra mitad -83.96 a -75.20 | episodio completo frente a v10 -31.38 a -23.06
+  azar por días enteros        n=156 cociente 1.384-2.250 (med 1.807) | >=1,16: 156 | otra mitad -81.17 a -61.17 | episodio completo frente a v10 -31.51 a -22.96
+  azar por horas               n=156 cociente 3.681-6.121 (med 4.635) | >=1,16: 156 | otra mitad -138.56 a -119.78 | episodio completo frente a v10 -29.90 a -25.07

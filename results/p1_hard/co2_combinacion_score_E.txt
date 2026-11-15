@@ -1,0 +1,6 @@
+SCORE dev | agente actual | 20.302 | dif +0.000 | infr 0 | ms/paso 4.62
+SCORE dev | make_dn | 20.267 | dif -0.034 | infr 0 | ms/paso 5.05
+SCORE 1-7 | agente actual | 21.263 | dif +0.000 | infr 0 | ms/paso 4.91
+SCORE 1-7 | make_dn | 21.222 | dif -0.042 | infr 0 | ms/paso 5.12
+SCORE 3-9 | agente actual | 21.068 | dif +0.000 | infr 0 | ms/paso 4.77
+SCORE 3-9 | make_dn | 21.028 | dif -0.040 | infr 0 | ms/paso 4.70

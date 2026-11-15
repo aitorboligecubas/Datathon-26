@@ -1,0 +1,5 @@
+SCORE 12-18 | agente actual | 19.003 | dif +0.000 | infr 0 | ms/paso 5.11
+SCORE 12-18 | diag_real_3_5 | 19.297 | dif +0.294 | infr 0 | ms/paso 5.05
+SCORE 12-18 | diag_real_3_8 | 19.400 | dif +0.397 | infr 0 | ms/paso 4.89
+SCORE 12-18 | diag_real_12_23 | 19.015 | dif +0.012 | infr 0 | ms/paso 5.56
+SCORE 12-18 | diag_real_3_23 | 19.392 | dif +0.388 | infr 0 | ms/paso 4.56

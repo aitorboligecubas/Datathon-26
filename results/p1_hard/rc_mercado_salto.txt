@@ -1,0 +1,41 @@
+== Camino y nivel aplicado a las horas de la semana siguiente (precio real = perfil x 1,5) ==
+  2025-09-30 20:00:00  camino=cand         H=24  previsto/perfil semana siguiente=1.000  mismo mes=1.422
+  2025-09-30 21:00:00  camino=cand         H=24  previsto/perfil semana siguiente=1.000  mismo mes=nan
+  2025-09-30 22:00:00  camino=MADRE(None)  H=24  previsto/perfil semana siguiente=1.446  mismo mes=nan
+  2025-09-30 23:00:00  camino=MADRE(None)  H=24  previsto/perfil semana siguiente=1.445  mismo mes=nan
+  2025-12-31 20:00:00  camino=cand         H=24  previsto/perfil semana siguiente=1.000  mismo mes=1.422
+  2025-12-31 21:00:00  camino=cand         H=24  previsto/perfil semana siguiente=1.000  mismo mes=nan
+  2025-12-31 22:00:00  camino=MADRE(None)  H=24  previsto/perfil semana siguiente=1.446  mismo mes=nan
+  2025-12-31 23:00:00  camino=MADRE(None)  H=24  previsto/perfil semana siguiente=1.445  mismo mes=nan
+  2026-02-28 20:00:00  camino=cand         H=24  previsto/perfil semana siguiente=1.000  mismo mes=1.422
+  2026-02-28 21:00:00  camino=cand         H=24  previsto/perfil semana siguiente=1.000  mismo mes=nan
+  2026-02-28 22:00:00  camino=MADRE(None)  H=24  previsto/perfil semana siguiente=1.446  mismo mes=nan
+  2026-02-28 23:00:00  camino=MADRE(None)  H=24  previsto/perfil semana siguiente=1.445  mismo mes=nan
+  2026-07-31 20:00:00  camino=cand         H=24  previsto/perfil semana siguiente=1.000  mismo mes=1.422
+  2026-07-31 21:00:00  camino=cand         H=24  previsto/perfil semana siguiente=1.000  mismo mes=nan
+  2026-07-31 22:00:00  camino=MADRE(None)  H=24  previsto/perfil semana siguiente=1.446  mismo mes=nan
+  2026-07-31 23:00:00  camino=MADRE(None)  H=24  previsto/perfil semana siguiente=1.445  mismo mes=nan
+  2026-08-31 20:00:00  camino=cand         H= 4  previsto/perfil semana siguiente=nan  mismo mes=1.422
+  2026-08-31 21:00:00  camino=cand         H= 3  previsto/perfil semana siguiente=nan  mismo mes=nan
+  2026-08-31 22:00:00  camino=MADRE(None)  H= 2  previsto/perfil semana siguiente=nan  mismo mes=nan
+  2026-08-31 23:00:00  camino=MADRE(None)  H= 1  previsto/perfil semana siguiente=nan  mismo mes=nan
+== Igual con nivel 0,6 ==
+  2025-09-30 20:00:00  camino=cand         H=24  previsto/perfil semana siguiente=1.000  mismo mes=0.639
+  2025-09-30 21:00:00  camino=cand         H=24  previsto/perfil semana siguiente=1.000  mismo mes=nan
+  2025-09-30 22:00:00  camino=MADRE(None)  H=24  previsto/perfil semana siguiente=0.643  mismo mes=nan
+  2025-09-30 23:00:00  camino=MADRE(None)  H=24  previsto/perfil semana siguiente=0.644  mismo mes=nan
+== month_blend en los días del test ==
+  2025-09-24 -> mes vecino 10, peso 0.388, tipo 0
+  2025-09-30 -> mes vecino 10, peso 0.583, tipo 0
+  2025-12-25 -> mes vecino 1, peso 0.411, tipo 2
+  2025-12-31 -> mes vecino 1, peso 0.609, tipo 0
+  2026-02-22 -> mes vecino 3, peso 0.345, tipo 2
+  2026-02-28 -> mes vecino 3, peso 0.533, tipo 1
+  2026-08-25 -> mes vecino 9, peso 0.418, tipo 0
+  2026-08-31 -> mes vecino 9, peso 0.619, tipo 0
+  2026-01-25 -> mes vecino 2, peso 0.433, tipo 2
+== Valores conocidos a 0, negativos, NaN ==
+  conocido=0.0 -> precio finito=True min=0.0000 max=0.1827 | co2 finito=True min=0.0000 max=0.6044
+  conocido=-0.05 -> precio finito=True min=0.0000 max=0.1827 | co2 finito=True min=0.0000 max=0.6044
+  conocido=nan -> precio finito=True min=0.0719 max=0.1639 | co2 finito=True min=0.0701 max=0.1316
+  conocido=inf -> precio finito=True min=0.0719 max=0.1639 | co2 finito=True min=0.0701 max=0.1316

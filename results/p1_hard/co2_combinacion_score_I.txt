@@ -1,0 +1,9 @@
+SCORE dev | agente actual | 20.302 | dif +0.000 | infr 0 | ms/paso 4.70
+SCORE dev | make_d12 | 20.288 | dif -0.014 | infr 0 | ms/paso 4.87
+SCORE dev | make_d12_8 | 20.300 | dif -0.002 | infr 0 | ms/paso 4.23
+SCORE 1-7 | agente actual | 21.263 | dif +0.000 | infr 0 | ms/paso 4.54
+SCORE 1-7 | make_d12 | 21.304 | dif +0.041 | infr 0 | ms/paso 4.64
+SCORE 1-7 | make_d12_8 | 21.303 | dif +0.039 | infr 0 | ms/paso 4.84
+SCORE 3-9 | agente actual | 21.068 | dif +0.000 | infr 0 | ms/paso 4.40
+SCORE 3-9 | make_d12 | 21.111 | dif +0.042 | infr 0 | ms/paso 4.60
+SCORE 3-9 | make_d12_8 | 21.082 | dif +0.014 | infr 0 | ms/paso 4.65

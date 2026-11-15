@@ -1,0 +1,7 @@
+val v14 20.874 soc fin semana: [2191, 0, 1974, 5898, 1121, 1572, 5244, 6000, 2413, 6000]
+val v14 + real tras el salto (TECHO, no causal) 20.894 soc fin semana: [2191, 0, 2461, 5898, 1079, 2189, 5244, 6000, 2404, 6000]
+val v14 + nivel de la semilla (causal, g=0,6) 20.887 soc fin semana: [2191, 0, 2461, 5898, 1093, 1572, 5244, 6000, 2428, 6000]
+ventana                                      agente  score    co2  coste  infr  soc_fin_semana_media  n_regla  d_score
+    val                                         v14 20.874 19.685 23.649     0              3241.218        0    0.000
+    val v14 + real tras el salto (TECHO, no causal) 20.894 19.748 23.570     0              3346.583        0    0.020
+    val   v14 + nivel de la semilla (causal, g=0,6) 20.887 19.720 23.609     0              3288.576      225    0.013

@@ -1,0 +1,8 @@
+
+=== dev: v14 20.288 | óptimo libre 21.417 (banco: 21.418) | óptimo obligado a cruzar cada salto con la carga de v14 21.391 | VALOR MÁXIMO DE LA CARGA EN LOS SALTOS 0.026
+carga al cruzar: óptimo libre [6000, 0, 0, 0, 6000, 6000, 2651, 6000, 6000, 2650] | v14 [5908, 0, 0, 0, 6000, 6000, 2220, 6000, 6000, 781] | medias 3530 y 3291
+valor de soltar cada salto por separado: [0.002, 0.0, 0.0, 0.0, 0.0, 0.0, 0.001, 0.0, 0.0, 0.023] suma 0.026
+
+=== 1-7: v14 21.235 | óptimo libre 22.442 (banco: 22.442) | óptimo obligado a cruzar cada salto con la carga de v14 22.315 | VALOR MÁXIMO DE LA CARGA EN LOS SALTOS 0.127
+carga al cruzar: óptimo libre [3688, 0, 6000, 0, 6000, 0, 6000, 558, 3007, 6000] | v14 [2338, 59, 1859, 0, 6000, 1178, 1731, 686, 6000, 4614] | medias 3125 y 2446
+valor de soltar cada salto por separado: [0.006, 0.001, 0.039, 0.0, -0.0, 0.015, 0.041, 0.001, 0.024, 0.002] suma 0.128

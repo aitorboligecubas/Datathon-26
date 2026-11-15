@@ -1,0 +1,9 @@
+val v14 20.874 soc fin semana: [2191, 0, 1974, 5898, 1121, 1572, 5244, 6000, 2413, 6000]
+val v14 + valor de la carga con la semana siguiente (perfil + nivel de la semilla) 20.874 soc fin semana: [2191, 0, 1974, 5898, 1121, 1572, 5244, 6000, 2413, 6000]
+val v14 + valor de la carga con la semana siguiente (solo perfil) 20.874 soc fin semana: [2191, 0, 1974, 5898, 1121, 1572, 5244, 6000, 2413, 6000]
+val v14 + valor de la carga (perfil + nivel) + previsión al nivel de la semilla 20.887 soc fin semana: [2191, 0, 2461, 5898, 1093, 1572, 5244, 6000, 2428, 6000]
+ventana                                                                         agente  score    co2  coste  infr  soc_fin_semana_media  n_regla  n_scen  d_score
+    val                                                                            v14 20.874 19.685 23.649     0              3241.218        0    1848    0.000
+    val v14 + valor de la carga con la semana siguiente (perfil + nivel de la semilla) 20.874 19.685 23.649     0              3241.218      247    1848    0.000
+    val                  v14 + valor de la carga con la semana siguiente (solo perfil) 20.874 19.685 23.649     0              3241.218      247    1848    0.000
+    val    v14 + valor de la carga (perfil + nivel) + previsión al nivel de la semilla 20.887 19.720 23.609     0              3288.576      247    1848    0.013

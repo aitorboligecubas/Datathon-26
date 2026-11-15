@@ -39,6 +39,23 @@ def market_day_type(ts) -> int:
     return 0 if wd < 5 else (1 if wd == 5 else 2)
 
 
+MARKET_MONTH_DAYS = 30.4     # días medios de un mes, para interpolar el perfil entre meses
+
+
+def month_blend(month: int, day: float, centers) -> tuple:
+    """Mes vecino (índice 0-11) y peso con el que entra su perfil, según lo lejos que cae el día del centro de los
+    datos con los que se ajustó el perfil del mes. El test son los días 25-31 y el train los días 1-24: el perfil
+    de la semana del test está a medio camino del perfil del mes siguiente."""
+    c = centers[month - 1]
+    if day >= c:
+        other = month % 12
+        w = (day - c) / (MARKET_MONTH_DAYS - c + centers[other])
+    else:
+        other = (month - 2) % 12
+        w = (c - day) / (c + MARKET_MONTH_DAYS - centers[other])
+    return other, min(max(w, 0.0), 1.0)
+
+
 def hour_index(ts) -> int:
     """Número de hora absoluto (para medir cuántas horas separan dos fechas sin restar fechas)."""
     return ts.toordinal() * 24 + ts.hour
@@ -69,6 +86,13 @@ class MarketForecaster:
                         self.reg[name] = (full, cold)
             except Exception:
                 self.reg = {}
+        self.centers = None        # día medio de los datos de cada mes: con él, el perfil se interpola entre meses
+        try:
+            centers = [float(v) for v in prior["day_center"]]
+            if len(centers) == 12 and all(1.0 <= v <= 31.0 for v in centers):
+                self.centers = centers
+        except Exception:
+            self.centers = None
         self.seen = {"price": {}, "co2": {}}       # número de hora -> (valor real, valor del perfil)
         self.yesterday_weight = yesterday_weight
 
@@ -76,7 +100,13 @@ class MarketForecaster:
         p = self.prof.get(name)
         if p is None:
             return float("nan")
-        return float(p[ts.month - 1][market_day_type(ts)][ts.hour])
+        typ = market_day_type(ts)
+        value = float(p[ts.month - 1][typ][ts.hour])
+        if self.centers is not None:
+            other, w = month_blend(ts.month, ts.day, self.centers)
+            if w > 0.0:
+                value = (1.0 - w) * value + w * float(p[other][typ][ts.hour])
+        return value
 
     def remember(self, obs: Obs, times: list) -> None:
         """Guarda los valores reales que se acaban de conocer (la hora actual y las siguientes)."""
