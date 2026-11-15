@@ -5,7 +5,7 @@ premios). Todo lo demás que hay en el repo y en sus ramas son versiones anterio
 
 | | Entrega 1 · **FINAL2** | Entrega 2 · **v10 con el arreglo del final del test** |
 |---|---|---|
-| ZIP | [`entrega/SanHackobos_hard_ENTREGA_1_FINAL2.zip`](entrega/SanHackobos_hard_ENTREGA_1_FINAL2.zip) | [`entrega/SanHackobos_hard_ENTREGA_2_v10_fin_agosto.zip`](entrega/SanHackobos_hard_ENTREGA_2_v10_fin_agosto.zip) |
+| ZIP | [`entrega/SanHackobos_hard_ENTREGA_1.zip`](entrega/SanHackobos_hard_ENTREGA_1.zip) | [`entrega/SanHackobos_hard_ENTREGA_2.zip`](entrega/SanHackobos_hard_ENTREGA_2.zip) |
 | Qué es | MPC con previsión propia de precio, CO₂, consumo y solar; el plan cuenta con la incertidumbre del consumo neto; perfiles de precio y CO₂ interpolados entre meses | La misma base, con margen de seguridad fijo (1,0) en lugar del plan con incertidumbre y sin interpolar los perfiles |
 | Código | **Este árbol**: `src/battery/hard.py`, `hard_market.py`, `hard_solar.py` y `models/hard_*.json` (commit `2ba3b8f`) | Commit `34a0f5f` más `results/p1_hard/v10_fin_de_agosto.patch` (4 líneas) |
 | Público en la web | 24,06 (CO₂ 22,86 %, coste 26,88 %), 0 infracciones | 24,15 (CO₂ 22,92 %, coste 27,02 %), 0 infracciones |
