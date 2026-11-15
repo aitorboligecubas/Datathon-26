@@ -1,0 +1,4 @@
+val: 1848 horas 2025-09-17 00:00:00 2026-08-16 22:00:00
+== MUNDO A (meteo de la hora anterior): FINAL conduce, v15 en sombra con las mismas observaciones
+{'label': 'A final+sombra v15', 'score': 21.1369, 'd_co2': 20.0603, 'd_cost': 23.649, 'infr': 0, 'exc': 0, 'ms_medio': 4.87, 'ms_max': 28.3, 't_total_s': 9.0, 'horas_irr_now': 0, 'primera_irr_now': None, 'sombra_dif_max_kw': 0.0, 'sombra_horas_distintas': 0, 'sombra_primera': None, 'sombra_infr': 0, 'sombra_ms_medio': 4.88, 'sombra_ms_max': 32.4, 'sombra_horas_irr_now': 0, 'sombra_irr_used': 0}
+== MUNDO B (meteo de la hora actual): cada uno con su trayectoria

@@ -248,3 +248,31 @@ Qué hacemos:
   por debajo de un agente normal. Si el público fuera al azar por horas, nada de esto la explicaría y solo quedarían la
   suerte (menos del 2 %) o conocer datos del test. Ante la organización y el jurado se dice en condicional: "firma
   compatible con mover coste en el salto de semana", sin acusar.
+
+## Cierre (domingo, 11:30 h): lo de las otras sesiones y qué se marca
+
+Tres líneas de trabajo llegaron a la vez y usaban los mismos nombres para cosas distintas:
+
+| Nombre | Qué es | Rama y commit | Público |
+|---|---|---|---|
+| v10 | Semilla de consumo y solar al empezar cada semana y margen 1,0 | `mejora-score-hard-z10`, `34a0f5f` | 24,15 |
+| **FINAL** (la "v14" de `p1-optimizador`) | La v10 con el plan que cuenta con la incertidumbre y los perfiles de precio y CO₂ interpolados | `final` y `p1-optimizador`, `98b7037` | 24,06 |
+| v15 (P2) | La FINAL con un detector de si la irradiancia de la observación es de la hora actual | `p2-datos` | sin dato al escribir esto |
+| "v14" de la otra sesión | La v10 con margen 1,4 de marzo a agosto. **No es la FINAL** | `revision-base` | no enviada |
+| "v13" y "v12 + truco" de la otra sesión | La v10 con el perfil mezclado al 50 % y, además, margen 0,4 en invierno o vaciado a fin de febrero | `mejora-score-hard-v13`, `-v12-truco` | 23,66 y 23,41 |
+
+- **El traspaso de la otra sesión** (`results/p1_hard/TRASPASO.md`, rama `revision-base`) propone entregar la v10. Su
+  comparación "v14 frente a v10" es con su v14, no con la FINAL, que no midió. De sus cuatro revisores solo subió rama
+  `revision-decision`: en la v10, el tope "no descargar más de lo comprado la hora anterior" bloquea la descarga tras
+  una hora con excedente solar. Su medida: +0,006 de media. Medida independiente con el calendario real
+  (`scripts/p1_lab/hard_revision_tope.py`): +0,000, +0,001 y +0,003 en tres ventanas. No pasa su criterio (+0,02) y no
+  se entrega. **La FINAL no tiene ese fallo:** con el plan con incertidumbre ese tope no se aplica.
+- **Sus dos sondeos con el perfil mezclado** (23,66 y 23,41) llevaban además margen 0,4 o el vaciado a fin de febrero:
+  no separan el efecto del perfil. La medida limpia es la de la FINAL frente a la v12 de P1: −0,05 en el público.
+- **Comprobación independiente de P2** (`analysis/hard_v15.md`, rama `p2-datos`): la FINAL gana a la v10 en 9 de 9
+  ventanas con el calendario real (+0,13 de media) y en 6 de 6 escenarios con datos deformados.
+- **La v15 de P2** decide exactamente igual que la FINAL si la meteo es de la hora anterior, que es lo documentado
+  (comprobado: 1.848 horas, diferencia 0,0, 0 infracciones). Si en la web saca lo mismo que la FINAL, son la misma.
+
+**Qué se marca: equipo `SanHackobos`, la FINAL (o la v15 si saca más que 24,06) y la v10.** Las pruebas de 23,66 y
+23,41 no se marcan.
