@@ -247,7 +247,9 @@ descartar ninguna: que el banco acierte y la web solo enseñe la mitad de las ho
 ±0,65 puntos según qué horas sean públicas), o que en el test las versiones prudentes sean de verdad peores.
 Por eso **se seleccionan a mano para el jurado la v14 y la v10**: cada una cubre una de las dos lecturas. La organización
 avisó el domingo de que **solo evalúa un nombre de equipo, en el ranking privado, y que solo el modo difícil cuenta
-para los premios**: se declara el nombre que tiene la v10 y la v14 (`SanHackobos`). No se
+para los premios**: se declara el nombre que tiene la v10 y la v14 (`SanHackobos`). A última hora se subieron las dos con
+un arreglo del final del test (**FINAL2** y la v10 arreglada): en agosto, la última semana dura 168 h desde su primera
+hora, porque el train de agosto acaba el 16/08 y la semana puede ser 16–23/08 y no 25–31/08. Son las dos marcadas. No se
 persiguen décimas del público con variantes, y no se imita a los líderes subiendo el peso del coste: en el episodio
 completo pierde (+0,99 de coste, −0,54 de CO₂, −0,08 de score). El análisis completo está en `docs/envios.md`.
 

@@ -51,6 +51,8 @@ validación rápida que no gasta cupo. El ZIP se genera con `python scripts/buil
 | H8 | sin enviar | `3b146a8` | v13: la v12 con el perfil de precio y CO₂ interpolado entre meses según el día | 21,06 | | | | | Gana donde la ventana se aleja del centro del mes (días 1–7: +0,11; validación: +0,14), que es la situación del test |
 | H9 | Dom 15/11, mañana | `98b7037` | v14: la v13 con los perfiles de sábado y domingo suavizados con los meses vecinos | **21,07** | **24,06** | 22,86 % (13.772,5 kg) | 26,88 % (25.525,83 €) | 0 | En casa gana a la v10 en 6 ventanas de 6 (+0,10 a +0,29); en la web −0,09. Ver "Ronda final" |
 | H10 | Dom 15/11, 9:5x | (sin commit: la v10 con `Z_SOLAR = 0,8`) | v10b: la v10 con el margen de la solar en 0,8 desviaciones (prueba) | 20,74 | **24,13** | 22,87 % (13.777,8 kg) | 27,08 % (25.720,79 €) | 0 | Enviada con el nombre `SanHackobos_v7`. En casa −0,03 de media en seis ventanas (pierde en las seis); en la web −0,02, con el mismo signo en CO₂ y en coste: el banco acierta. No se selecciona |
+| H11 | Dom 15/11, ~10:47 | `2ba3b8f` | **FINAL2**: la FINAL (v14) con el final del test por duración de la semana (168 h desde su primera hora) | 21,07 (igual que la FINAL antes de agosto) | **24,06** | 22,86 % (13.772,5 kg) | 26,88 % (25.525,83 €) | 0 | Idéntica a la FINAL en el público hasta el céntimo: o la última semana es 25–31/08 o su último día no es público. Nunca peor que la FINAL; +0,124 si la última semana es 16–23/08. **Marcada para el jurado** |
+| H12 | Dom 15/11, ~10:52 | `34a0f5f` + `results/p1_hard/v10_fin_de_agosto.patch` | **v10 con el mismo arreglo** del final del test | 20,79 (igual que la v10 antes de agosto) | **24,15** | 22,92 % (13.809,7 kg) | 27,02 % (25.665,85 €) | 0 | Idéntica a la v10 en el público hasta el céntimo. +0,122 si la última semana es 16–23/08. **Marcada para el jurado** como cobertura |
 
 Las horas son las que muestra la web, que van en UTC: una hora menos que la hora local. La v11 (margen 0,7 de
 septiembre a febrero, rama `mejora-score-hard-v11`) no se integra: en el banco pierde frente a la v10 en las tres
@@ -309,3 +311,13 @@ o más con 0 infracciones.
 **Ataque de robustez con el código de FINAL2:** calendario, 0 infracciones en todos los casos y la misma nota que la
 FINAL con el test que acaba el 31/08 (18,821); formato, 69 casos y 0 excepciones (las infracciones son las de los
 casos en que la observación trae la carga de la batería falseada, que ya existían).
+
+## Selección definitiva para el jurado (domingo, 11:55 h)
+
+Equipo declarado: `SanHackobos`. Entregas marcadas a mano: **FINAL2 (H11)** y **la v10 con el arreglo del final del
+test (H12)**. Las dos salen en el público idénticas a sus versiones sin arreglo (24,06 y 24,15), como se esperaba: el
+arreglo solo cambia el último día del test.
+
+Al cierre había tres equipos entre 27,36 y 27,98 en el público. Ese es el nivel del óptimo que conoce todo el futuro
+(1,13–1,16 veces la v10): con la información que da el entorno no se llega ahí. No se persigue: cuenta el ranking
+privado y la organización revisa el código de las dos entregas elegidas.
