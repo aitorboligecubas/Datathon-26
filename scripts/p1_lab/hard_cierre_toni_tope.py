@@ -21,8 +21,13 @@ from battery.policy import MPCPolicy  # noqa: E402
 win = sys.argv[1] if len(sys.argv) > 1 else "val"
 which = sys.argv[2] if len(sys.argv) > 2 else "final"
 full = B.hard_table()
-df = B.split_frame(full, win)
-exclude = set(df.timestamp)
+if win.startswith("ep"):      # episodio con el calendario real del test (datos de 14 o 7 días antes)
+    import hard_ataque_comun as C
+    df, exclude = C.episodio_test("copia", desfases=(14, 21, 7) if win == "ep14" else (7, 14, 21))
+    exclude = set(exclude)
+else:
+    df = B.split_frame(full, win)
+    exclude = set(df.timestamp)
 fit_df = full[~full.timestamp.isin(exclude)]
 solar = B.fit_solar(fit_df)
 if which == "final":

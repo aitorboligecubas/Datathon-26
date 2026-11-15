@@ -1,0 +1,22 @@
+== Primera hora de cada semana (un solo previsor, sin pasar por las horas intermedias) ==
+  2025-09-24 camino=cand pistas NaN=[] zy/zy2 NaN={'price': 0, 'co2': 0} horas de semilla (7 d)={'price': 168, 'co2': 168} z medio ultimo dia={'price': -0.056, 'co2': -0.254}
+  2025-10-25 camino=cand pistas NaN=[] zy/zy2 NaN={'price': 0, 'co2': 0} horas de semilla (7 d)={'price': 168, 'co2': 168} z medio ultimo dia={'price': 0.025, 'co2': 0.042}
+  2025-11-24 camino=cand pistas NaN=[] zy/zy2 NaN={'price': 0, 'co2': 0} horas de semilla (7 d)={'price': 168, 'co2': 168} z medio ultimo dia={'price': -0.106, 'co2': -0.206}
+  2025-12-25 camino=cand pistas NaN=[] zy/zy2 NaN={'price': 0, 'co2': 0} horas de semilla (7 d)={'price': 168, 'co2': 168} z medio ultimo dia={'price': -0.228, 'co2': -0.562}
+  2026-01-25 camino=cand pistas NaN=[] zy/zy2 NaN={'price': 0, 'co2': 0} horas de semilla (7 d)={'price': 168, 'co2': 168} z medio ultimo dia={'price': -0.31, 'co2': -0.506}
+  2026-02-22 camino=cand pistas NaN=[] zy/zy2 NaN={'price': 0, 'co2': 0} horas de semilla (7 d)={'price': 168, 'co2': 168} z medio ultimo dia={'price': 0.048, 'co2': 0.222}
+  2026-03-25 camino=cand pistas NaN=[] zy/zy2 NaN={'price': 0, 'co2': 0} horas de semilla (7 d)={'price': 168, 'co2': 168} z medio ultimo dia={'price': 0.0, 'co2': -0.102}
+  2026-04-24 camino=cand pistas NaN=[] zy/zy2 NaN={'price': 0, 'co2': 0} horas de semilla (7 d)={'price': 168, 'co2': 168} z medio ultimo dia={'price': -0.042, 'co2': -0.168}
+  2026-05-25 camino=cand pistas NaN=[] zy/zy2 NaN={'price': 0, 'co2': 0} horas de semilla (7 d)={'price': 168, 'co2': 168} z medio ultimo dia={'price': -0.0, 'co2': -0.134}
+  2026-06-24 camino=cand pistas NaN=[] zy/zy2 NaN={'price': 0, 'co2': 0} horas de semilla (7 d)={'price': 168, 'co2': 168} z medio ultimo dia={'price': 0.087, 'co2': 0.185}
+  2026-07-25 camino=cand pistas NaN=[] zy/zy2 NaN={'price': 0, 'co2': 0} horas de semilla (7 d)={'price': 168, 'co2': 168} z medio ultimo dia={'price': -0.128, 'co2': -0.031}
+  2026-08-25 camino=cand pistas NaN=[] zy/zy2 NaN={'price': 0, 'co2': 0} horas de semilla (7 d)={'price': 168, 'co2': 168} z medio ultimo dia={'price': -0.056, 'co2': -0.33}
+rebase: h0 fijo = 17747472
+== Perfil de septiembre (2025) frente al de agosto (2026), por tipo de dia ==
+  price: media sep/ago por tipo = [0.78  0.784 0.771] ; corr. de forma (laborable) = 0.928 ; jul/ago = [0.949 0.884 0.895]
+  price: media oct/sep = [1.085 1.075 1.095] ; ene/dic = [1.007 1.003 0.998] ; mar/feb = [1.256 1.263 1.294]
+  co2: media sep/ago por tipo = [0.8   0.856 0.827] ; corr. de forma (laborable) = 0.946 ; jul/ago = [0.946 0.954 0.941]
+  co2: media oct/sep = [1.351 1.351 1.413] ; ene/dic = [0.803 0.873 0.832] ; mar/feb = [1.39  1.389 1.355]
+== Cambio de hora: fechas del plan alrededor ==
+   2025-10-26 00:00 ['00', '01', '02', '03', '04']
+   2026-03-29 00:00 ['00', '01', '02', '03', '04']

@@ -30,6 +30,7 @@ from .safety import clip_action, feasible_range, soc_after
 
 HARD_PARAMS = BatteryParams(capacity_kwh=6000.0, soc_init_kwh=3000.0, max_charge_kw=1500.0, max_discharge_kw=1500.0)
 LAST_MONTHS = ((2026, 8),)   # el test acaba el 31/08/2026 (ENUNCIAT: 12 semanas): se llega con la batería vacía
+LAST_WEEK_HOURS = 168                # horas de cada semana del test
 # Qué hacer al final de cada semana del test (cada una acaba con su mes):
 #   False: la batería sigue de una semana a la siguiente; solo se vacía al final del test (LAST_MONTHS).
 #   True:  cada semana se cierra con la batería vacía.
@@ -192,6 +193,12 @@ class HardPolicy(MPCPolicy):
                     break
                 nxt = nxt + ONE_HOUR * (24 * (nxt.days_in_month - 7))
             t = nxt
+        if (ts.year, ts.month) in LAST_MONTHS:
+            # La última semana del test dura 168 h desde su primera hora, acabe o no con el mes: el train de agosto
+            # termina el 16/08 a las 22:00, así que la semana puede ser 16/08 23:00 - 23/08 22:00 y no 25-31/08.
+            week_left = LAST_WEEK_HOURS - self.block_hours
+            if 1 <= week_left < len(times):
+                times = times[:week_left]
         if RUN_STEPS > 0:
             left = RUN_STEPS - (self.t % RUN_STEPS)       # pasos que quedan hasta el corte, contando el actual
             if left < len(times):

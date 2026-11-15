@@ -1,0 +1,6 @@
+val   privado_mar-ago  v10 26.555 (CO2 25.92 coste 28.05) | FINAL 26.955 (CO2 26.56 coste 27.89) | FINAL - v10 = +0.400 (CO2 +0.64, coste -0.16)
+val   publico_sep-feb  v10 14.588 (CO2 12.71 coste 18.96) | FINAL 14.757 (CO2 12.94 coste 18.99) | FINAL - v10 = +0.169 (CO2 +0.23, coste +0.03)
+val   todo             v10 20.785 (CO2 19.53 coste 23.70) | FINAL 21.073 (CO2 19.98 coste 23.63) | FINAL - v10 = +0.288 (CO2 +0.44, coste -0.07)
+ep14  privado_mar-ago  v10 25.868 (CO2 25.12 coste 27.62) | FINAL 25.974 (CO2 25.26 coste 27.63) | FINAL - v10 = +0.106 (CO2 +0.15, coste +0.01)
+ep14  publico_sep-feb  v10 13.027 (CO2 11.91 coste 15.63) | FINAL 13.027 (CO2 12.16 coste 15.06) | FINAL - v10 = +0.000 (CO2 +0.25, coste -0.58)
+ep14  todo             v10 18.767 (CO2 17.65 coste 21.36) | FINAL 18.821 (CO2 17.86 coste 21.07) | FINAL - v10 = +0.054 (CO2 +0.20, coste -0.30)

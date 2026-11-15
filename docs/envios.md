@@ -276,3 +276,26 @@ Tres líneas de trabajo llegaron a la vez y usaban los mismos nombres para cosas
 
 **Qué se marca: equipo `SanHackobos`, la FINAL (o la v15 si saca más que 24,06) y la v10.** Las pruebas de 23,66 y
 23,41 no se marcan.
+
+## FINAL2 (domingo, 11:41 h): el final del test no depende de que la última semana acabe el 31/08
+
+Lo encontró la revisión de código de última hora. El agente solo vaciaba la batería si la última semana del test acaba
+el 31/08 a las 23:00. El train de agosto acaba el 16/08 a las 22:00, justo 168 horas antes del 23/08 a las 22:00: lo
+más probable es que la última semana del test sea del 16/08 a las 23:00 al 23/08 a las 22:00. En ese caso todas las
+versiones anteriores (también la v10) solo descargan en las dos últimas horas y dejan unos 4.000 kWh sin usar.
+
+Arreglo (4 líneas en `HardPolicy.horizon_times`, commit siguiente a `98b7037`): en agosto de 2026, la semana dura
+168 horas desde su primera hora, acabe o no con el mes. Medido con `scripts/p1_lab/hard_fin_agosto.py` (código nuevo
+frente al ZIP de la FINAL, junio + julio + agosto con las dos fechas posibles):
+
+| Última semana del test | FINAL | FINAL2 |
+|---|---|---|
+| 25–31 de agosto | acaba con 35,5 kWh | idéntica: 0 acciones distintas |
+| 16 (23 h) – 23 (22 h) de agosto | deja 4.022 kWh sin usar | acaba con 0 kWh: **+0,124 puntos**, 13 acciones distintas, todas en agosto |
+
+Comprobaciones: 43 tests en verde, `build_submission.py --hard` (prueba aislada y validador oficial), 0 infracciones, y
+el ZIP nuevo decide igual que el de la FINAL en las 1.680 horas de la validación anteriores a agosto (diferencia 0,0).
+No dio tiempo a repetir el ataque de robustez completo: por eso se marca solo si la web devuelve 24,06 o más y 0
+infracciones. ZIP: `entregas/HARD_FINAL2_fin_de_agosto.zip`.
+
+**Qué se marca: FINAL2 y v10.** Si FINAL2 saliera por debajo de 24,06, la FINAL y la v10.

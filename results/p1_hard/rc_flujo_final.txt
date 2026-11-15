@@ -1,0 +1,18 @@
+(1) final 31/08 23:00: horas=336 infr=0 soc_final=35.5 vertido=410 kWh  t/paso=5.0 ms -> 2016 h: 10.0 s n_scen=336 fallbacks=0
+              timestamp  load_kw  pv_kw  action_kw  soc_kwh  import_kw  export_kw
+330 2026-08-31 18:00:00   1861.6   28.4        0.0   6000.0     1833.2        0.0
+331 2026-08-31 19:00:00   1677.5   49.0     -388.0   5591.0     1240.5        0.0
+332 2026-08-31 20:00:00   1462.0  110.5    -1500.0   4009.9        0.0      148.5
+333 2026-08-31 21:00:00   1259.9    5.4    -1345.4   2591.7        0.0       90.9
+334 2026-08-31 22:00:00   1183.8    0.0    -1239.9   1284.7        0.0       56.1
+335 2026-08-31 23:00:00   1184.0    0.0    -1185.1     35.5        0.0        1.1
+(2) final 2026-08-23 22:00:00: REAL  infr=0 soc_final=4022.3 n_scen=336
+    final 2026-08-23 22:00:00: SABE  infr=0 soc_final=0.0
+    pérdida del agente real frente al que sabe el final: 0.065 puntos (sobre la referencia de 2.016 h)
+              timestamp  load_kw  pv_kw  action_kw  soc_kwh  import_kw  export_kw
+331 2026-08-23 18:00:00    858.5  353.6        0.0   6000.0      504.9        0.0
+332 2026-08-23 19:00:00    877.2  124.0        0.0   6000.0      753.1        0.0
+333 2026-08-23 20:00:00    885.0   46.2        0.0   6000.0      838.9        0.0
+334 2026-08-23 21:00:00    886.6   11.1     -924.1   5025.9        0.0       48.5
+335 2026-08-23 22:00:00    844.8    0.0     -952.2   4022.3        0.0      107.4
+(3) observaciones a mano: 720; infracciones con la regla oficial: 0

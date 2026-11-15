@@ -1,0 +1,8 @@
+[v10] ep7: 2016 h, llamadas al tope 2016, score 20.602 (CO2 19.42 coste 23.35) infr 0 vertido 8062 kWh, SOC final 525
+  horas con el plan con incertidumbre (scen_used): 0 de 2016
+  horas tras una hora con excedente (lectura neta <= 0): 215
+  ... y el plan quería descargar: 1; de ellas con consumo neto real > 0: 1
+  ... BLOQUEADAS por el tope (plan < 0, sale 0): 1; kWh que el plan quería: 333
+  horas en que el tope cambia la acción (cualquier caso): 110; kWh recortados 11891
+  horas en que el tope del modo estándar la HABRÍA cambiado: 110 (tras excedente: 1); kWh 11891
+  acción final sin descarga tras excedente con consumo neto real > 0: 41; de ellas el plan quería descargar: 1

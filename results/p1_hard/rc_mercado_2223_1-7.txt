@@ -1,0 +1,16 @@
+ajuste 2 s, horas 1844
+1-7 v14 tal cual               score 21.2346 co2 20.174 coste 23.708 infr 0 (10 s) n_fix=0
+1-7 v14 + 22-23h solo perfil   score 21.2599 co2 20.211 coste 23.708 infr 0 (8 s) n_fix=20
+horas con otra accion: 10
+  2025-09-07 22:00:00  tal cual -710 kW | arreglo -680 kW
+  2025-10-01 02:00:00  tal cual 147 kW | arreglo 112 kW
+  2025-12-07 22:00:00  tal cual -760 kW | arreglo 0 kW
+  2025-12-07 23:00:00  tal cual -784 kW | arreglo 0 kW
+  2026-01-01 00:00:00  tal cual -719 kW | arreglo -748 kW
+  2026-01-01 02:00:00  tal cual 0 kW | arreglo -780 kW
+  2026-01-01 03:00:00  tal cual 0 kW | arreglo -360 kW
+  2026-01-01 08:00:00  tal cual -265 kW | arreglo -640 kW
+  2026-05-07 22:00:00  tal cual -1004 kW | arreglo -1016 kW
+  2026-06-01 00:00:00  tal cual 1091 kW | arreglo 1105 kW
+diferencia de score por semana (arreglo - tal cual), una por semana del episodio:
+  -0.003 +0.003 -0.109 +0.134 +0.000 +0.000 +0.000 +0.001 -0.001 +0.000 +0.000  | suma +0.025

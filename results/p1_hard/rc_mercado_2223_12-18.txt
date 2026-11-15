@@ -1,0 +1,4 @@
+ajuste 2 s, horas 1797
+12-18 v14 tal cual               score 19.0714 co2 18.209 coste 21.084 infr 0 (10 s) n_fix=0
+12-18 v14 + 22-23h solo perfil   score 19.0714 co2 18.209 coste 21.084 infr 0 (11 s) n_fix=0
+horas con otra accion: 0

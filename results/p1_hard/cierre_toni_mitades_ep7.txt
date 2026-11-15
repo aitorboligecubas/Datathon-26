@@ -1,0 +1,3 @@
+ep7   privado_mar-ago  v10 27.381 (CO2 26.77 coste 28.80) | FINAL 27.504 (CO2 26.94 coste 28.81) | FINAL - v10 = +0.123 (CO2 +0.17, coste +0.01)
+ep7   publico_sep-feb  v10 14.657 (CO2 13.06 coste 18.39) | FINAL 14.500 (CO2 12.66 coste 18.79) | FINAL - v10 = -0.157 (CO2 -0.39, coste +0.40)
+ep7   todo             v10 20.602 (CO2 19.42 coste 23.35) | FINAL 20.574 (CO2 19.29 coste 23.56) | FINAL - v10 = -0.028 (CO2 -0.13, coste +0.21)

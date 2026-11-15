@@ -1,0 +1,40 @@
+ajuste 2 s, horas 1848
+val v14 tal cual               score 20.8743 co2 19.685 coste 23.649 infr 0 (10 s) n_fix=0
+val v14 + 22-23h solo perfil   score 21.1508 co2 20.080 coste 23.650 infr 0 (8 s) n_fix=20
+horas con otra accion: 34
+  2025-09-23 22:00:00  tal cual -914 kW | arreglo 1500 kW
+  2025-09-23 23:00:00  tal cual -534 kW | arreglo 907 kW
+  2025-10-18 00:00:00  tal cual -863 kW | arreglo -908 kW
+  2025-10-18 02:00:00  tal cual 0 kW | arreglo -628 kW
+  2025-10-18 03:00:00  tal cual -176 kW | arreglo -1039 kW
+  2025-10-18 04:00:00  tal cual 0 kW | arreglo -597 kW
+  2025-10-18 06:00:00  tal cual 0 kW | arreglo -735 kW
+  2025-10-18 07:00:00  tal cual 0 kW | arreglo -745 kW
+  2025-12-24 22:00:00  tal cual 0 kW | arreglo 1500 kW
+  2025-12-24 23:00:00  tal cual 0 kW | arreglo 1500 kW
+  2026-01-18 00:00:00  tal cual -689 kW | arreglo -725 kW
+  2026-01-18 02:00:00  tal cual 0 kW | arreglo -805 kW
+  2026-01-18 04:00:00  tal cual 380 kW | arreglo 0 kW
+  2026-01-18 06:00:00  tal cual 0 kW | arreglo -732 kW
+  2026-01-18 07:00:00  tal cual -721 kW | arreglo -806 kW
+  2026-01-18 08:00:00  tal cual 0 kW | arreglo -700 kW
+  2026-01-24 23:00:00  tal cual 263 kW | arreglo 371 kW
+  2026-02-15 01:00:00  tal cual -479 kW | arreglo -576 kW
+  2026-02-21 22:00:00  tal cual -748 kW | arreglo -757 kW
+  2026-03-18 02:00:00  tal cual 330 kW | arreglo 340 kW
+  2026-04-23 22:00:00  tal cual 0 kW | arreglo 797 kW
+  2026-05-18 01:00:00  tal cual 0 kW | arreglo -487 kW
+  2026-05-18 02:00:00  tal cual -539 kW | arreglo -769 kW
+  2026-06-23 22:00:00  tal cual -1062 kW | arreglo -1097 kW
+  2026-06-23 23:00:00  tal cual 0 kW | arreglo -1150 kW
+  2026-07-18 01:00:00  tal cual -1171 kW | arreglo -291 kW
+  2026-07-18 02:00:00  tal cual -305 kW | arreglo 0 kW
+  2026-07-24 23:00:00  tal cual 1218 kW | arreglo 0 kW
+  2026-08-09 23:00:00  tal cual -726 kW | arreglo -700 kW
+  2026-08-10 00:00:00  tal cual -80 kW | arreglo 0 kW
+  2026-08-10 01:00:00  tal cual -771 kW | arreglo -702 kW
+  2026-08-10 07:00:00  tal cual -1083 kW | arreglo -1039 kW
+  2026-08-10 08:00:00  tal cual -734 kW | arreglo -214 kW
+  2026-08-10 09:00:00  tal cual -358 kW | arreglo -0 kW
+diferencia de score por semana (arreglo - tal cual), una por semana del episodio:
+  -0.261 +0.399 -0.128 +0.223 +0.004 -0.000 -0.043 +0.050 +0.109 +0.009 -0.086  | suma +0.277
