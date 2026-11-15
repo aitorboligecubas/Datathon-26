@@ -2,8 +2,8 @@
 
 | Fichero | Qué es | Código | Público en la web | Cómo reconocerla en la web |
 |---|---|---|---|---|
-| `SanHackobos_hard_ENTREGA_1_FINAL2.zip` | **FINAL2**: el plan que cuenta con la incertidumbre del consumo neto, los perfiles de precio y CO₂ interpolados entre meses y el final del test por duración de la semana | rama `p1-optimizador`, commit `2ba3b8f` | 24,06 (13.772,5 kg; 25.525,83 €; 0 infracciones) | el 24,06 de hora más tardía (domingo, ~10:47 UTC) |
-| `SanHackobos_hard_ENTREGA_2_v10_fin_agosto.zip` | **La v10 con el mismo arreglo del final del test**: semilla de consumo y solar al empezar cada semana y margen fijo 1,0 | commit `34a0f5f` + `results/p1_hard/v10_fin_de_agosto.patch` | 24,15 (13.809,7 kg; 25.665,85 €; 0 infracciones) | el 24,15 de hora más tardía (domingo, ~10:52 UTC) |
+| `SanHackobos_hard_ENTREGA_1.zip` | **FINAL2**: el plan que cuenta con la incertidumbre del consumo neto, los perfiles de precio y CO₂ interpolados entre meses y el final del test por duración de la semana | rama `p1-optimizador`, commit `2ba3b8f` | 24,06 (13.772,5 kg; 25.525,83 €; 0 infracciones) | el 24,06 de hora más tardía (domingo, ~10:47 UTC) |
+| `SanHackobos_hard_ENTREGA_2.zip` | **La v10 con el mismo arreglo del final del test**: semilla de consumo y solar al empezar cada semana y margen fijo 1,0 | commit `34a0f5f` + `results/p1_hard/v10_fin_de_agosto.patch` | 24,15 (13.809,7 kg; 25.665,85 €; 0 infracciones) | el 24,15 de hora más tardía (domingo, ~10:52 UTC) |
 
 ## Por qué estas dos
 
